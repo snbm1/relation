@@ -2,6 +2,13 @@ use std::{default, path::Path};
 
 use serde::{Deserialize, Serialize};
 use url::Url;
+
+mod multiplex;
+use multiplex::*;
+
+mod transport;
+use transport::*;
+
 mod tls;
 use tls::*;
 
@@ -12,6 +19,13 @@ enum Flow {
     #[default]
     #[serde(rename = "xtls-rprx-vision")]
     XtlsRprxVision,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+enum TransportType {
+    Grpc,
+    #[serde(rename = "ws")]
+    WebSocket,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
