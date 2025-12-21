@@ -1,9 +1,7 @@
-use core::str;
-use std::error;
-
 use serde::{Deserialize, Serialize};
-use serde_json;
 use url::Url;
+
+use crate::configurator::Config;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 enum Flow {
@@ -25,7 +23,8 @@ enum PacketEncoding {
     #[default]
     xudp,
 }
-#[derive(Debug)]
+
+#[warn(dead_code)]
 enum PossibleKeys {
     Server,
     ServerPort,
@@ -43,9 +42,9 @@ enum PossibleKeys {
 }
 #[derive(Debug)]
 enum PossibleValues {
-    _bool(bool),
-    _u16(u16),
-    _string(String),
+    Bool(bool),
+    U16(u16),
+    String(String),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -73,7 +72,7 @@ struct TlsConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct VlessConfig {
+pub struct VlessConfig {
     server: String,
     server_port: u16,
     uuid: String,
@@ -86,7 +85,68 @@ struct VlessConfig {
 }
 
 impl VlessConfig {
-    fn new(value: Vec<(PossibleKeys, PossibleValues)>) -> Result<Self, Box<dyn error::Error>> {
+    fn parser(input: &str) -> Vec<(PossibleKeys, PossibleValues)> {
+        let parsed_input = Url::parse(input).unwrap();
+        let mut values: Vec<(PossibleKeys, PossibleValues)> = Vec::new();
+        values.push((
+            PossibleKeys::Server,
+            PossibleValues::String(String::from(parsed_input.host_str().unwrap())),
+        ));
+        values.push((
+            PossibleKeys::ServerPort,
+            PossibleValues::U16(parsed_input.port().unwrap_or(443)),
+        ));
+        values.push((
+            PossibleKeys::UUID,
+            PossibleValues::String(String::from(parsed_input.username())),
+        ));
+        for i in parsed_input
+            .query()
+            .unwrap()
+            .split("&")
+            .map(|x| x.split("="))
+        {
+            let j = i.collect::<Vec<_>>();
+            let ln = j.len();
+            if ln > 1 {
+                match j[0] {
+                    "type" => values.push((
+                        PossibleKeys::Type,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
+                    "flow" => values.push((
+                        PossibleKeys::Flow,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
+                    "sni" => values.push((
+                        PossibleKeys::Sni,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
+                    "fp" => {
+                        values.push((PossibleKeys::Fp, PossibleValues::String(String::from(j[1]))))
+                    }
+                    "pbk" => values.push((
+                        PossibleKeys::Pbk,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
+                    "sid" => values.push((
+                        PossibleKeys::Sid,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
+                    _ => {}
+                }
+            }
+        }
+        values
+    }
+}
+
+impl Config for VlessConfig {
+    fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>>
+    where
+        Self: Sized,
+    {
+        let value = VlessConfig::parser(url);
         let mut server: Option<String> = None;
         let mut server_port: Option<u16> = None;
         let mut uuid: Option<String> = None;
@@ -102,7 +162,7 @@ impl VlessConfig {
             match key {
                 PossibleKeys::Type => {
                     network = match val {
-                        PossibleValues::_string(x) => match x.as_str() {
+                        PossibleValues::String(x) => match x.as_str() {
                             "udp" => Some(Network::udp),
                             "tcp" => Some(Network::tcp),
                             _ => None,
@@ -113,7 +173,7 @@ impl VlessConfig {
 
                 PossibleKeys::Flow => {
                     flow = Some(match val {
-                        PossibleValues::_string(x) => match x.as_str() {
+                        PossibleValues::String(x) => match x.as_str() {
                             "xtls-rprx-vision" => Flow::xtls_rprx_vision,
                             _ => Flow::xtls_rprx_vision,
                         },
@@ -123,52 +183,52 @@ impl VlessConfig {
 
                 PossibleKeys::Server => {
                     server = Some(match val {
-                        PossibleValues::_string(x) => x,
+                        PossibleValues::String(x) => x,
                         _ => return Err("Invalid server".into()),
                     });
                 }
 
                 PossibleKeys::ServerPort => {
                     server_port = Some(match val {
-                        PossibleValues::_u16(x) => x,
+                        PossibleValues::U16(x) => x,
                         _ => return Err("Invalid port".into()),
                     });
                 }
 
                 PossibleKeys::UUID => {
                     uuid = Some(match val {
-                        PossibleValues::_string(x) => x,
+                        PossibleValues::String(x) => x,
                         _ => return Err("Invalid uuid".into()),
                     });
                 }
                 PossibleKeys::Sni => {
                     tls_server_name = Some(match val {
-                        PossibleValues::_string(x) => x,
+                        PossibleValues::String(x) => x,
                         _ => return Err("Invalid tls server name".into()),
                     })
                 }
                 PossibleKeys::Fp => {
                     tls_utls = Some(match val {
-                        PossibleValues::_string(x) => x,
+                        PossibleValues::String(x) => x,
                         _ => return Err("Invalid fingerprint name".into()),
                     })
                 }
                 PossibleKeys::Pbk => {
                     tls_reality_pbk = Some(match val {
-                        PossibleValues::_string(x) => x,
+                        PossibleValues::String(x) => x,
                         _ => return Err("Invalid public key".into()),
                     })
                 }
                 PossibleKeys::Sid => {
                     tls_reality_sid = Some(match val {
-                        PossibleValues::_string(x) => x,
+                        PossibleValues::String(x) => x,
                         _ => return Err("Invalid short id".into()),
                     })
                 }
                 _ => {}
             }
         }
-        if (tls_server_name != None && tls_reality_sid != None && tls_reality_pbk != None) {
+        if !(tls_server_name.is_none() || tls_reality_sid.is_none() || tls_reality_pbk.is_none()) {
             Ok(VlessConfig {
                 server: server.ok_or("server missing")?,
                 server_port: server_port.ok_or("port missing")?,
@@ -191,7 +251,10 @@ impl VlessConfig {
                 }),
                 packet_encoding: PacketEncoding::default(),
             })
-        } else if (tls_server_name != None || tls_reality_sid != None || tls_reality_pbk != None) {
+        } else if tls_server_name.is_none()
+            || tls_reality_sid.is_none()
+            || tls_reality_pbk.is_none()
+        {
             println!("Tls not full configurated");
             Ok(VlessConfig {
                 server: server.ok_or("server missing")?,
@@ -214,72 +277,8 @@ impl VlessConfig {
             })
         }
     }
-}
 
-pub fn vless2json(input: String) {
-    let parsed_input = Url::parse(&input).unwrap();
-    println!("{}", parsed_input.scheme());
-    println!("{}", parsed_input.username());
-    println!("{}", parsed_input.host().unwrap());
-    println!("{}", parsed_input.port().unwrap());
-    for i in parsed_input.query().unwrap().split("&") {
-        println!("  {}", i);
+    fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(serde_json::to_string(self)?)
     }
-    println!("{}", parsed_input.fragment().unwrap());
-
-    let mut values: Vec<(PossibleKeys, PossibleValues)> = Vec::new();
-    values.push((
-        PossibleKeys::Server,
-        PossibleValues::_string(String::from(parsed_input.host_str().unwrap())),
-    ));
-    values.push((
-        PossibleKeys::ServerPort,
-        PossibleValues::_u16(parsed_input.port().unwrap_or(443)),
-    ));
-    values.push((
-        PossibleKeys::UUID,
-        PossibleValues::_string(String::from(parsed_input.username())),
-    ));
-    for i in parsed_input
-        .query()
-        .unwrap()
-        .split("&")
-        .map(|x| x.split("="))
-    {
-        let j = i.collect::<Vec<_>>();
-        let ln = j.len();
-        if ln > 1 {
-            match j[0] {
-                "type" => values.push((
-                    PossibleKeys::Type,
-                    PossibleValues::_string(String::from(j[1])),
-                )),
-                "flow" => values.push((
-                    PossibleKeys::Flow,
-                    PossibleValues::_string(String::from(j[1])),
-                )),
-                "sni" => values.push((
-                    PossibleKeys::Sni,
-                    PossibleValues::_string(String::from(j[1])),
-                )),
-                "fp" => values.push((
-                    PossibleKeys::Fp,
-                    PossibleValues::_string(String::from(j[1])),
-                )),
-                "pbk" => values.push((
-                    PossibleKeys::Pbk,
-                    PossibleValues::_string(String::from(j[1])),
-                )),
-                "sid" => values.push((
-                    PossibleKeys::Sid,
-                    PossibleValues::_string(String::from(j[1])),
-                )),
-                _ => {}
-            }
-        }
-    }
-    println!("{:?}", values);
-    let config = VlessConfig::new(values).unwrap();
-    let j = serde_json::to_string(&config).unwrap();
-    println!("{}", j);
 }
