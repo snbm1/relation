@@ -1,5 +1,9 @@
+use std::{default, path::Path};
+
 use serde::{Deserialize, Serialize};
 use url::Url;
+mod tls;
+use tls::*;
 
 use crate::configurator::Config;
 
@@ -7,28 +11,33 @@ use crate::configurator::Config;
 enum Flow {
     #[default]
     #[serde(rename = "xtls-rprx-vision")]
-    xtls_rprx_vision,
+    XtlsRprxVision,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 enum Network {
-    tcp,
-    udp,
+    #[serde(rename = "tcp")]
+    Tcp,
+    #[serde(rename = "udp")]
+    Udp,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 enum PacketEncoding {
-    none,
-    packetaddr,
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "packetaddr")]
+    Packetaddr,
     #[default]
-    xudp,
+    #[serde(rename = "xudp")]
+    Xudp,
 }
 
 #[warn(dead_code)]
 enum PossibleKeys {
     Server,
     ServerPort,
-    UUID,
+    Uuid,
     Security,
     Type,
     Header,
@@ -40,7 +49,8 @@ enum PossibleKeys {
     Pbk,
     Sid,
 }
-#[derive(Debug)]
+
+#[warn(dead_code)]
 enum PossibleValues {
     Bool(bool),
     U16(u16),
@@ -48,43 +58,49 @@ enum PossibleValues {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct RealityConfig {
-    enable: bool,
-    public_key: String,
-    short_id: String,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct UtlsConfig {
-    enable: bool,
-    fingerprint: String,
-}
-
-#[derive(Serialize, Deserialize, Default, Debug)]
-struct TlsConfig {
-    enable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    disable_sni: Option<bool>,
-    server_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    utls: Option<UtlsConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    reality: Option<RealityConfig>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct VlessConfig {
-    server: String,
-    server_port: u16,
-    uuid: String,
-    flow: Flow,
+    server: Option<String>,
+    server_port: Option<u16>,
+    uuid: Option<String>,
+    flow: Option<Flow>,
     #[serde(skip_serializing_if = "Option::is_none")]
     network: Option<Network>,
     #[serde(skip_serializing_if = "Option::is_none")]
     tls: Option<TlsConfig>,
-    packet_encoding: PacketEncoding,
+    packet_encoding: Option<PacketEncoding>,
 }
 
 impl VlessConfig {
+    fn new() -> VlessConfig {
+        VlessConfig {
+            server: None,
+            server_port: None,
+            uuid: None,
+            flow: None,
+            network: None,
+            tls: None,
+            packet_encoding: None,
+        }
+    }
+
+    fn check(&mut self) -> bool {
+        match self.server.is_none() || self.server_port.is_none() || self.uuid.is_none() {
+            true => false,
+            false => {
+                if self.flow.is_none() {
+                    self.flow = Some(Flow::default());
+                }
+                if self.packet_encoding.is_none() {
+                    self.packet_encoding = Some(PacketEncoding::default());
+                }
+                match self.tls.is_none() {
+                    true => true,
+                    false => self.tls.as_ref().unwrap().check(),
+                }
+            }
+        }
+    }
+
     fn parser(input: &str) -> Vec<(PossibleKeys, PossibleValues)> {
         let parsed_input = Url::parse(input).unwrap();
         let mut values: Vec<(PossibleKeys, PossibleValues)> = Vec::new();
@@ -97,7 +113,7 @@ impl VlessConfig {
             PossibleValues::U16(parsed_input.port().unwrap_or(443)),
         ));
         values.push((
-            PossibleKeys::UUID,
+            PossibleKeys::Uuid,
             PossibleValues::String(String::from(parsed_input.username())),
         ));
         for i in parsed_input
@@ -147,134 +163,99 @@ impl Config for VlessConfig {
         Self: Sized,
     {
         let value = VlessConfig::parser(url);
-        let mut server: Option<String> = None;
-        let mut server_port: Option<u16> = None;
-        let mut uuid: Option<String> = None;
-        let mut flow: Option<Flow> = None;
-        let mut network: Option<Network> = None;
 
-        let mut tls_server_name: Option<String> = None;
-        let mut tls_utls: Option<String> = None;
-        let mut tls_reality_pbk: Option<String> = None;
-        let mut tls_reality_sid: Option<String> = None;
+        let mut cfg = VlessConfig::new();
+
+        let mut tls = TlsConfig::new();
+        let mut utls = UtlsConfig::new();
+        let mut rlt = RealityConfig::new();
 
         for (key, val) in value {
             match key {
                 PossibleKeys::Type => {
-                    network = match val {
+                    match val {
                         PossibleValues::String(x) => match x.as_str() {
-                            "udp" => Some(Network::udp),
-                            "tcp" => Some(Network::tcp),
-                            _ => None,
+                            "udp" => cfg.network = Some(Network::Udp),
+                            "tcp" => cfg.network = Some(Network::Tcp),
+                            _ => {}
                         },
-                        _ => return Err("Invalid type".into()),
+                        _ => return Err("Invalid type type".into()),
                     };
                 }
 
                 PossibleKeys::Flow => {
-                    flow = Some(match val {
+                    match val {
                         PossibleValues::String(x) => match x.as_str() {
-                            "xtls-rprx-vision" => Flow::xtls_rprx_vision,
-                            _ => Flow::xtls_rprx_vision,
+                            "xtls-rprx-vision" => cfg.flow = Some(Flow::XtlsRprxVision),
+                            _ => cfg.flow = Some(Flow::XtlsRprxVision),
                         },
-                        _ => return Err("Invalid flow".into()),
-                    });
+                        _ => return Err("Invalid flow type".into()),
+                    };
                 }
 
                 PossibleKeys::Server => {
-                    server = Some(match val {
-                        PossibleValues::String(x) => x,
-                        _ => return Err("Invalid server".into()),
-                    });
+                    match val {
+                        PossibleValues::String(x) => cfg.server = Some(x),
+                        _ => return Err("Invalid server type".into()),
+                    };
                 }
 
                 PossibleKeys::ServerPort => {
-                    server_port = Some(match val {
-                        PossibleValues::U16(x) => x,
-                        _ => return Err("Invalid port".into()),
-                    });
+                    match val {
+                        PossibleValues::U16(x) => cfg.server_port = Some(x),
+                        _ => return Err("Invalid port type".into()),
+                    };
                 }
 
-                PossibleKeys::UUID => {
-                    uuid = Some(match val {
-                        PossibleValues::String(x) => x,
-                        _ => return Err("Invalid uuid".into()),
-                    });
+                PossibleKeys::Uuid => {
+                    match val {
+                        PossibleValues::String(x) => cfg.uuid = Some(x),
+                        _ => return Err("Invalid uuid type".into()),
+                    };
                 }
-                PossibleKeys::Sni => {
-                    tls_server_name = Some(match val {
-                        PossibleValues::String(x) => x,
-                        _ => return Err("Invalid tls server name".into()),
-                    })
-                }
-                PossibleKeys::Fp => {
-                    tls_utls = Some(match val {
-                        PossibleValues::String(x) => x,
-                        _ => return Err("Invalid fingerprint name".into()),
-                    })
-                }
-                PossibleKeys::Pbk => {
-                    tls_reality_pbk = Some(match val {
-                        PossibleValues::String(x) => x,
-                        _ => return Err("Invalid public key".into()),
-                    })
-                }
-                PossibleKeys::Sid => {
-                    tls_reality_sid = Some(match val {
-                        PossibleValues::String(x) => x,
-                        _ => return Err("Invalid short id".into()),
-                    })
-                }
+                PossibleKeys::Sni => match val {
+                    PossibleValues::String(x) => tls.server_name = Some(x),
+                    _ => return Err("Invalid tls server name".into()),
+                },
+                PossibleKeys::Fp => match val {
+                    PossibleValues::String(x) => {
+                        utls.enable = Some(true);
+                        utls.fingerprint = Some(x);
+                    }
+                    _ => return Err("Invalid fingerprint name".into()),
+                },
+                PossibleKeys::Pbk => match val {
+                    PossibleValues::String(x) => {
+                        rlt.enable = Some(true);
+                        rlt.public_key = Some(x);
+                    }
+                    _ => return Err("Invalid public key".into()),
+                },
+                PossibleKeys::Sid => match val {
+                    PossibleValues::String(x) => {
+                        rlt.enable = Some(true);
+                        rlt.short_id = Some(x);
+                    }
+                    _ => return Err("Invalid short id".into()),
+                },
                 _ => {}
             }
         }
-        if !(tls_server_name.is_none() || tls_reality_sid.is_none() || tls_reality_pbk.is_none()) {
-            Ok(VlessConfig {
-                server: server.ok_or("server missing")?,
-                server_port: server_port.ok_or("port missing")?,
-                uuid: uuid.ok_or("uuid missing")?,
-                flow: flow.ok_or("flow missing")?,
-                network,
-                tls: Some(TlsConfig {
-                    enable: true,
-                    disable_sni: None,
-                    server_name: tls_server_name.unwrap(),
-                    utls: Some(UtlsConfig {
-                        enable: true,
-                        fingerprint: tls_utls.unwrap(),
-                    }),
-                    reality: Some(RealityConfig {
-                        enable: true,
-                        public_key: tls_reality_pbk.unwrap(),
-                        short_id: tls_reality_sid.unwrap(),
-                    }),
-                }),
-                packet_encoding: PacketEncoding::default(),
-            })
-        } else if tls_server_name.is_none()
-            || tls_reality_sid.is_none()
-            || tls_reality_pbk.is_none()
-        {
-            println!("Tls not full configurated");
-            Ok(VlessConfig {
-                server: server.ok_or("server missing")?,
-                server_port: server_port.ok_or("port missing")?,
-                uuid: uuid.ok_or("uuid missing")?,
-                flow: flow.ok_or("flow missing")?,
-                network,
-                tls: None,
-                packet_encoding: PacketEncoding::default(),
-            })
-        } else {
-            Ok(VlessConfig {
-                server: server.ok_or("server missing")?,
-                server_port: server_port.ok_or("port missing")?,
-                uuid: uuid.ok_or("uuid missing")?,
-                flow: flow.ok_or("flow missing")?,
-                network,
-                tls: None,
-                packet_encoding: PacketEncoding::default(),
-            })
+        match cfg.check() {
+            false => Err("Not configurated required fields".into()),
+            true => match tls.check() {
+                false => Ok(cfg),
+                true => {
+                    if utls.check() {
+                        tls.utls = Some(utls);
+                    }
+                    if rlt.check() {
+                        tls.reality = Some(rlt);
+                    }
+                    cfg.tls = Some(tls);
+                    Ok(cfg)
+                }
+            },
         }
     }
 
