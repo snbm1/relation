@@ -18,7 +18,7 @@ impl RealityConfig {
 
     pub fn check(&self) -> bool {
         match self.enable {
-            None => true,
+            None => false,
             Some(x) => match x {
                 false => true,
                 true => !(self.public_key.is_none() || self.short_id.is_none()),
@@ -42,7 +42,7 @@ impl UtlsConfig {
     }
     pub fn check(&self) -> bool {
         match self.enable {
-            None => true,
+            None => false,
             Some(x) => match x {
                 false => true,
                 true => !self.fingerprint.is_none(),
@@ -58,6 +58,8 @@ pub struct TlsConfig {
     pub disable_sni: Option<bool>,
     pub server_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub insecure: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub utls: Option<UtlsConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reality: Option<RealityConfig>,
@@ -69,6 +71,7 @@ impl TlsConfig {
             enable: None,
             disable_sni: None,
             server_name: None,
+            insecure: None,
             utls: None,
             reality: None,
         }
@@ -76,7 +79,7 @@ impl TlsConfig {
 
     pub fn check(&self) -> bool {
         match self.enable {
-            None => true,
+            None => false,
             Some(x) => match x {
                 false => true,
                 true => match self.server_name {

@@ -8,7 +8,7 @@ pub struct MultiplexConfig {
 }
 
 impl MultiplexConfig {
-    pub fn new() -> Self {
+    pub fn new() -> MultiplexConfig {
         MultiplexConfig {
             enable: None,
             protocol: None,
@@ -18,7 +18,7 @@ impl MultiplexConfig {
 
     pub fn check(&self) -> bool {
         match self.enable {
-            None => true,
+            None => false,
             Some(x) => match x {
                 false => true,
                 true => !(self.protocol.is_none() || self.max_streams.is_none()),

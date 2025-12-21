@@ -1,4 +1,4 @@
-use std::{default, path::Path};
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -16,6 +16,8 @@ use crate::configurator::Config;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 enum Flow {
+    #[serde(rename = "")]
+    None,
     #[default]
     #[serde(rename = "xtls-rprx-vision")]
     XtlsRprxVision,
@@ -62,6 +64,7 @@ enum PossibleKeys {
     Fp,
     Pbk,
     Sid,
+    Mux,
 }
 
 #[warn(dead_code)]
@@ -71,28 +74,39 @@ enum PossibleValues {
     String(String),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct VlessConfig {
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config_type: Option<String>,
     server: Option<String>,
     server_port: Option<u16>,
     uuid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     flow: Option<Flow>,
     #[serde(skip_serializing_if = "Option::is_none")]
     network: Option<Network>,
     #[serde(skip_serializing_if = "Option::is_none")]
     tls: Option<TlsConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    multiplex: Option<MultiplexConfig>,
     packet_encoding: Option<PacketEncoding>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    transport: Option<TransportConfig>,
 }
 
 impl VlessConfig {
     fn new() -> VlessConfig {
         VlessConfig {
+            config_type: Some("vless".to_string()),
             server: None,
             server_port: None,
             uuid: None,
             flow: None,
             network: None,
             tls: None,
+            multiplex: None,
+            transport: None,
             packet_encoding: None,
         }
     }
@@ -163,6 +177,18 @@ impl VlessConfig {
                         PossibleKeys::Sid,
                         PossibleValues::String(String::from(j[1])),
                     )),
+                    "mux" => values.push((
+                        PossibleKeys::Mux,
+                        PossibleValues::U16(j[1].parse().unwrap()),
+                    )),
+                    "path" => values.push((
+                        PossibleKeys::Path,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
+                    "host" => values.push((
+                        PossibleKeys::Host,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
                     _ => {}
                 }
             }
@@ -183,6 +209,8 @@ impl Config for VlessConfig {
         let mut tls = TlsConfig::new();
         let mut utls = UtlsConfig::new();
         let mut rlt = RealityConfig::new();
+        let mut mtx = MultiplexConfig::new();
+        let mut tfg = TransportConfig::None;
 
         for (key, val) in value {
             match key {
@@ -191,6 +219,7 @@ impl Config for VlessConfig {
                         PossibleValues::String(x) => match x.as_str() {
                             "udp" => cfg.network = Some(Network::Udp),
                             "tcp" => cfg.network = Some(Network::Tcp),
+                            "ws" => tfg = TransportConfig::WebSocket(WebSocketConfig::new()),
                             _ => {}
                         },
                         _ => return Err("Invalid type type".into()),
@@ -201,7 +230,7 @@ impl Config for VlessConfig {
                     match val {
                         PossibleValues::String(x) => match x.as_str() {
                             "xtls-rprx-vision" => cfg.flow = Some(Flow::XtlsRprxVision),
-                            _ => cfg.flow = Some(Flow::XtlsRprxVision),
+                            _ => cfg.flow = Some(Flow::None),
                         },
                         _ => return Err("Invalid flow type".into()),
                     };
@@ -227,49 +256,105 @@ impl Config for VlessConfig {
                         _ => return Err("Invalid uuid type".into()),
                     };
                 }
+
                 PossibleKeys::Sni => match val {
-                    PossibleValues::String(x) => tls.server_name = Some(x),
+                    PossibleValues::String(x) => {
+                        tls.enable = Some(true);
+                        tls.server_name = Some(x);
+                    }
                     _ => return Err("Invalid tls server name".into()),
                 },
+
                 PossibleKeys::Fp => match val {
                     PossibleValues::String(x) => {
+                        tls.enable = Some(true);
                         utls.enable = Some(true);
                         utls.fingerprint = Some(x);
                     }
                     _ => return Err("Invalid fingerprint name".into()),
                 },
+
                 PossibleKeys::Pbk => match val {
                     PossibleValues::String(x) => {
+                        tls.enable = Some(true);
                         rlt.enable = Some(true);
                         rlt.public_key = Some(x);
                     }
                     _ => return Err("Invalid public key".into()),
                 },
+
                 PossibleKeys::Sid => match val {
                     PossibleValues::String(x) => {
+                        tls.enable = Some(true);
                         rlt.enable = Some(true);
                         rlt.short_id = Some(x);
                     }
                     _ => return Err("Invalid short id".into()),
                 },
+
+                PossibleKeys::Mux => match val {
+                    PossibleValues::U16(x) => {
+                        mtx.enable = Some(true);
+                        mtx.protocol = Some("h2mux".to_string());
+                        mtx.max_streams = Some(x);
+                    }
+                    _ => return Err("Invalid multiplex type".into()),
+                },
+                PossibleKeys::Path => match val {
+                    PossibleValues::String(x) => match tfg {
+                        TransportConfig::None => return Err("Path before type".into()),
+                        TransportConfig::WebSocket(ref mut z) => z.path = Some(x),
+                    },
+                    _ => return Err("Invalid Path type".into()),
+                },
+                PossibleKeys::Host => match val {
+                    PossibleValues::String(x) => match tfg {
+                        TransportConfig::None => return Err("Host before type".into()),
+                        TransportConfig::WebSocket(ref mut z) => match z.headers {
+                            None => z.headers = Some(HashMap::from([("Host".to_string(), x)])),
+                            Some(_) => {
+                                let _ = z.headers.as_mut().unwrap().insert("Host".to_string(), x);
+                            }
+                        },
+                    },
+                    _ => return Err("Invalid Host type".into()),
+                },
                 _ => {}
             }
         }
+
         match cfg.check() {
             false => Err("Not configurated required fields".into()),
-            true => match tls.check() {
-                false => Ok(cfg),
-                true => {
-                    if utls.check() {
-                        tls.utls = Some(utls);
-                    }
-                    if rlt.check() {
-                        tls.reality = Some(rlt);
-                    }
-                    cfg.tls = Some(tls);
-                    Ok(cfg)
+            true => {
+                if mtx.check() {
+                    cfg.multiplex = Some(mtx);
                 }
-            },
+                match tls.check() {
+                    false => {}
+                    true => {
+                        if utls.check() {
+                            tls.utls = Some(utls);
+                        }
+                        if rlt.check() {
+                            tls.reality = Some(rlt);
+                        }
+                        cfg.tls = Some(tls);
+                    }
+                }
+                match tfg {
+                    TransportConfig::None => {}
+                    TransportConfig::WebSocket(x) => {
+                        if x.check() {
+                            if let Some(ref mut z) = cfg.tls {
+                                z.insecure = Some(true);
+                            }
+                            cfg.flow = None;
+                            cfg.transport = Some(TransportConfig::WebSocket(x));
+                        }
+                    }
+                }
+                Ok(cfg)
+            }
         }
     }
 
