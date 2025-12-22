@@ -1,4 +1,5 @@
 use url::Url;
+mod dns;
 mod vless;
 
 pub trait Config {

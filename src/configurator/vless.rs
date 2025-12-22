@@ -231,6 +231,10 @@ impl Config for VlessConfig {
                             "ws" => tfg = TransportConfig::WebSocket(WebSocketConfig::new()),
                             "grpc" => tfg = TransportConfig::Grpc(GrpcConfig::new()),
                             "quic" => tfg = TransportConfig::Quic(QuicConfig::new()),
+                            "http" => tfg = TransportConfig::Http(HttpConfig::new()),
+                            "httpupdate" => {
+                                tfg = TransportConfig::HttpUpdate(HttpUpdateConfig::new())
+                            }
                             _ => {}
                         },
                         _ => return Err("Invalid type type".into()),
@@ -320,11 +324,13 @@ impl Config for VlessConfig {
                     }
                     _ => return Err("Invalid multiplex type".into()),
                 },
-
+                // urlencoding::decode(encoded).unwrap();
                 PossibleKeys::Path => match val {
                     PossibleValues::String(x) => match tfg {
                         TransportConfig::None => return Err("Path before type".into()),
                         TransportConfig::WebSocket(ref mut z) => z.path = Some(x),
+                        TransportConfig::Http(ref mut z) => z.path = Some(x),
+                        TransportConfig::HttpUpdate(ref mut z) => z.path = Some(x),
                         _ => {}
                     },
                     _ => return Err("Invalid Path type".into()),
@@ -337,6 +343,18 @@ impl Config for VlessConfig {
                             None => z.headers = Some(HashMap::from([("Host".to_string(), x)])),
                             Some(_) => {
                                 let _ = z.headers.as_mut().unwrap().insert("Host".to_string(), x);
+                            }
+                        },
+                        TransportConfig::Http(ref mut z) => match z.host {
+                            None => z.host = Some(vec![x]),
+                            Some(_) => {
+                                z.host.as_mut().unwrap().push(x);
+                            }
+                        },
+                        TransportConfig::HttpUpdate(ref mut z) => match z.host {
+                            None => z.host = Some(vec![x]),
+                            Some(_) => {
+                                z.host.as_mut().unwrap().push(x);
                             }
                         },
                         _ => {}
@@ -405,6 +423,24 @@ impl Config for VlessConfig {
                             }
                             cfg.flow = Some(Flow::None);
                             cfg.transport = Some(TransportConfig::Quic(x));
+                        }
+                    }
+                    TransportConfig::Http(x) => {
+                        if x.check() {
+                            if let Some(ref mut z) = cfg.tls {
+                                z.insecure = Some(true)
+                            }
+                            cfg.flow = Some(Flow::None);
+                            cfg.transport = Some(TransportConfig::Http(x))
+                        }
+                    }
+                    TransportConfig::HttpUpdate(x) => {
+                        if x.check() {
+                            if let Some(ref mut z) = cfg.tls {
+                                z.insecure = Some(true)
+                            }
+                            cfg.flow = Some(Flow::None);
+                            cfg.transport = Some(TransportConfig::HttpUpdate(x))
                         }
                     }
                 }

@@ -8,6 +8,8 @@ pub enum TransportConfig {
     WebSocket(WebSocketConfig),
     Grpc(GrpcConfig),
     Quic(QuicConfig),
+    Http(HttpConfig),
+    HttpUpdate(HttpUpdateConfig),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -82,5 +84,66 @@ impl QuicConfig {
 
     pub fn check(&self) -> bool {
         !self.config_type.is_none()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HttpConfig {
+    #[serde(rename = "type")]
+    pub config_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host: Option<Vec<String>>,
+    pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub method: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub headers: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idle_timeout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ping_timeout: Option<String>,
+}
+
+impl HttpConfig {
+    pub fn new() -> Self {
+        HttpConfig {
+            config_type: Some("http".to_string()),
+            host: None,
+            path: None,
+            method: None,
+            headers: None,
+            idle_timeout: None,
+            ping_timeout: None,
+        }
+    }
+
+    pub fn check(&self) -> bool {
+        !self.path.is_none()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HttpUpdateConfig {
+    #[serde(rename = "type")]
+    pub config_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host: Option<Vec<String>>,
+    pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub headers: Option<HashMap<String, String>>,
+}
+
+impl HttpUpdateConfig {
+    pub fn new() -> Self {
+        HttpUpdateConfig {
+            config_type: Some("httpupgrade".to_string()),
+            host: None,
+            path: None,
+            headers: None,
+        }
+    }
+
+    pub fn check(&self) -> bool {
+        !self.path.is_none()
     }
 }
