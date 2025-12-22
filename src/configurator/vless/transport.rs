@@ -6,6 +6,8 @@ use std::collections::HashMap;
 pub enum TransportConfig {
     None,
     WebSocket(WebSocketConfig),
+    Grpc(GrpcConfig),
+    Quic(QuicConfig),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -36,3 +38,49 @@ impl WebSocketConfig {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GrpcConfig {
+    #[serde(rename = "type")]
+    pub config_type: Option<String>,
+    pub service_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idle_timeout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ping_timeout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permit_without_stream: Option<bool>,
+}
+
+impl GrpcConfig {
+    pub fn new() -> Self {
+        GrpcConfig {
+            config_type: Some("gprc".to_string()),
+            service_name: None,
+            idle_timeout: Some("15s".to_string()),
+            ping_timeout: Some("15s".to_string()),
+            permit_without_stream: Some(false),
+        }
+    }
+
+    pub fn check(&self) -> bool {
+        !self.service_name.is_none()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct QuicConfig {
+    #[serde(rename = "type")]
+    pub config_type: Option<String>,
+}
+
+impl QuicConfig {
+    pub fn new() -> Self {
+        QuicConfig {
+            config_type: Some("quic".to_string()),
+        }
+    }
+
+    pub fn check(&self) -> bool {
+        !self.config_type.is_none()
+    }
+}

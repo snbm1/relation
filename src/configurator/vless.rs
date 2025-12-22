@@ -65,6 +65,7 @@ enum PossibleKeys {
     Pbk,
     Sid,
     Mux,
+    ServiceName,
 }
 
 #[warn(dead_code)]
@@ -158,6 +159,10 @@ impl VlessConfig {
                         PossibleKeys::Type,
                         PossibleValues::String(String::from(j[1])),
                     )),
+                    "security" => values.push((
+                        PossibleKeys::Security,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
                     "flow" => values.push((
                         PossibleKeys::Flow,
                         PossibleValues::String(String::from(j[1])),
@@ -187,6 +192,10 @@ impl VlessConfig {
                     )),
                     "host" => values.push((
                         PossibleKeys::Host,
+                        PossibleValues::String(String::from(j[1])),
+                    )),
+                    "serviceName" => values.push((
+                        PossibleKeys::ServiceName,
                         PossibleValues::String(String::from(j[1])),
                     )),
                     _ => {}
@@ -220,6 +229,8 @@ impl Config for VlessConfig {
                             "udp" => cfg.network = Some(Network::Udp),
                             "tcp" => cfg.network = Some(Network::Tcp),
                             "ws" => tfg = TransportConfig::WebSocket(WebSocketConfig::new()),
+                            "grpc" => tfg = TransportConfig::Grpc(GrpcConfig::new()),
+                            "quic" => tfg = TransportConfig::Quic(QuicConfig::new()),
                             _ => {}
                         },
                         _ => return Err("Invalid type type".into()),
@@ -274,6 +285,15 @@ impl Config for VlessConfig {
                     _ => return Err("Invalid fingerprint name".into()),
                 },
 
+                PossibleKeys::Security => match val {
+                    PossibleValues::String(x) => match x.as_str() {
+                        "reality" => rlt.enable = Some(true),
+                        "tls" => tls.enable = Some(true),
+                        _ => eprintln!("{} not supported", x),
+                    },
+                    _ => return Err("Invalid Security type".into()),
+                },
+
                 PossibleKeys::Pbk => match val {
                     PossibleValues::String(x) => {
                         tls.enable = Some(true);
@@ -300,13 +320,16 @@ impl Config for VlessConfig {
                     }
                     _ => return Err("Invalid multiplex type".into()),
                 },
+
                 PossibleKeys::Path => match val {
                     PossibleValues::String(x) => match tfg {
                         TransportConfig::None => return Err("Path before type".into()),
                         TransportConfig::WebSocket(ref mut z) => z.path = Some(x),
+                        _ => {}
                     },
                     _ => return Err("Invalid Path type".into()),
                 },
+
                 PossibleKeys::Host => match val {
                     PossibleValues::String(x) => match tfg {
                         TransportConfig::None => return Err("Host before type".into()),
@@ -316,8 +339,18 @@ impl Config for VlessConfig {
                                 let _ = z.headers.as_mut().unwrap().insert("Host".to_string(), x);
                             }
                         },
+                        _ => {}
                     },
                     _ => return Err("Invalid Host type".into()),
+                },
+
+                PossibleKeys::ServiceName => match val {
+                    PossibleValues::String(x) => match tfg {
+                        TransportConfig::None => return Err("Host before type".into()),
+                        TransportConfig::Grpc(ref mut z) => z.service_name = Some(x),
+                        _ => {}
+                    },
+                    _ => return Err("Invalid ServiceName type".into()),
                 },
                 _ => {}
             }
@@ -335,8 +368,12 @@ impl Config for VlessConfig {
                         if utls.check() {
                             tls.utls = Some(utls);
                         }
-                        if rlt.check() {
-                            tls.reality = Some(rlt);
+                        if let Some(x) = rlt.enable {
+                            if x && rlt.check() {
+                                tls.reality = Some(rlt)
+                            } else if x && !rlt.check() {
+                                return Err("Security = reality, but it doesnt configurated".into());
+                            }
                         }
                         cfg.tls = Some(tls);
                     }
@@ -348,8 +385,26 @@ impl Config for VlessConfig {
                             if let Some(ref mut z) = cfg.tls {
                                 z.insecure = Some(true);
                             }
-                            cfg.flow = None;
+                            cfg.flow = Some(Flow::None);
                             cfg.transport = Some(TransportConfig::WebSocket(x));
+                        }
+                    }
+                    TransportConfig::Grpc(x) => {
+                        if x.check() {
+                            if let Some(ref mut z) = cfg.tls {
+                                z.insecure = Some(true);
+                            }
+                            cfg.flow = Some(Flow::None);
+                            cfg.transport = Some(TransportConfig::Grpc(x));
+                        }
+                    }
+                    TransportConfig::Quic(x) => {
+                        if x.check() {
+                            if let Some(ref mut z) = cfg.tls {
+                                z.insecure = Some(true);
+                            }
+                            cfg.flow = Some(Flow::None);
+                            cfg.transport = Some(TransportConfig::Quic(x));
                         }
                     }
                 }
