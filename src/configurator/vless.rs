@@ -3,14 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-mod multiplex;
-use multiplex::*;
-
-mod transport;
-use transport::*;
-
-mod tls;
-use tls::*;
+use crate::configurator::multiplex::*;
+use crate::configurator::tls::*;
+use crate::configurator::transport::*;
 
 use crate::configurator::Config;
 

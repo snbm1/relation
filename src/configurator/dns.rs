@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
+mod dnsrule;
+mod dnsserver;
 
-#[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-enum DnsServer {
-    None,
-}
+use dnsrule::*;
+use dnsserver::*;
+
 #[derive(Serialize, Deserialize)]
 pub struct DnsConfig {
     pub servers: Option<Vec<DnsServer>>,
