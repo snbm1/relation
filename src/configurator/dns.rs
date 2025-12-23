@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 mod dnsrule;
 mod dnsserver;
 
-use dnsrule::*;
 use dnsserver::*;
 
 #[derive(Serialize, Deserialize)]

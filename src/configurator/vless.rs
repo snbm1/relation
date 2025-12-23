@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::configurator::multiplex::*;
-use crate::configurator::tls::*;
-use crate::configurator::transport::*;
+use crate::configurator::shared::multiplex::*;
+use crate::configurator::shared::tls::*;
+use crate::configurator::shared::transport::*;
 
 use crate::configurator::Config;
 
