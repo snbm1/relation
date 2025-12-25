@@ -18,8 +18,8 @@ pub struct MixedConfig {
 impl MixedConfig {
     fn new() -> Self {
         MixedConfig {
-            config_type: Some("direct".to_string()),
-            tag: Some("direct-outbound".to_string()),
+            config_type: Some("mixed".to_string()),
+            tag: Some("mixed-inbound".to_string()),
             listen: None,
             set_system_proxy: None,
         }

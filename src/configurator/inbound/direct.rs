@@ -25,7 +25,7 @@ impl DirectConfig {
     fn new() -> Self {
         DirectConfig {
             config_type: Some("direct".to_string()),
-            tag: Some("direct-outbound".to_string()),
+            tag: Some("direct-inbound".to_string()),
             listen: None,
             network: None,
             override_address: None,
