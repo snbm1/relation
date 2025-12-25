@@ -1,19 +1,22 @@
 use url::Url;
 mod dns;
+mod inbound;
+mod outbound;
 mod route;
 mod shared;
-mod vless;
+
+use outbound::*;
+use serde::{Deserialize, Serialize};
 
 pub trait Config {
     fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>>
     where
         Self: Sized;
-
-    fn to_json(&self) -> Result<String, Box<dyn std::error::Error>>;
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Configurator {
-    config: Box<dyn Config>,
+    outbound: Outbound,
 }
 
 impl Configurator {
@@ -22,15 +25,13 @@ impl Configurator {
 
         match url.scheme() {
             "vless" => {
-                let cfg = vless::VlessConfig::from_url(input).map_err(|e| e.to_string())?;
+                let cfg =
+                    outbound::vless::VlessConfig::from_url(input).map_err(|e| e.to_string())?;
                 Ok(Configurator {
-                    config: Box::new(cfg),
+                    outbound: Outbound::Vless(cfg),
                 })
             }
             other => Err(format!("unsupported scheme: {other}")),
         }
-    }
-    pub fn to_json(&self) -> String {
-        self.config.to_json().unwrap()
     }
 }

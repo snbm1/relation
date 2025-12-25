@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::configurator::shared::Network;
+use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::multiplex::*;
 use crate::configurator::shared::tls::*;
 use crate::configurator::shared::transport::*;
@@ -23,14 +25,6 @@ enum TransportType {
     Grpc,
     #[serde(rename = "ws")]
     WebSocket,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-enum Network {
-    #[serde(rename = "tcp")]
-    Tcp,
-    #[serde(rename = "udp")]
-    Udp,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -75,6 +69,8 @@ pub struct VlessConfig {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     config_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tag: Option<String>,
     server: Option<String>,
     server_port: Option<u16>,
     uuid: Option<String>,
@@ -89,12 +85,16 @@ pub struct VlessConfig {
     packet_encoding: Option<PacketEncoding>,
     #[serde(skip_serializing_if = "Option::is_none")]
     transport: Option<TransportConfig>,
+    #[serde(flatten)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    dial: Option<DialFields>,
 }
 
 impl VlessConfig {
     fn new() -> VlessConfig {
         VlessConfig {
             config_type: Some("vless".to_string()),
+            tag: Some("vless-outbound".to_string()),
             server: None,
             server_port: None,
             uuid: None,
@@ -104,6 +104,7 @@ impl VlessConfig {
             multiplex: None,
             transport: None,
             packet_encoding: None,
+            dial: None,
         }
     }
 
@@ -442,9 +443,5 @@ impl Config for VlessConfig {
                 Ok(cfg)
             }
         }
-    }
-
-    fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
-        Ok(serde_json::to_string(self)?)
     }
 }
