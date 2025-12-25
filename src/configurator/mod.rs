@@ -5,7 +5,10 @@ mod outbound;
 mod route;
 mod shared;
 
+use dns::*;
+use inbound::*;
 use outbound::*;
+use route::*;
 use serde::{Deserialize, Serialize};
 
 pub trait Config {
@@ -16,7 +19,10 @@ pub trait Config {
 
 #[derive(Serialize, Deserialize)]
 pub struct Configurator {
-    outbound: Outbound,
+    dns: DnsConfig,
+    inbounds: Vec<Inbound>,
+    outbounds: Vec<Outbound>,
+    route: RouteConfig,
 }
 
 impl Configurator {
@@ -28,7 +34,7 @@ impl Configurator {
                 let cfg =
                     outbound::vless::VlessConfig::from_url(input).map_err(|e| e.to_string())?;
                 Ok(Configurator {
-                    outbound: Outbound::Vless(cfg),
+                    outbounds: vec![Outbound::Vless(cfg)],
                 })
             }
             other => Err(format!("unsupported scheme: {other}")),
