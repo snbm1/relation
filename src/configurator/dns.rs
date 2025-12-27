@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize, de::MapAccess};
-mod dnsrule;
-mod dnsserver;
+pub mod dnsrule;
+pub mod dnsruleaction;
+pub mod dnsserver;
 
 use dnsserver::*;
 
