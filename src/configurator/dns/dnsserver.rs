@@ -23,11 +23,11 @@ pub enum DnsServer {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerLocal {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tag: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_go: Option<bool>,
 }
@@ -44,10 +44,11 @@ impl DnsServerLocal {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerHosts {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<HostsPath>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -81,10 +82,12 @@ pub enum HostValue {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerTcp {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
@@ -107,10 +110,12 @@ impl DnsServerTcp {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerUdp {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
@@ -133,10 +138,12 @@ impl DnsServerUdp {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerTls {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
@@ -162,10 +169,12 @@ impl DnsServerTls {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerQuic {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
@@ -191,10 +200,12 @@ impl DnsServerQuic {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerHttps {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
@@ -226,10 +237,12 @@ impl DnsServerHttps {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerHttp3 {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
@@ -261,10 +274,11 @@ impl DnsServerHttp3 {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerDhcp {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interface: Option<String>,
     #[serde(flatten)]
@@ -285,10 +299,11 @@ impl DnsServerDhcp {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerFakeIp {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inet4_range: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -308,10 +323,12 @@ impl DnsServerFakeIp {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerTailscale {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub endpoint: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub accept_default_resolvers: Option<bool>,
@@ -330,10 +347,12 @@ impl DnsServerTailscale {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DnsServerResolved {
-    #[serde(rename = "type")]
-    pub server_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub service: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub accept_default_resolvers: Option<bool>,

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::configurator::shared::Network;
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Listable<T> {
@@ -15,38 +17,27 @@ pub type ListableU32 = Listable<u32>;
 pub struct RouteConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rules: Option<Vec<RouteRule>>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule_set: Option<Vec<RuleSet>>,
-
     #[serde(rename = "final")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_detect_interface: Option<bool>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub override_android_vpn: Option<bool>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_interface: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_mark: Option<u32>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_domain_resolver: Option<DomainResolver>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_network_strategy: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_network_type: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_fallback_network_type: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_fallback_delay: Option<String>,
 }
@@ -102,22 +93,16 @@ pub enum RouteRule {
 pub struct DefaultRouteRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inbound: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_version: Option<u8>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_user: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub network: Option<String>,
-
+    pub network: Option<Network>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub domain: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -126,87 +111,60 @@ pub struct DefaultRouteRule {
     pub domain_keyword: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub domain_regex: Option<ListableString>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub geosite: Option<ListableString>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_geoip: Option<ListableString>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub geoip: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_ip_cidr: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ip_cidr: Option<ListableString>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_is_private: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub ip_cidr: Option<ListableString>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub source_ip_is_private: Option<bool>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_port: Option<ListableU16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_port_range: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub port: Option<ListableU16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub port_range: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub process_name: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub process_path: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub process_path_regex: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package_name: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_id: Option<ListableU32>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clash_mode: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_type: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_is_expensive: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_is_constrained: Option<bool>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interface_address: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_interface_address: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_interface_address: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wifi_ssid: Option<ListableString>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wifi_bssid: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preferred_by: Option<ListableString>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule_set: Option<ListableString>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rule_set_ipcidr_match_source: Option<bool>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule_set_ip_cidr_match_source: Option<bool>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invert: Option<bool>,
-
     #[serde(rename = "action")]
     pub actions: Listable<RuleAction>,
 }
@@ -232,19 +190,14 @@ pub struct LogicalRouteRule {
 pub enum RuleAction {
     #[serde(rename = "route")]
     Route(RouteAction),
-
     #[serde(rename = "reject")]
     Reject(RejectAction),
-
     #[serde(rename = "hijack-dns")]
     HijackDns(HijackDnsAction),
-
     #[serde(rename = "route-options")]
     RouteOptions(RouteOptionsAction),
-
     #[serde(rename = "sniff")]
     Sniff(SniffAction),
-
     #[serde(rename = "resolve")]
     Resolve(ResolveAction),
 }
