@@ -33,8 +33,23 @@ impl Configurator {
             "vless" => {
                 let cfg =
                     outbound::vless::VlessConfig::from_url(input).map_err(|e| e.to_string())?;
+
+                let mut lp = shared::listenfields::ListenFields::new();
+                lp.listen = Some("127.0.0.1".to_string());
+                lp.listen_port = Some(12334);
+
+                let mut mxd = inbound::mixed::MixedConfig::new();
+                mxd.set_system_proxy = Some(true);
+                mxd.listen = Some(lp);
+
                 Ok(Configurator {
+                    dns: DnsConfig::new(),
+                    inbounds: vec![
+                        Inbound::Mixed(mxd),
+                        Inbound::Direct(inbound::direct::DirectConfig::new()),
+                    ],
                     outbounds: vec![Outbound::Vless(cfg)],
+                    route: RouteConfig::new(),
                 })
             }
             other => Err(format!("unsupported scheme: {other}")),

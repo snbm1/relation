@@ -51,6 +51,25 @@ pub struct RouteConfig {
     pub default_fallback_delay: Option<String>,
 }
 
+impl RouteConfig {
+    pub fn new() -> Self {
+        RouteConfig {
+            rules: None,
+            rule_set: None,
+            default: None,
+            auto_detect_interface: None,
+            override_android_vpn: None,
+            default_interface: None,
+            default_mark: None,
+            default_domain_resolver: None,
+            default_network_strategy: None,
+            default_network_type: None,
+            default_fallback_network_type: None,
+            default_fallback_delay: None,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DomainResolver {

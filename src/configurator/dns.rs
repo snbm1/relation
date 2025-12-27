@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::MapAccess};
 mod dnsrule;
 mod dnsserver;
 
@@ -26,6 +26,23 @@ pub struct DnsConfig {
     pub reverse_mapping: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_subnet: Option<String>,
+}
+
+impl DnsConfig {
+    pub fn new() -> Self {
+        DnsConfig {
+            servers: None,
+            rules: None,
+            default: None,
+            strategy: None,
+            disable_cache: None,
+            disable_expire: None,
+            independent_cache: None,
+            cache_capacity: None,
+            reverse_mapping: None,
+            client_subnet: None,
+        }
+    }
 }
 
 // { "dns": {

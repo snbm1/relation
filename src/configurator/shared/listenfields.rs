@@ -1,3 +1,5 @@
+use core::net;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -30,4 +32,25 @@ pub struct ListenFields {
     pub udp_timeout: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detour: Option<String>,
+}
+
+impl ListenFields {
+    pub fn new() -> Self {
+        Self {
+            listen: None,
+            listen_port: None,
+            bind_interface: None,
+            routing_mark: None,
+            reuse_addr: None,
+            netns: None,
+            tcp_fast_open: None,
+            tcp_multi_path: None,
+            disable_tcp_keep_alive: None,
+            tcp_keep_alive: None,
+            tcp_keep_alive_interval: None,
+            udp_fragment: None,
+            udp_timeout: None,
+            detour: None,
+        }
+    }
 }

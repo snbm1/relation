@@ -7,22 +7,22 @@ use crate::configurator::shared::Network;
 pub struct DirectConfig {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    config_type: Option<String>,
+    pub config_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    tag: Option<String>,
+    pub tag: Option<String>,
     #[serde(flatten)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    listen: Option<ListenFields>,
+    pub listen: Option<ListenFields>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    network: Option<Network>,
+    pub network: Option<Network>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    override_address: Option<String>,
+    pub override_address: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    override_port: Option<u16>,
+    pub override_port: Option<u16>,
 }
 
 impl DirectConfig {
-    fn new() -> Self {
+    pub fn new() -> Self {
         DirectConfig {
             config_type: Some("direct".to_string()),
             tag: Some("direct-inbound".to_string()),
@@ -33,7 +33,7 @@ impl DirectConfig {
         }
     }
 
-    fn check(&self) -> bool {
+    pub fn check(&self) -> bool {
         !(self.config_type.is_none()
             || self.tag.is_none()
             || self.override_address.is_none()

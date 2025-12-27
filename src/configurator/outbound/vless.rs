@@ -323,7 +323,7 @@ impl Config for VlessConfig {
                 // urlencoding::decode(encoded).unwrap();
                 PossibleKeys::Path => match val {
                     PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => return Err("Path before type".into()),
+                        TransportConfig::None => eprintln!("[Warning] Path before transport"),
                         TransportConfig::WebSocket(ref mut z) => z.path = Some(x),
                         TransportConfig::Http(ref mut z) => z.path = Some(x),
                         TransportConfig::HttpUpdate(ref mut z) => z.path = Some(x),
@@ -334,7 +334,7 @@ impl Config for VlessConfig {
 
                 PossibleKeys::Host => match val {
                     PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => return Err("Host before type".into()),
+                        TransportConfig::None => eprintln!("[Warning] Host before transport"),
                         TransportConfig::WebSocket(ref mut z) => match z.headers {
                             None => z.headers = Some(HashMap::from([("Host".to_string(), x)])),
                             Some(_) => {

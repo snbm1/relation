@@ -5,18 +5,18 @@ use serde::{Deserialize, Serialize};
 pub struct MixedConfig {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    config_type: Option<String>,
+    pub config_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    tag: Option<String>,
+    pub tag: Option<String>,
     #[serde(flatten)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    listen: Option<ListenFields>,
+    pub listen: Option<ListenFields>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    set_system_proxy: Option<bool>,
+    pub set_system_proxy: Option<bool>,
 }
 
 impl MixedConfig {
-    fn new() -> Self {
+    pub fn new() -> Self {
         MixedConfig {
             config_type: Some("mixed".to_string()),
             tag: Some("mixed-inbound".to_string()),
@@ -25,7 +25,7 @@ impl MixedConfig {
         }
     }
 
-    fn check(&self) -> bool {
+    pub fn check(&self) -> bool {
         !(self.config_type.is_none() || self.tag.is_none())
     }
 }
