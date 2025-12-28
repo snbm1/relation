@@ -222,8 +222,7 @@ impl Config for VlessConfig {
                 PossibleKeys::Type => {
                     match val {
                         PossibleValues::String(x) => match x.as_str() {
-                            "udp" => cfg.network = Some(Network::Udp),
-                            "tcp" => cfg.network = Some(Network::Tcp),
+                            "tcp" => tfg = TransportConfig::Tcp,
                             "ws" => tfg = TransportConfig::WebSocket(WebSocketConfig::new()),
                             "grpc" => tfg = TransportConfig::Grpc(GrpcConfig::new()),
                             "quic" => tfg = TransportConfig::Quic(QuicConfig::new()),
@@ -353,6 +352,7 @@ impl Config for VlessConfig {
                                 z.host.as_mut().unwrap().push(x);
                             }
                         },
+                        TransportConfig::Tcp => {}
                         _ => {}
                     },
                     _ => return Err("Invalid Host type".into()),
@@ -439,6 +439,7 @@ impl Config for VlessConfig {
                             cfg.transport = Some(TransportConfig::HttpUpdate(x))
                         }
                     }
+                    TransportConfig::Tcp => {}
                 }
                 Ok(cfg)
             }

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::configurator::shared::Network;
+mod rule_set;
+use crate::configurator::route::rule_set::RuleSet;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RouteConfig {
@@ -92,13 +93,13 @@ pub struct DefaultRouteRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_version: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub network: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_user: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub domain: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -110,11 +111,11 @@ pub struct DefaultRouteRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_ip_cidr: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_ip_is_private: Option<bool>,
+    pub ip_is_private: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_cidr: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ip_is_private: Option<bool>,
+    pub source_ip_is_private: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_port: Option<Vec<u16>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -138,9 +139,13 @@ pub struct DefaultRouteRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clash_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub preferred_by: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub rule_set: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rule_set_ip_cidr_match_source: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invert: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub action: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -155,7 +160,8 @@ pub struct LogicalRouteRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invert: Option<bool>,
     #[serde(rename = "action")]
-    pub action: Option<String>,
+    #[serde(flatten)]
+    pub action: Option<RuleAction>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -177,6 +183,7 @@ pub enum RuleAction {
 pub struct RouteAction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outbound: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub override_address: Option<String>,
@@ -240,99 +247,4 @@ pub struct ResolveAction {
     pub rewrite_ttl: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_subnet: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum RuleSet {
-    Inline(RuleSetInline),
-    Local(RuleSetLocal),
-    Remote(RuleSetRemote),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RuleSetInline {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
-    pub tag: String,
-    pub rules: Vec<HeadlessRule>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RuleSetLocal {
-    pub r#type: String,
-    pub tag: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<String>,
-    pub path: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RuleSetRemote {
-    pub r#type: String,
-    pub tag: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<String>,
-    pub url: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub download_detour: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub update_interval: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum HeadlessRule {
-    Default(HeadlessDefaultRule),
-    Logical(HeadlessLogicalRule),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct HeadlessDefaultRule {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub query_type: Option<Vec<NumOrStr>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub network: Option<Vec<Network>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub domain: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub domain_suffix: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub domain_keyword: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub domain_regex: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_ip_cidr: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ip_cidr: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_port: Option<Vec<u16>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_port_range: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub port: Option<Vec<u16>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub port_range: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub process_name: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub process_path: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub process_path_regex: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub package_name: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub default_interface_address: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub invert: Option<bool>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct HeadlessLogicalRule {
-    #[serde(rename = "type")]
-    pub rule_type: String,
-    pub mode: String,
-    pub rules: Vec<HeadlessRule>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub invert: Option<bool>,
 }

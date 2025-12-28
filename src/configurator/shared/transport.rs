@@ -5,6 +5,7 @@ use std::collections::HashMap;
 #[serde(untagged)]
 pub enum TransportConfig {
     None,
+    Tcp,
     WebSocket(WebSocketConfig),
     Grpc(GrpcConfig),
     Quic(QuicConfig),
