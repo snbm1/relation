@@ -1,3 +1,10 @@
 package main
 
-import "C"
+import (
+	"fmt"
+	_ "methods/manager"
+)
+
+func main() {
+	fmt.Println("hello")
+}
