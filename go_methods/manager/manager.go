@@ -18,7 +18,7 @@ func Register(service adapter.Service) {
 }
 
 func StartServices() error {
-	// CloseServices() пока не знаю как это скажется на Rust
+	CloseServices()
 	for _, service := range services {
 		if err := service.Start(); err != nil {
 			return err
