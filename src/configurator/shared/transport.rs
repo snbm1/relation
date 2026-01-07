@@ -13,7 +13,7 @@ pub enum TransportConfig {
     HttpUpdate(HttpUpdateConfig),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct WebSocketConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
@@ -29,10 +29,7 @@ impl WebSocketConfig {
     pub fn new() -> Self {
         WebSocketConfig {
             config_type: Some("ws".to_string()),
-            path: None,
-            headers: None,
-            max_early_data: None,
-            early_data_header_name: None,
+            ..Default::default()
         }
     }
 
@@ -41,7 +38,7 @@ impl WebSocketConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct GrpcConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
@@ -70,7 +67,7 @@ impl GrpcConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct QuicConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
@@ -88,7 +85,7 @@ impl QuicConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct HttpConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
@@ -109,12 +106,7 @@ impl HttpConfig {
     pub fn new() -> Self {
         HttpConfig {
             config_type: Some("http".to_string()),
-            host: None,
-            path: None,
-            method: None,
-            headers: None,
-            idle_timeout: None,
-            ping_timeout: None,
+            ..Default::default()
         }
     }
 
@@ -123,7 +115,7 @@ impl HttpConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct HttpUpdateConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
@@ -138,9 +130,7 @@ impl HttpUpdateConfig {
     pub fn new() -> Self {
         HttpUpdateConfig {
             config_type: Some("httpupgrade".to_string()),
-            host: None,
-            path: None,
-            headers: None,
+            ..Default::default()
         }
     }
 

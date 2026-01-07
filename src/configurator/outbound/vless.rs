@@ -64,7 +64,7 @@ enum PossibleValues {
     String(String),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct VlessConfig {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -95,16 +95,7 @@ impl VlessConfig {
         VlessConfig {
             config_type: Some("vless".to_string()),
             tag: Some("vless-outbound".to_string()),
-            server: None,
-            server_port: None,
-            uuid: None,
-            flow: None,
-            network: None,
-            tls: None,
-            multiplex: None,
-            transport: None,
-            packet_encoding: None,
-            dial: None,
+            ..Default::default()
         }
     }
 

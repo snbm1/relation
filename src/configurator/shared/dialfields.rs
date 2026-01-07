@@ -29,17 +29,7 @@ pub struct DialFields {
 impl DialFields {
     pub fn new() -> Self {
         Self {
-            detour: None,
-            domain_resolver: None,
-            bind_interface: None,
-            inet4_bind_address: None,
-            inet6_bind_address: None,
-            routing_mark: None,
-            reuse_addr: None,
-            connect_timeout: None,
-            tcp_fast_open: None,
-            tcp_multi_path: None,
-            udp_fragment: None,
+            ..Default::default()
         }
     }
 }

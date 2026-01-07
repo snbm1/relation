@@ -37,20 +37,14 @@ pub struct ListenFields {
 impl ListenFields {
     pub fn new() -> Self {
         Self {
-            listen: None,
-            listen_port: None,
-            bind_interface: None,
-            routing_mark: None,
-            reuse_addr: None,
-            netns: None,
-            tcp_fast_open: None,
-            tcp_multi_path: None,
-            disable_tcp_keep_alive: None,
-            tcp_keep_alive: None,
-            tcp_keep_alive_interval: None,
-            udp_fragment: None,
-            udp_timeout: None,
-            detour: None,
+            ..Default::default()
+        }
+    }
+    pub fn with_listen(addr: Option<String>, port: Option<u16>) -> Self {
+        Self {
+            listen: addr,
+            listen_port: port,
+            ..Default::default()
         }
     }
 }

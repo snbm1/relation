@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct RealityConfig {
     pub enable: Option<bool>,
     pub public_key: Option<String>,
@@ -10,9 +10,7 @@ pub struct RealityConfig {
 impl RealityConfig {
     pub fn new() -> Self {
         RealityConfig {
-            enable: None,
-            public_key: None,
-            short_id: None,
+            ..Default::default()
         }
     }
 
@@ -27,7 +25,7 @@ impl RealityConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct UtlsConfig {
     pub enable: Option<bool>,
     pub fingerprint: Option<String>,
@@ -35,11 +33,18 @@ pub struct UtlsConfig {
 
 impl UtlsConfig {
     pub fn new() -> Self {
-        UtlsConfig {
-            enable: None,
-            fingerprint: None,
+        Self {
+            ..Default::default()
         }
     }
+
+    pub fn with_fingerprint(addr: String) -> Self {
+        Self {
+            enable: Some(true),
+            fingerprint: Some(addr),
+        }
+    }
+
     pub fn check(&self) -> bool {
         match self.enable {
             None => false,
@@ -68,13 +73,25 @@ pub struct TlsConfig {
 impl TlsConfig {
     pub fn new() -> Self {
         TlsConfig {
-            enable: None,
-            disable_sni: None,
-            server_name: None,
-            insecure: None,
-            utls: None,
-            reality: None,
+            ..Default::default()
         }
+    }
+
+    pub fn with_server_name(name: String) -> Self {
+        Self {
+            server_name: Some(name),
+            ..Default::default()
+        }
+    }
+
+    pub fn add_utls(mut self, utls: UtlsConfig) -> Self {
+        self.utls = Some(utls);
+        self
+    }
+
+    pub fn add_reality(mut self, reality: RealityConfig) -> Self {
+        self.reality = Some(reality);
+        self
     }
 
     pub fn check(&self) -> bool {

@@ -25,7 +25,21 @@ impl MixedConfig {
         }
     }
 
+    pub fn with_listen(addr: ListenFields) -> Self {
+        Self {
+            config_type: Some("mixed".to_string()),
+            tag: Some("mixed-inbound".to_string()),
+            listen: Some(addr),
+            set_system_proxy: None,
+        }
+    }
+
+    pub fn ssp(mut self) -> Self {
+        self.set_system_proxy = Some(true);
+        self
+    }
+
     pub fn check(&self) -> bool {
-        !(self.config_type.is_none() || self.tag.is_none())
+        !(self.listen.is_none())
     }
 }
