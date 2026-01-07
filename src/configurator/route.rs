@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 mod rule_set;
 use crate::configurator::route::rule_set::RuleSet;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RouteConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rules: Option<Vec<RouteRule>>,
@@ -34,19 +34,8 @@ pub struct RouteConfig {
 
 impl RouteConfig {
     pub fn new() -> Self {
-        RouteConfig {
-            rules: None,
-            rule_set: None,
-            default: None,
-            auto_detect_interface: None,
-            override_android_vpn: None,
-            default_interface: None,
-            default_mark: None,
-            default_domain_resolver: None,
-            default_network_strategy: None,
-            default_network_type: None,
-            default_fallback_network_type: None,
-            default_fallback_delay: None,
+        Self {
+            ..Default::default()
         }
     }
 }
@@ -58,7 +47,7 @@ pub enum DomainResolver {
     Options(ResolveOptionsNoAction),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ResolveOptionsNoAction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
@@ -70,6 +59,14 @@ pub struct ResolveOptionsNoAction {
     pub rewrite_ttl: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_subnet: Option<String>,
+}
+
+impl ResolveOptionsNoAction {
+    pub fn new() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -86,7 +83,7 @@ pub enum NumOrStr {
     Str(String),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DefaultRouteRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inbound: Option<Vec<String>>,
@@ -148,7 +145,15 @@ pub struct DefaultRouteRule {
     pub action: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl DefaultRouteRule {
+    pub fn new() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct LogicalRouteRule {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -164,22 +169,25 @@ pub struct LogicalRouteRule {
     pub action: Option<RuleAction>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum RuleAction {
-    #[serde(rename = "route")]
-    RouteOptions(RouteAction),
-    #[serde(rename = "reject")]
-    Reject(RejectAction),
-    #[serde(rename = "hijack-dns")]
-    HijackDns(HijackDnsAction),
-    #[serde(rename = "sniff")]
-    Sniff(SniffAction),
-    #[serde(rename = "resolve")]
-    Resolve(ResolveAction),
+impl LogicalRouteRule {
+    pub fn new() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RuleAction {
+    RouteOptions(RouteAction),
+    Reject(RejectAction),
+    HijackDns(HijackDnsAction),
+    Sniff(SniffAction),
+    Resolve(ResolveAction),
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RouteAction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
@@ -207,7 +215,16 @@ pub struct RouteAction {
     pub tls_record_fragment: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl RouteAction {
+    pub fn new() -> Self {
+        Self {
+            action: Some("route".to_string()),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RejectAction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
@@ -217,13 +234,31 @@ pub struct RejectAction {
     pub no_drop: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl RejectAction {
+    pub fn new() -> Self {
+        Self {
+            action: Some("reject".to_string()),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct HijackDnsAction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl HijackDnsAction {
+    pub fn new() -> Self {
+        Self {
+            action: Some("hijack-dns".to_string()),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SniffAction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
@@ -233,7 +268,16 @@ pub struct SniffAction {
     pub timeout: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl SniffAction {
+    pub fn new() -> Self {
+        Self {
+            action: Some("sniff".to_string()),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ResolveAction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
@@ -247,4 +291,13 @@ pub struct ResolveAction {
     pub rewrite_ttl: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_subnet: Option<String>,
+}
+
+impl ResolveAction {
+    pub fn new() -> Self {
+        Self {
+            action: Some("resolve".to_string()),
+            ..Default::default()
+        }
+    }
 }

@@ -1,11 +1,11 @@
-use serde::{Deserialize, Serialize, de::MapAccess};
+use serde::{Deserialize, Serialize};
 pub mod dnsrule;
 pub mod dnsruleaction;
 pub mod dnsserver;
 
 use dnsserver::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct DnsConfig {
     pub servers: Option<Vec<DnsServer>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -32,16 +32,7 @@ pub struct DnsConfig {
 impl DnsConfig {
     pub fn new() -> Self {
         DnsConfig {
-            servers: None,
-            rules: None,
-            default: None,
-            strategy: None,
-            disable_cache: None,
-            disable_expire: None,
-            independent_cache: None,
-            cache_capacity: None,
-            reverse_mapping: None,
-            client_subnet: None,
+            ..Default::default()
         }
     }
 }
