@@ -14,7 +14,11 @@ replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-2
 
 replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222
 
-require github.com/sagernet/sing-box v0.0.0-00010101000000-000000000000
+require (
+	github.com/sagernet/sing v0.4.3
+	github.com/sagernet/sing-box v0.0.0-00010101000000-000000000000
+	google.golang.org/protobuf v1.34.2
+)
 
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
@@ -76,7 +80,6 @@ require (
 	github.com/sagernet/netlink v0.0.0-20240523065131-45e60152f9ba // indirect
 	github.com/sagernet/quic-go v0.47.0-beta.2 // indirect
 	github.com/sagernet/reality v0.0.0-20230406110435-ee17307e7691 // indirect
-	github.com/sagernet/sing v0.4.3 // indirect
 	github.com/sagernet/sing-dns v0.2.3 // indirect
 	github.com/sagernet/sing-mux v0.2.0 // indirect
 	github.com/sagernet/sing-quic v0.2.2 // indirect
@@ -111,7 +114,6 @@ require (
 	golang.org/x/tools v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/grpc v1.66.0 // indirect
-	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
 )

@@ -1,0 +1,11 @@
+syntax = "proto3";
+package relationrpc; 
+
+option go_package = "./relationrpc";
+
+message ParseRequest {
+    string content = 1;
+    string config_path = 2; 
+    string temp_path = 3;
+    bool debug = 4; 
+}
