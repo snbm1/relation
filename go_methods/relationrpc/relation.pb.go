@@ -7,12 +7,11 @@
 package relationrpc
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -21,6 +20,52 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+type ResponseFlag int32
+
+const (
+	ResponseFlag_OK     ResponseFlag = 0
+	ResponseFlag_FAILED ResponseFlag = 1
+)
+
+// Enum value maps for ResponseFlag.
+var (
+	ResponseFlag_name = map[int32]string{
+		0: "OK",
+		1: "FAILED",
+	}
+	ResponseFlag_value = map[string]int32{
+		"OK":     0,
+		"FAILED": 1,
+	}
+)
+
+func (x ResponseFlag) Enum() *ResponseFlag {
+	p := new(ResponseFlag)
+	*p = x
+	return p
+}
+
+func (x ResponseFlag) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ResponseFlag) Descriptor() protoreflect.EnumDescriptor {
+	return file_relation_proto_enumTypes[0].Descriptor()
+}
+
+func (ResponseFlag) Type() protoreflect.EnumType {
+	return &file_relation_proto_enumTypes[0]
+}
+
+func (x ResponseFlag) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ResponseFlag.Descriptor instead.
+func (ResponseFlag) EnumDescriptor() ([]byte, []int) {
+	return file_relation_proto_rawDescGZIP(), []int{0}
+}
 
 type ParseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -90,6 +135,66 @@ func (x *ParseRequest) GetDebug() bool {
 	return false
 }
 
+type ParseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResponceFlag  ResponseFlag           `protobuf:"varint,1,opt,name=responce_flag,json=responceFlag,proto3,enum=relationrpc.ResponseFlag" json:"responce_flag,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ParseResponse) Reset() {
+	*x = ParseResponse{}
+	mi := &file_relation_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ParseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ParseResponse) ProtoMessage() {}
+
+func (x *ParseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_relation_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ParseResponse.ProtoReflect.Descriptor instead.
+func (*ParseResponse) Descriptor() ([]byte, []int) {
+	return file_relation_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ParseResponse) GetResponceFlag() ResponseFlag {
+	if x != nil {
+		return x.ResponceFlag
+	}
+	return ResponseFlag_OK
+}
+
+func (x *ParseResponse) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *ParseResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_relation_proto protoreflect.FileDescriptor
 
 const file_relation_proto_rawDesc = "" +
@@ -100,7 +205,15 @@ const file_relation_proto_rawDesc = "" +
 	"\vconfig_path\x18\x02 \x01(\tR\n" +
 	"configPath\x12\x1b\n" +
 	"\ttemp_path\x18\x03 \x01(\tR\btempPath\x12\x14\n" +
-	"\x05debug\x18\x04 \x01(\bR\x05debugB\x0fZ\r./relationrpcb\x06proto3"
+	"\x05debug\x18\x04 \x01(\bR\x05debug\"\x83\x01\n" +
+	"\rParseResponse\x12>\n" +
+	"\rresponce_flag\x18\x01 \x01(\x0e2\x19.relationrpc.ResponseFlagR\fresponceFlag\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage*\"\n" +
+	"\fResponseFlag\x12\x06\n" +
+	"\x02OK\x10\x00\x12\n" +
+	"\n" +
+	"\x06FAILED\x10\x01B\x0fZ\r./relationrpcb\x06proto3"
 
 var (
 	file_relation_proto_rawDescOnce sync.Once
@@ -114,16 +227,20 @@ func file_relation_proto_rawDescGZIP() []byte {
 	return file_relation_proto_rawDescData
 }
 
-var file_relation_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_relation_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_relation_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_relation_proto_goTypes = []any{
-	(*ParseRequest)(nil), // 0: relationrpc.ParseRequest
+	(ResponseFlag)(0),     // 0: relationrpc.ResponseFlag
+	(*ParseRequest)(nil),  // 1: relationrpc.ParseRequest
+	(*ParseResponse)(nil), // 2: relationrpc.ParseResponse
 }
 var file_relation_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: relationrpc.ParseResponse.responce_flag:type_name -> relationrpc.ResponseFlag
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_relation_proto_init() }
@@ -136,13 +253,14 @@ func file_relation_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_relation_proto_rawDesc), len(file_relation_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   1,
+			NumEnums:      1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_relation_proto_goTypes,
 		DependencyIndexes: file_relation_proto_depIdxs,
+		EnumInfos:         file_relation_proto_enumTypes,
 		MessageInfos:      file_relation_proto_msgTypes,
 	}.Build()
 	File_relation_proto = out.File

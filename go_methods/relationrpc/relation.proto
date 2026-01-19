@@ -3,9 +3,20 @@ package relationrpc;
 
 option go_package = "./relationrpc";
 
+enum ResponseFlag {
+    OK = 0;
+    FAILED = 1; 
+}
+
 message ParseRequest {
     string content = 1;
     string config_path = 2; 
     string temp_path = 3;
     bool debug = 4; 
+}
+
+message ParseResponse {
+    ResponseFlag responce_flag = 1; 
+    string content = 2; 
+    string message = 3; 
 }
