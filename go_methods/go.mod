@@ -15,8 +15,11 @@ replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-2
 replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222
 
 require (
+	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344
+	github.com/hiddify/ray2sing v0.0.0-00010101000000-000000000000
 	github.com/sagernet/sing v0.4.3
-	github.com/sagernet/sing-box v0.0.0-00010101000000-000000000000
+	github.com/sagernet/sing-box v1.8.9
+	github.com/xmdhs/clash2singbox v0.1.4
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -31,7 +34,6 @@ require (
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
-	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/go-chi/chi/v5 v5.0.12 // indirect
 	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/go-chi/render v1.0.3 // indirect
@@ -115,5 +117,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/grpc v1.66.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
 )

@@ -99,6 +99,8 @@ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240928213625-7b79bf0c814d h1:+jTGlmOl+Kt3JEU1pt5yIItpi6nKKqUIUf76jkONHgQ=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240928213625-7b79bf0c814d/go.mod h1:2Cozqb5uVY/y0c/HWZ57CfE6fZwjmik/J3tWynsjjDA=
+github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222 h1:+MFxFxoWCA44WhqIixqL/Zkt4DwnqhQvafS0Dm4+dKM=
+github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222/go.mod h1:cFEg1b0eBgL9kBgIPAD71lHO1Q5g20PZL4dUGhQpAO8=
 github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1 h1:xdbHlZtzs+jijAxy85qal835GglwmjohA/srHT8gm9s=
 github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1/go.mod h1:K4J7/npM+VAMUeUmTa2JaA02JmyheP0GpRBOUvn3ecc=
 github.com/hiddify/xray-core v0.0.0-20240902024714-0fcb0895bb4b h1:fF9wb8XnL4dk/suRK1cOKPN1x1BG3F5iHN3Aq2mrKaE=
@@ -283,6 +285,8 @@ github.com/viant/assertly v0.4.8/go.mod h1:aGifi++jvCrUaklKEKT0BU95igDNaqkvz+49u
 github.com/viant/toolbox v0.24.0/go.mod h1:OxMCG57V0PXuIP2HNQrtJf2CjqdmbrOx5EkMILuUhzM=
 github.com/vishvananda/netns v0.0.4 h1:Oeaw1EM2JMxD51g9uhtC0D7erkIjgmj8+JZc26m1YX8=
 github.com/vishvananda/netns v0.0.4/go.mod h1:SpkAiCQRtJ6TvvxPnOSyH3BMl6unz3xZlaprSwhNNJM=
+github.com/xmdhs/clash2singbox v0.1.4 h1:fhyFLve8VR/FtNVTjBLDsxRkzWqhUpaXq4XDdGYqWXM=
+github.com/xmdhs/clash2singbox v0.1.4/go.mod h1:u2kIEBN2r26EGFSdU7mTwCqz4XG2B7Cwq8U1dVn2IXI=
 github.com/xtls/reality v0.0.0-20240712055506-48f0b2d5ed6d h1:+B97uD9uHLgAAulhigmys4BVwZZypzK7gPN3WtpgRJg=
 github.com/xtls/reality v0.0.0-20240712055506-48f0b2d5ed6d/go.mod h1:dm4y/1QwzjGaK17ofi0Vs6NpKAHegZky8qk6J2JJZAE=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
