@@ -70,9 +70,8 @@ func (ResponseFlag) EnumDescriptor() ([]byte, []int) {
 type ParseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	ConfigPath    string                 `protobuf:"bytes,2,opt,name=config_path,json=configPath,proto3" json:"config_path,omitempty"`
-	TempPath      string                 `protobuf:"bytes,3,opt,name=temp_path,json=tempPath,proto3" json:"temp_path,omitempty"`
-	Debug         bool                   `protobuf:"varint,4,opt,name=debug,proto3" json:"debug,omitempty"`
+	TempPath      string                 `protobuf:"bytes,2,opt,name=temp_path,json=tempPath,proto3" json:"temp_path,omitempty"`
+	Debug         bool                   `protobuf:"varint,3,opt,name=debug,proto3" json:"debug,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -110,13 +109,6 @@ func (*ParseRequest) Descriptor() ([]byte, []int) {
 func (x *ParseRequest) GetContent() string {
 	if x != nil {
 		return x.Content
-	}
-	return ""
-}
-
-func (x *ParseRequest) GetConfigPath() string {
-	if x != nil {
-		return x.ConfigPath
 	}
 	return ""
 }
@@ -199,13 +191,11 @@ var File_relation_proto protoreflect.FileDescriptor
 
 const file_relation_proto_rawDesc = "" +
 	"\n" +
-	"\x0erelation.proto\x12\vrelationrpc\"|\n" +
+	"\x0erelation.proto\x12\vrelationrpc\"[\n" +
 	"\fParseRequest\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\tR\acontent\x12\x1f\n" +
-	"\vconfig_path\x18\x02 \x01(\tR\n" +
-	"configPath\x12\x1b\n" +
-	"\ttemp_path\x18\x03 \x01(\tR\btempPath\x12\x14\n" +
-	"\x05debug\x18\x04 \x01(\bR\x05debug\"\x83\x01\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\x12\x1b\n" +
+	"\ttemp_path\x18\x02 \x01(\tR\btempPath\x12\x14\n" +
+	"\x05debug\x18\x03 \x01(\bR\x05debug\"\x83\x01\n" +
 	"\rParseResponse\x12>\n" +
 	"\rresponce_flag\x18\x01 \x01(\x0e2\x19.relationrpc.ResponseFlagR\fresponceFlag\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x18\n" +
