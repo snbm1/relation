@@ -37,6 +37,12 @@ func parse(content *C.char, tempPath *C.char, debug bool) *C.char {
 
 }
 
+//export start
+func start(configPath *C.char, Memorylimit bool) *C.char {
+	err := V2.Start(C.GoString(configPath), Memorylimit)
+	return errorOrNot(err)
+}
+
 //export stop
 func stop() *C.char {
 	err := V2.Stop()
