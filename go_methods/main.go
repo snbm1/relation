@@ -37,6 +37,12 @@ func parse(content *C.char, tempPath *C.char, debug bool) *C.char {
 
 }
 
+//export stop
+func stop() *C.char {
+	err := V2.Stop()
+	return errorOrNot(err)
+}
+
 func errorOrNot(err error) *C.char {
 	if err == nil {
 		return C.CString("")
