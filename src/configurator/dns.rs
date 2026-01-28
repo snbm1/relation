@@ -47,6 +47,19 @@ impl DnsConfig {
     pub fn set_final_by_type(&mut self, name: &str) {
         self.default = self.get_tag_by_type(name);
     }
+
+    pub fn add_server(&mut self, server: DnsServer) {
+        match &mut self.servers {
+            Some(servers) => servers.push(server),
+            None => self.servers = Some(vec![server]),
+        }
+    }
+
+    pub fn remove_server(&mut self, name: &str) {
+        if let Some(servers) = self.servers.as_mut() {
+            servers.retain(|x| x.server_type() != name);
+        }
+    }
 }
 
 // { "dns": {
