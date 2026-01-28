@@ -5,6 +5,7 @@ import (
 	"os"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
@@ -30,10 +31,15 @@ func Start(configPath string, Memorylimit bool) (err error) {
 	}
 
 	libbox.SetMemoryLimit(Memorylimit)
+
+	return StartService(configPath)
+}
+
+func StartService(configPath string) error {
+
 	file, err := os.ReadFile(configPath)
 	if err != nil {
 		return fmt.Errorf("Can't read the file with config: %w", err)
-
 	}
 
 	content := string(file)
@@ -55,6 +61,30 @@ func Start(configPath string, Memorylimit bool) (err error) {
 
 	Box = instance
 	return nil
+}
+
+func Restart(configPath string, Memorylimit bool) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("Panic in Restart func: %v\n%s", r, debug.Stack())
+		}
+	}()
+
+	mut.Lock()
+	defer mut.Unlock()
+
+	if Box == nil {
+		return fmt.Errorf("instance not found")
+	}
+
+	if err = StopUnlocked(); err != nil {
+		return err
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	libbox.SetMemoryLimit(Memorylimit)
+	return StartService(configPath)
 }
 
 func StopUnlocked() (err error) {

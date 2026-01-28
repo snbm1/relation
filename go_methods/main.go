@@ -43,6 +43,12 @@ func start(configPath *C.char, Memorylimit bool) *C.char {
 	return errorOrNot(err)
 }
 
+//export restart
+func restart(configPath *C.char, Memorylimit bool) *C.char {
+	err := V2.Restart(C.GoString(configPath), Memorylimit)
+	return errorOrNot(err)
+}
+
 //export stop
 func stop() *C.char {
 	err := V2.Stop()
