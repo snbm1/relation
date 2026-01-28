@@ -2,15 +2,9 @@ use crate::configurator::dns::dnsruleaction::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum Listable<T> {
-    One(T),
-    Many(Vec<T>),
-}
-
-pub type ListableString = Listable<String>;
-pub type ListableU16 = Listable<u16>;
+use crate::configurator::shared::Listable;
+use crate::configurator::shared::ListableString;
+use crate::configurator::shared::ListableU16;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -33,13 +27,7 @@ pub enum DnsRule {
     Logical(DnsLogicalRule),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Mode {
-    and,
-    or,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsDefaultRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inbound: Option<ListableString>,
@@ -122,14 +110,34 @@ pub struct DnsDefaultRule {
     pub ip_accept_any: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl DnsDefaultRule {
+    pub fn new() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsLogicalRule {
     #[serde(rename = "type")]
-    pub rule_type: String,
-    pub mode: String,
-    pub rules: Vec<DnsRule>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rule_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rules: Option<Vec<DnsRule>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invert: Option<bool>,
     #[serde(flatten)]
-    pub action: DnsRuleAction,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub action: Option<DnsRuleAction>,
+}
+
+impl DnsLogicalRule {
+    pub fn new() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
 }

@@ -13,3 +13,13 @@ pub enum Network {
     #[serde(rename = "udp")]
     Udp,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Listable<T> {
+    One(T),
+    Many(Vec<T>),
+}
+
+pub type ListableString = Listable<String>;
+pub type ListableU16 = Listable<u16>;

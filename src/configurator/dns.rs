@@ -32,8 +32,20 @@ pub struct DnsConfig {
 impl DnsConfig {
     pub fn new() -> Self {
         DnsConfig {
+            servers: Some(vec![]),
             ..Default::default()
         }
+    }
+
+    pub fn get_tag_by_type(&self, name: &str) -> Option<String> {
+        self.servers
+            .as_ref()
+            .and_then(|s| s.iter().find(|x| x.server_type() == name))
+            .map(|x| x.get_tag())
+    }
+
+    pub fn set_final_by_type(&mut self, name: &str) {
+        self.default = self.get_tag_by_type(name);
     }
 }
 
