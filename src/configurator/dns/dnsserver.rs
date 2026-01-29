@@ -5,13 +5,6 @@ use crate::configurator::shared::ListableString;
 use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::tls::TlsConfig;
 
-pub trait DnsServerVariansTrait {
-    fn new() -> Self;
-    fn with_name(name: String) -> Self;
-    fn server_type(&self) -> String;
-    fn get_tag(&self) -> String;
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DnsServer {
@@ -30,7 +23,7 @@ pub enum DnsServer {
 }
 
 impl DnsServer {
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         match self {
             DnsServer::Local(s) => s.server_type(),
             DnsServer::Hosts(s) => s.server_type(),
@@ -64,7 +57,7 @@ impl DnsServer {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerLocal {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
@@ -75,8 +68,8 @@ pub struct DnsServerLocal {
     pub prefer_go: Option<bool>,
 }
 
-impl DnsServerVariansTrait for DnsServerLocal {
-    fn new() -> Self {
+impl DnsServerLocal {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-local".to_string()),
             server_type: Some("local".to_string()),
@@ -84,7 +77,7 @@ impl DnsServerVariansTrait for DnsServerLocal {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("local".to_string()),
@@ -92,11 +85,11 @@ impl DnsServerVariansTrait for DnsServerLocal {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -114,8 +107,8 @@ pub struct DnsServerHosts {
     pub predefined: Option<HashMap<String, ListableString>>,
 }
 
-impl DnsServerVariansTrait for DnsServerHosts {
-    fn new() -> Self {
+impl DnsServerHosts {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-hosts".to_string()),
             server_type: Some("hosts".to_string()),
@@ -123,7 +116,7 @@ impl DnsServerVariansTrait for DnsServerHosts {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("hosts".to_string()),
@@ -131,11 +124,11 @@ impl DnsServerVariansTrait for DnsServerHosts {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -156,8 +149,8 @@ pub struct DnsServerTcp {
     pub dial: Option<DialFields>,
 }
 
-impl DnsServerVariansTrait for DnsServerTcp {
-    fn new() -> Self {
+impl DnsServerTcp {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-tcp".to_string()),
             server_type: Some("tcp".to_string()),
@@ -165,7 +158,17 @@ impl DnsServerVariansTrait for DnsServerTcp {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_server(server: Option<String>, server_port: Option<u16>) -> Self {
+        Self {
+            tag: Some("dns-tcp".to_string()),
+            server_type: Some("tcp".to_string()),
+            server,
+            server_port,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("tcp".to_string()),
@@ -173,11 +176,16 @@ impl DnsServerVariansTrait for DnsServerTcp {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn change_tag(mut self, name: String) -> Self {
+        self.tag = Some(name);
+        self
+    }
+
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -198,8 +206,8 @@ pub struct DnsServerUdp {
     pub dial: Option<DialFields>,
 }
 
-impl DnsServerVariansTrait for DnsServerUdp {
-    fn new() -> Self {
+impl DnsServerUdp {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-udp".to_string()),
             server_type: Some("udp".to_string()),
@@ -207,7 +215,17 @@ impl DnsServerVariansTrait for DnsServerUdp {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_server(server: Option<String>, server_port: Option<u16>) -> Self {
+        Self {
+            tag: Some("dns-udp".to_string()),
+            server_type: Some("udp".to_string()),
+            server,
+            server_port,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("udp".to_string()),
@@ -215,11 +233,16 @@ impl DnsServerVariansTrait for DnsServerUdp {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn change_tag(mut self, name: String) -> Self {
+        self.tag = Some(name);
+        self
+    }
+
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -242,8 +265,8 @@ pub struct DnsServerTls {
     pub dial: Option<DialFields>,
 }
 
-impl DnsServerVariansTrait for DnsServerTls {
-    fn new() -> Self {
+impl DnsServerTls {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-tls".to_string()),
             server_type: Some("tls".to_string()),
@@ -251,7 +274,7 @@ impl DnsServerVariansTrait for DnsServerTls {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("tls".to_string()),
@@ -259,11 +282,11 @@ impl DnsServerVariansTrait for DnsServerTls {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -286,8 +309,8 @@ pub struct DnsServerQuic {
     pub dial: Option<DialFields>,
 }
 
-impl DnsServerVariansTrait for DnsServerQuic {
-    fn new() -> Self {
+impl DnsServerQuic {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-quic".to_string()),
             server_type: Some("quic".to_string()),
@@ -295,7 +318,7 @@ impl DnsServerVariansTrait for DnsServerQuic {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("quic".to_string()),
@@ -303,11 +326,11 @@ impl DnsServerVariansTrait for DnsServerQuic {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -334,8 +357,8 @@ pub struct DnsServerHttps {
     pub dial: Option<DialFields>,
 }
 
-impl DnsServerVariansTrait for DnsServerHttps {
-    fn new() -> Self {
+impl DnsServerHttps {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-https".to_string()),
             server_type: Some("https".to_string()),
@@ -343,7 +366,7 @@ impl DnsServerVariansTrait for DnsServerHttps {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("https".to_string()),
@@ -351,11 +374,11 @@ impl DnsServerVariansTrait for DnsServerHttps {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -382,8 +405,8 @@ pub struct DnsServerHttp3 {
     pub dial: Option<DialFields>,
 }
 
-impl DnsServerVariansTrait for DnsServerHttp3 {
-    fn new() -> Self {
+impl DnsServerHttp3 {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-h3".to_string()),
             server_type: Some("h3".to_string()),
@@ -391,7 +414,7 @@ impl DnsServerVariansTrait for DnsServerHttp3 {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("h3".to_string()),
@@ -399,11 +422,11 @@ impl DnsServerVariansTrait for DnsServerHttp3 {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -422,8 +445,8 @@ pub struct DnsServerDhcp {
     pub dial: Option<DialFields>,
 }
 
-impl DnsServerVariansTrait for DnsServerDhcp {
-    fn new() -> Self {
+impl DnsServerDhcp {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-dhcp".to_string()),
             server_type: Some("dhcp".to_string()),
@@ -431,7 +454,7 @@ impl DnsServerVariansTrait for DnsServerDhcp {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("dhcp".to_string()),
@@ -439,11 +462,11 @@ impl DnsServerVariansTrait for DnsServerDhcp {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -461,8 +484,8 @@ pub struct DnsServerFakeIp {
     pub inet6_range: Option<String>,
 }
 
-impl DnsServerVariansTrait for DnsServerFakeIp {
-    fn new() -> Self {
+impl DnsServerFakeIp {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-fakeip".to_string()),
             server_type: Some("fakeip".to_string()),
@@ -470,7 +493,7 @@ impl DnsServerVariansTrait for DnsServerFakeIp {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("fakeip".to_string()),
@@ -478,11 +501,11 @@ impl DnsServerVariansTrait for DnsServerFakeIp {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -500,8 +523,8 @@ pub struct DnsServerTailscale {
     pub accept_default_resolvers: Option<bool>,
 }
 
-impl DnsServerVariansTrait for DnsServerTailscale {
-    fn new() -> Self {
+impl DnsServerTailscale {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-tailscale".to_string()),
             server_type: Some("tailscale".to_string()),
@@ -509,7 +532,7 @@ impl DnsServerVariansTrait for DnsServerTailscale {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("tailscale".to_string()),
@@ -517,11 +540,11 @@ impl DnsServerVariansTrait for DnsServerTailscale {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }
@@ -539,8 +562,8 @@ pub struct DnsServerResolved {
     pub accept_default_resolvers: Option<bool>,
 }
 
-impl DnsServerVariansTrait for DnsServerResolved {
-    fn new() -> Self {
+impl DnsServerResolved {
+    pub fn new() -> Self {
         Self {
             tag: Some("dns-resolved".to_string()),
             server_type: Some("resolved".to_string()),
@@ -548,7 +571,7 @@ impl DnsServerVariansTrait for DnsServerResolved {
         }
     }
 
-    fn with_name(name: String) -> Self {
+    pub fn with_tag(name: String) -> Self {
         Self {
             tag: Some(name),
             server_type: Some("resolved".to_string()),
@@ -556,11 +579,11 @@ impl DnsServerVariansTrait for DnsServerResolved {
         }
     }
 
-    fn server_type(&self) -> String {
+    pub fn server_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
-    fn get_tag(&self) -> String {
+    pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
     }
 }

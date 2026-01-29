@@ -41,8 +41,11 @@ impl Configurator {
 
                 let mxd = mixed::MixedConfig::with_listen(lp).ssp();
 
+                let mut dns_config = DnsConfig::new();
+                dns_config.add_udp(Some("8.8.8.8".to_string()), None, None).add_local(None);
+
                 Ok(Configurator {
-                    dns: DnsConfig::new(),
+                    dns: dns_config,
                     inbounds: vec![
                         Inbound::Mixed(mxd),
                         Inbound::Direct(inbound::direct::DirectConfig::new()),
