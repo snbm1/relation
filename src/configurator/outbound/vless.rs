@@ -9,8 +9,6 @@ use crate::configurator::shared::multiplex::*;
 use crate::configurator::shared::tls::*;
 use crate::configurator::shared::transport::*;
 
-use crate::configurator::Config;
-
 #[derive(Serialize, Deserialize, Default, Debug)]
 enum Flow {
     #[serde(rename = "")]
@@ -64,7 +62,7 @@ enum PossibleValues {
     String(String),
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct VlessConfig {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -91,15 +89,15 @@ pub struct VlessConfig {
 }
 
 impl VlessConfig {
-    fn new() -> VlessConfig {
+    pub fn new() -> VlessConfig {
         VlessConfig {
             config_type: Some("vless".to_string()),
-            tag: Some("vless-outbound".to_string()),
+            tag: Some("outbound-vless".to_string()),
             ..Default::default()
         }
     }
 
-    fn check(&mut self) -> bool {
+    pub fn check(&mut self) -> bool {
         match self.server.is_none() || self.server_port.is_none() || self.uuid.is_none() {
             true => false,
             false => {
@@ -115,6 +113,14 @@ impl VlessConfig {
                 }
             }
         }
+    }
+
+    pub fn get_type(&self) -> String {
+        self.config_type.clone().expect("[ERROR] No type")
+    }
+
+    pub fn get_tag(&self) -> String {
+        self.tag.clone().expect("[ERROR] No tag")
     }
 
     fn parser(input: &str) -> Vec<(PossibleKeys, PossibleValues)> {
@@ -191,12 +197,8 @@ impl VlessConfig {
         }
         values
     }
-}
 
-impl Config for VlessConfig {
-    fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>>
-    where
-        Self: Sized,
+    pub fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>>
     {
         let value = VlessConfig::parser(url);
 

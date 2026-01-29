@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::configurator::{
     inbound::{direct::DirectConfig, mixed::MixedConfig},
-    shared::{ListableString, listenfields::ListenFields},
+    shared::{listenfields::ListenFields},
 };
 
 #[derive(Serialize, Deserialize, Debug)]

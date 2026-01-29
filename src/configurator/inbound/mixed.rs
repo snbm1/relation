@@ -22,8 +22,7 @@ impl MixedConfig {
         MixedConfig {
             config_type: Some("mixed".to_string()),
             tag: Some("inbound-mixed".to_string()),
-            listen: None,
-            set_system_proxy: None,
+            ..Default::default()
         }
     }
 
