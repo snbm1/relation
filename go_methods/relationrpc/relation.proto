@@ -15,7 +15,42 @@ message ParseRequest {
 }
 
 message ParseResponse {
-    ResponseFlag responce_flag = 1; 
+    ResponseFlag response_flag = 1; 
     string content = 2; 
     string message = 3; 
 }
+
+message SetupRequest {
+    string base_path = 1; 
+    string working_path = 2; 
+    string temp_path = 3; 
+    int64 status_port = 4; 
+    bool debug = 5; 
+    bool enable_services = 6; 
+} 
+
+message BaseResponse {
+    bool ok = 1; 
+    string message = 2;
+}
+ 
+message StartRequest {
+    string config_path = 1; 
+    bool memory_limit = 2; 
+}
+
+message Empty {}
+
+message UrlTestRequest {
+    string tag = 1;
+}
+
+service Core {
+    rpc Setup(SetupRequest) returns (BaseResponse);
+    rpc Parse(ParseRequest) returns (ParseResponse); 
+    rpc Start(StartRequest) returns (BaseResponse); 
+    rpc Stop(Empty) returns (BaseResponse); 
+    rpc Restart(StartRequest) returns (BaseResponse); 
+    rpc UrlTest(UrlTestRequest) returns (BaseResponse); 
+}
+

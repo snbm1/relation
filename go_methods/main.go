@@ -29,7 +29,7 @@ func parse(content *C.char, tempPath *C.char, debug bool) *C.char {
 		return C.CString(err.Error())
 	}
 
-	if res.ResponceFlag != rb.ResponseFlag_OK {
+	if res.ResponseFlag != rb.ResponseFlag_OK {
 		return C.CString(res.Message)
 	}
 

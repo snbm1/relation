@@ -129,7 +129,7 @@ func (x *ParseRequest) GetDebug() bool {
 
 type ParseResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ResponceFlag  ResponseFlag           `protobuf:"varint,1,opt,name=responce_flag,json=responceFlag,proto3,enum=relationrpc.ResponseFlag" json:"responce_flag,omitempty"`
+	ResponseFlag  ResponseFlag           `protobuf:"varint,1,opt,name=response_flag,json=responseFlag,proto3,enum=relationrpc.ResponseFlag" json:"response_flag,omitempty"`
 	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
 	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -166,9 +166,9 @@ func (*ParseResponse) Descriptor() ([]byte, []int) {
 	return file_relation_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ParseResponse) GetResponceFlag() ResponseFlag {
+func (x *ParseResponse) GetResponseFlag() ResponseFlag {
 	if x != nil {
-		return x.ResponceFlag
+		return x.ResponseFlag
 	}
 	return ResponseFlag_OK
 }
@@ -187,6 +187,274 @@ func (x *ParseResponse) GetMessage() string {
 	return ""
 }
 
+type SetupRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	BasePath       string                 `protobuf:"bytes,1,opt,name=base_path,json=basePath,proto3" json:"base_path,omitempty"`
+	WorkingPath    string                 `protobuf:"bytes,2,opt,name=working_path,json=workingPath,proto3" json:"working_path,omitempty"`
+	TempPath       string                 `protobuf:"bytes,3,opt,name=temp_path,json=tempPath,proto3" json:"temp_path,omitempty"`
+	StatusPort     int64                  `protobuf:"varint,4,opt,name=status_port,json=statusPort,proto3" json:"status_port,omitempty"`
+	Debug          bool                   `protobuf:"varint,5,opt,name=debug,proto3" json:"debug,omitempty"`
+	EnableServices bool                   `protobuf:"varint,6,opt,name=enable_services,json=enableServices,proto3" json:"enable_services,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SetupRequest) Reset() {
+	*x = SetupRequest{}
+	mi := &file_relation_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetupRequest) ProtoMessage() {}
+
+func (x *SetupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_relation_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetupRequest.ProtoReflect.Descriptor instead.
+func (*SetupRequest) Descriptor() ([]byte, []int) {
+	return file_relation_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *SetupRequest) GetBasePath() string {
+	if x != nil {
+		return x.BasePath
+	}
+	return ""
+}
+
+func (x *SetupRequest) GetWorkingPath() string {
+	if x != nil {
+		return x.WorkingPath
+	}
+	return ""
+}
+
+func (x *SetupRequest) GetTempPath() string {
+	if x != nil {
+		return x.TempPath
+	}
+	return ""
+}
+
+func (x *SetupRequest) GetStatusPort() int64 {
+	if x != nil {
+		return x.StatusPort
+	}
+	return 0
+}
+
+func (x *SetupRequest) GetDebug() bool {
+	if x != nil {
+		return x.Debug
+	}
+	return false
+}
+
+func (x *SetupRequest) GetEnableServices() bool {
+	if x != nil {
+		return x.EnableServices
+	}
+	return false
+}
+
+type BaseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BaseResponse) Reset() {
+	*x = BaseResponse{}
+	mi := &file_relation_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BaseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BaseResponse) ProtoMessage() {}
+
+func (x *BaseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_relation_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BaseResponse.ProtoReflect.Descriptor instead.
+func (*BaseResponse) Descriptor() ([]byte, []int) {
+	return file_relation_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BaseResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *BaseResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type StartRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConfigPath    string                 `protobuf:"bytes,1,opt,name=config_path,json=configPath,proto3" json:"config_path,omitempty"`
+	MemoryLimit   bool                   `protobuf:"varint,2,opt,name=memory_limit,json=memoryLimit,proto3" json:"memory_limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartRequest) Reset() {
+	*x = StartRequest{}
+	mi := &file_relation_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartRequest) ProtoMessage() {}
+
+func (x *StartRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_relation_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartRequest.ProtoReflect.Descriptor instead.
+func (*StartRequest) Descriptor() ([]byte, []int) {
+	return file_relation_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *StartRequest) GetConfigPath() string {
+	if x != nil {
+		return x.ConfigPath
+	}
+	return ""
+}
+
+func (x *StartRequest) GetMemoryLimit() bool {
+	if x != nil {
+		return x.MemoryLimit
+	}
+	return false
+}
+
+type Empty struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Empty) Reset() {
+	*x = Empty{}
+	mi := &file_relation_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Empty) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Empty) ProtoMessage() {}
+
+func (x *Empty) ProtoReflect() protoreflect.Message {
+	mi := &file_relation_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
+func (*Empty) Descriptor() ([]byte, []int) {
+	return file_relation_proto_rawDescGZIP(), []int{5}
+}
+
+type UrlTestRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tag           string                 `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UrlTestRequest) Reset() {
+	*x = UrlTestRequest{}
+	mi := &file_relation_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UrlTestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UrlTestRequest) ProtoMessage() {}
+
+func (x *UrlTestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_relation_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UrlTestRequest.ProtoReflect.Descriptor instead.
+func (*UrlTestRequest) Descriptor() ([]byte, []int) {
+	return file_relation_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UrlTestRequest) GetTag() string {
+	if x != nil {
+		return x.Tag
+	}
+	return ""
+}
+
 var File_relation_proto protoreflect.FileDescriptor
 
 const file_relation_proto_rawDesc = "" +
@@ -197,13 +465,38 @@ const file_relation_proto_rawDesc = "" +
 	"\ttemp_path\x18\x02 \x01(\tR\btempPath\x12\x14\n" +
 	"\x05debug\x18\x03 \x01(\bR\x05debug\"\x83\x01\n" +
 	"\rParseResponse\x12>\n" +
-	"\rresponce_flag\x18\x01 \x01(\x0e2\x19.relationrpc.ResponseFlagR\fresponceFlag\x12\x18\n" +
+	"\rresponse_flag\x18\x01 \x01(\x0e2\x19.relationrpc.ResponseFlagR\fresponseFlag\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage*\"\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\xcb\x01\n" +
+	"\fSetupRequest\x12\x1b\n" +
+	"\tbase_path\x18\x01 \x01(\tR\bbasePath\x12!\n" +
+	"\fworking_path\x18\x02 \x01(\tR\vworkingPath\x12\x1b\n" +
+	"\ttemp_path\x18\x03 \x01(\tR\btempPath\x12\x1f\n" +
+	"\vstatus_port\x18\x04 \x01(\x03R\n" +
+	"statusPort\x12\x14\n" +
+	"\x05debug\x18\x05 \x01(\bR\x05debug\x12'\n" +
+	"\x0fenable_services\x18\x06 \x01(\bR\x0eenableServices\"8\n" +
+	"\fBaseResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"R\n" +
+	"\fStartRequest\x12\x1f\n" +
+	"\vconfig_path\x18\x01 \x01(\tR\n" +
+	"configPath\x12!\n" +
+	"\fmemory_limit\x18\x02 \x01(\bR\vmemoryLimit\"\a\n" +
+	"\x05Empty\"\"\n" +
+	"\x0eUrlTestRequest\x12\x10\n" +
+	"\x03tag\x18\x01 \x01(\tR\x03tag*\"\n" +
 	"\fResponseFlag\x12\x06\n" +
 	"\x02OK\x10\x00\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x01B\x0fZ\r./relationrpcb\x06proto3"
+	"\x06FAILED\x10\x012\xff\x02\n" +
+	"\x04Core\x12=\n" +
+	"\x05Setup\x12\x19.relationrpc.SetupRequest\x1a\x19.relationrpc.BaseResponse\x12>\n" +
+	"\x05Parse\x12\x19.relationrpc.ParseRequest\x1a\x1a.relationrpc.ParseResponse\x12=\n" +
+	"\x05Start\x12\x19.relationrpc.StartRequest\x1a\x19.relationrpc.BaseResponse\x125\n" +
+	"\x04Stop\x12\x12.relationrpc.Empty\x1a\x19.relationrpc.BaseResponse\x12?\n" +
+	"\aRestart\x12\x19.relationrpc.StartRequest\x1a\x19.relationrpc.BaseResponse\x12A\n" +
+	"\aUrlTest\x12\x1b.relationrpc.UrlTestRequest\x1a\x19.relationrpc.BaseResponseB\x0fZ\r./relationrpcb\x06proto3"
 
 var (
 	file_relation_proto_rawDescOnce sync.Once
@@ -218,16 +511,33 @@ func file_relation_proto_rawDescGZIP() []byte {
 }
 
 var file_relation_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_relation_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_relation_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_relation_proto_goTypes = []any{
-	(ResponseFlag)(0),     // 0: relationrpc.ResponseFlag
-	(*ParseRequest)(nil),  // 1: relationrpc.ParseRequest
-	(*ParseResponse)(nil), // 2: relationrpc.ParseResponse
+	(ResponseFlag)(0),      // 0: relationrpc.ResponseFlag
+	(*ParseRequest)(nil),   // 1: relationrpc.ParseRequest
+	(*ParseResponse)(nil),  // 2: relationrpc.ParseResponse
+	(*SetupRequest)(nil),   // 3: relationrpc.SetupRequest
+	(*BaseResponse)(nil),   // 4: relationrpc.BaseResponse
+	(*StartRequest)(nil),   // 5: relationrpc.StartRequest
+	(*Empty)(nil),          // 6: relationrpc.Empty
+	(*UrlTestRequest)(nil), // 7: relationrpc.UrlTestRequest
 }
 var file_relation_proto_depIdxs = []int32{
-	0, // 0: relationrpc.ParseResponse.responce_flag:type_name -> relationrpc.ResponseFlag
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
+	0, // 0: relationrpc.ParseResponse.response_flag:type_name -> relationrpc.ResponseFlag
+	3, // 1: relationrpc.Core.Setup:input_type -> relationrpc.SetupRequest
+	1, // 2: relationrpc.Core.Parse:input_type -> relationrpc.ParseRequest
+	5, // 3: relationrpc.Core.Start:input_type -> relationrpc.StartRequest
+	6, // 4: relationrpc.Core.Stop:input_type -> relationrpc.Empty
+	5, // 5: relationrpc.Core.Restart:input_type -> relationrpc.StartRequest
+	7, // 6: relationrpc.Core.UrlTest:input_type -> relationrpc.UrlTestRequest
+	4, // 7: relationrpc.Core.Setup:output_type -> relationrpc.BaseResponse
+	2, // 8: relationrpc.Core.Parse:output_type -> relationrpc.ParseResponse
+	4, // 9: relationrpc.Core.Start:output_type -> relationrpc.BaseResponse
+	4, // 10: relationrpc.Core.Stop:output_type -> relationrpc.BaseResponse
+	4, // 11: relationrpc.Core.Restart:output_type -> relationrpc.BaseResponse
+	4, // 12: relationrpc.Core.UrlTest:output_type -> relationrpc.BaseResponse
+	7, // [7:13] is the sub-list for method output_type
+	1, // [1:7] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -244,9 +554,9 @@ func file_relation_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_relation_proto_rawDesc), len(file_relation_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   7,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_relation_proto_goTypes,
 		DependencyIndexes: file_relation_proto_depIdxs,

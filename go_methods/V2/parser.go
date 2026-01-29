@@ -24,7 +24,7 @@ func ParseWriter(content string, filePath string) error {
 
 func Parse(in *rb.ParseRequest) (resp *rb.ParseResponse, err error) {
 	resp = &rb.ParseResponse{
-		ResponceFlag: rb.ResponseFlag_FAILED,
+		ResponseFlag: rb.ResponseFlag_FAILED,
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -58,7 +58,7 @@ func Parse(in *rb.ParseRequest) (resp *rb.ParseResponse, err error) {
 		return
 	}
 
-	resp.ResponceFlag = rb.ResponseFlag_OK
+	resp.ResponseFlag = rb.ResponseFlag_OK
 	resp.Content = string(parsed)
 	resp.Message = ""
 
