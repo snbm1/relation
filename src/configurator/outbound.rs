@@ -46,6 +46,12 @@ impl OutboundConfig {
     pub fn get_mut_by_tag(&mut self, tag: &str) -> Option<&mut Outbound> {
         self.servers.iter_mut().find(|x| x.get_tag() == tag)
     }
+
+    pub fn get_tag_by_type(&self, name: &str) -> Option<String> {
+        self.servers
+            .iter().find(|x| x.get_type() == name)
+            .map(|x| x.get_tag())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -60,6 +66,13 @@ impl Outbound {
         match self {
             Outbound::Direct(cfg) => cfg.get_tag(),
             Outbound::Vless(cfg) => cfg.get_tag(),
+        }
+    }
+
+    pub fn get_type(&self) -> String {
+        match self {
+            Outbound::Direct(cfg) => cfg.get_type(),
+            Outbound::Vless(cfg) => cfg.get_type(),
         }
     }
 }

@@ -44,8 +44,8 @@ impl MixedConfig {
         }
     }
 
-    pub fn set_system_proxy(mut self) -> Self {
-        self.set_system_proxy = Some(true);
+    pub fn set_system_proxy(mut self, value: bool) -> Self {
+        self.set_system_proxy = Some(value);
         self
     }
 

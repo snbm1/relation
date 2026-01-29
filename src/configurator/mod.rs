@@ -29,7 +29,7 @@ impl Configurator {
         let mut inbound_config = InboundConfig::new();
         inbound_config.add_server(Inbound::Mixed(
             mixed::MixedConfig::with_addr(Some("122.0.0.1".to_string()), Some(12334))
-                .set_system_proxy(),
+                .set_system_proxy(true),
         ));
         inbound_config.add_direct(None);
 

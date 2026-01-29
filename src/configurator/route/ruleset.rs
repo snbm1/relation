@@ -1,7 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use crate::configurator::NumOrStr;
 use crate::configurator::shared::Network;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NumOrStr {
+    Num(u16),
+    Str(String),
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
