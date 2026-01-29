@@ -25,18 +25,18 @@ pub enum DnsServer {
 impl DnsServer {
     pub fn get_type(&self) -> String {
         match self {
-            DnsServer::Local(s) => s.server_type(),
-            DnsServer::Hosts(s) => s.server_type(),
-            DnsServer::Tcp(s) => s.server_type(),
-            DnsServer::Udp(s) => s.server_type(),
-            DnsServer::Tls(s) => s.server_type(),
-            DnsServer::Quic(s) => s.server_type(),
-            DnsServer::Https(s) => s.server_type(),
-            DnsServer::Http3(s) => s.server_type(),
-            DnsServer::Dhcp(s) => s.server_type(),
-            DnsServer::FakeIp(s) => s.server_type(),
-            DnsServer::Tailscale(s) => s.server_type(),
-            DnsServer::Resolved(s) => s.server_type(),
+            DnsServer::Local(s) => s.get_type(),
+            DnsServer::Hosts(s) => s.get_type(),
+            DnsServer::Tcp(s) => s.get_type(),
+            DnsServer::Udp(s) => s.get_type(),
+            DnsServer::Tls(s) => s.get_type(),
+            DnsServer::Quic(s) => s.get_type(),
+            DnsServer::Https(s) => s.get_type(),
+            DnsServer::Http3(s) => s.get_type(),
+            DnsServer::Dhcp(s) => s.get_type(),
+            DnsServer::FakeIp(s) => s.get_type(),
+            DnsServer::Tailscale(s) => s.get_type(),
+            DnsServer::Resolved(s) => s.get_type(),
         }
     }
     pub fn get_tag(&self) -> String {
@@ -85,7 +85,7 @@ impl DnsServerLocal {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -124,7 +124,7 @@ impl DnsServerHosts {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -181,7 +181,7 @@ impl DnsServerTcp {
         self
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -238,7 +238,7 @@ impl DnsServerUdp {
         self
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -282,7 +282,7 @@ impl DnsServerTls {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -326,7 +326,7 @@ impl DnsServerQuic {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -374,7 +374,7 @@ impl DnsServerHttps {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -422,7 +422,7 @@ impl DnsServerHttp3 {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -462,7 +462,7 @@ impl DnsServerDhcp {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -501,7 +501,7 @@ impl DnsServerFakeIp {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -540,7 +540,7 @@ impl DnsServerTailscale {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
@@ -579,7 +579,7 @@ impl DnsServerResolved {
         }
     }
 
-    pub fn server_type(&self) -> String {
+    pub fn get_type(&self) -> String {
         self.server_type.clone().expect("[ERROR] No type")
     }
 
