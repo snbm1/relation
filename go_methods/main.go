@@ -55,6 +55,13 @@ func stop() *C.char {
 	return errorOrNot(err)
 }
 
+//export urlTest
+func urlTest(tag *C.char) *C.char {
+	err := V2.UrlTest(C.GoString(tag))
+
+	return errorOrNot(err)
+}
+
 func errorOrNot(err error) *C.char {
 	if err == nil {
 		return C.CString("")
@@ -62,3 +69,5 @@ func errorOrNot(err error) *C.char {
 	log.Error(err.Error())
 	return C.CString(err.Error())
 }
+
+func main() {}
