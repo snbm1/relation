@@ -4,8 +4,8 @@ import "C"
 import (
 	_ "fmt"
 	V2 "methods/V2"
+	"methods/grpcserver"
 	_ "methods/manager"
-	rb "methods/relationrpc"
 
 	"github.com/sagernet/sing-box/log"
 )
@@ -18,22 +18,18 @@ func setup(basicPath, workingPath, tempPath *C.char, statusPort C.longlong, debu
 
 //export parse
 func parse(content *C.char, tempPath *C.char, debug bool) *C.char {
-	res, err := V2.Parse(&rb.ParseRequest{
-		Content:  C.GoString(content),
-		TempPath: C.GoString(tempPath),
-		Debug:    debug,
-	})
+	res, err := V2.Parse(
+		C.GoString(content),
+		C.GoString(tempPath),
+		debug,
+	)
 
 	if err != nil {
 		log.Error(err.Error())
 		return C.CString(err.Error())
 	}
 
-	if res.ResponseFlag != rb.ResponseFlag_OK {
-		return C.CString(res.Message)
-	}
-
-	return C.CString(res.Content)
+	return C.CString(res)
 
 }
 
@@ -59,6 +55,12 @@ func stop() *C.char {
 func urlTest(tag *C.char) *C.char {
 	err := V2.UrlTest(C.GoString(tag))
 
+	return errorOrNot(err)
+}
+
+//export startCoreGrpcServer
+func startCoreGrpcServer(listenAddress *C.char) *C.char {
+	err := grpcserver.StartGrpcServer(C.GoString(listenAddress))
 	return errorOrNot(err)
 }
 

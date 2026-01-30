@@ -3,7 +3,6 @@ package V2
 import (
 	"fmt"
 	"methods/config"
-	rb "methods/relationrpc"
 	"os"
 	"runtime/debug"
 )
@@ -22,45 +21,30 @@ func ParseWriter(content string, filePath string) error {
 	return os.Rename(tmp, filePath)
 }
 
-func Parse(in *rb.ParseRequest) (resp *rb.ParseResponse, err error) {
-	resp = &rb.ParseResponse{
-		ResponseFlag: rb.ResponseFlag_FAILED,
-	}
+func Parse(content string, tempPath string, debugger bool) (string, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("Parse error: %v\n%s", r, debug.Stack())
-			resp.Message = err.Error()
+			panic(fmt.Errorf("Parse panic: %v\n%s", r, debug.Stack()))
 		}
 	}()
 
-	content := in.Content
-
-	if content == "" && in.TempPath != "" {
-		var data []byte
-		data, err = os.ReadFile(in.TempPath)
+	if content == "" && tempPath != "" {
+		data, err := os.ReadFile(tempPath)
 		if err != nil {
-			resp.Message = err.Error()
-			return
+			return "", err
 		}
 		content = string(data)
 	}
 
 	if content == "" {
-		err = fmt.Errorf("empty config")
-		resp.Message = err.Error()
-		return
+		return "", fmt.Errorf("empty config")
 	}
 
-	var parsed []byte
-	parsed, err = config.ConfigParser(content)
+	parsed, err := config.ConfigParser(content)
 	if err != nil {
-		resp.Message = err.Error()
-		return
+		return "", err
 	}
 
-	resp.ResponseFlag = rb.ResponseFlag_OK
-	resp.Content = string(parsed)
-	resp.Message = ""
+	return string(parsed), nil
 
-	return
 }

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.1
-// source: relation.proto
+// source: relationrpc/relation.proto
 
 package relationrpc
 
@@ -51,11 +51,11 @@ func (x ResponseFlag) String() string {
 }
 
 func (ResponseFlag) Descriptor() protoreflect.EnumDescriptor {
-	return file_relation_proto_enumTypes[0].Descriptor()
+	return file_relationrpc_relation_proto_enumTypes[0].Descriptor()
 }
 
 func (ResponseFlag) Type() protoreflect.EnumType {
-	return &file_relation_proto_enumTypes[0]
+	return &file_relationrpc_relation_proto_enumTypes[0]
 }
 
 func (x ResponseFlag) Number() protoreflect.EnumNumber {
@@ -64,7 +64,7 @@ func (x ResponseFlag) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ResponseFlag.Descriptor instead.
 func (ResponseFlag) EnumDescriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{0}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{0}
 }
 
 type ParseRequest struct {
@@ -78,7 +78,7 @@ type ParseRequest struct {
 
 func (x *ParseRequest) Reset() {
 	*x = ParseRequest{}
-	mi := &file_relation_proto_msgTypes[0]
+	mi := &file_relationrpc_relation_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -90,7 +90,7 @@ func (x *ParseRequest) String() string {
 func (*ParseRequest) ProtoMessage() {}
 
 func (x *ParseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_relation_proto_msgTypes[0]
+	mi := &file_relationrpc_relation_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -103,7 +103,7 @@ func (x *ParseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseRequest.ProtoReflect.Descriptor instead.
 func (*ParseRequest) Descriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{0}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ParseRequest) GetContent() string {
@@ -138,7 +138,7 @@ type ParseResponse struct {
 
 func (x *ParseResponse) Reset() {
 	*x = ParseResponse{}
-	mi := &file_relation_proto_msgTypes[1]
+	mi := &file_relationrpc_relation_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +150,7 @@ func (x *ParseResponse) String() string {
 func (*ParseResponse) ProtoMessage() {}
 
 func (x *ParseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_relation_proto_msgTypes[1]
+	mi := &file_relationrpc_relation_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +163,7 @@ func (x *ParseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseResponse.ProtoReflect.Descriptor instead.
 func (*ParseResponse) Descriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{1}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ParseResponse) GetResponseFlag() ResponseFlag {
@@ -201,7 +201,7 @@ type SetupRequest struct {
 
 func (x *SetupRequest) Reset() {
 	*x = SetupRequest{}
-	mi := &file_relation_proto_msgTypes[2]
+	mi := &file_relationrpc_relation_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -213,7 +213,7 @@ func (x *SetupRequest) String() string {
 func (*SetupRequest) ProtoMessage() {}
 
 func (x *SetupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_relation_proto_msgTypes[2]
+	mi := &file_relationrpc_relation_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -226,7 +226,7 @@ func (x *SetupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupRequest.ProtoReflect.Descriptor instead.
 func (*SetupRequest) Descriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{2}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SetupRequest) GetBasePath() string {
@@ -281,7 +281,7 @@ type BaseResponse struct {
 
 func (x *BaseResponse) Reset() {
 	*x = BaseResponse{}
-	mi := &file_relation_proto_msgTypes[3]
+	mi := &file_relationrpc_relation_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -293,7 +293,7 @@ func (x *BaseResponse) String() string {
 func (*BaseResponse) ProtoMessage() {}
 
 func (x *BaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_relation_proto_msgTypes[3]
+	mi := &file_relationrpc_relation_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -306,7 +306,7 @@ func (x *BaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BaseResponse.ProtoReflect.Descriptor instead.
 func (*BaseResponse) Descriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{3}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *BaseResponse) GetOk() bool {
@@ -333,7 +333,7 @@ type StartRequest struct {
 
 func (x *StartRequest) Reset() {
 	*x = StartRequest{}
-	mi := &file_relation_proto_msgTypes[4]
+	mi := &file_relationrpc_relation_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -345,7 +345,7 @@ func (x *StartRequest) String() string {
 func (*StartRequest) ProtoMessage() {}
 
 func (x *StartRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_relation_proto_msgTypes[4]
+	mi := &file_relationrpc_relation_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -358,7 +358,7 @@ func (x *StartRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartRequest.ProtoReflect.Descriptor instead.
 func (*StartRequest) Descriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{4}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *StartRequest) GetConfigPath() string {
@@ -383,7 +383,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_relation_proto_msgTypes[5]
+	mi := &file_relationrpc_relation_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -395,7 +395,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_relation_proto_msgTypes[5]
+	mi := &file_relationrpc_relation_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -408,7 +408,7 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{5}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{5}
 }
 
 type UrlTestRequest struct {
@@ -420,7 +420,7 @@ type UrlTestRequest struct {
 
 func (x *UrlTestRequest) Reset() {
 	*x = UrlTestRequest{}
-	mi := &file_relation_proto_msgTypes[6]
+	mi := &file_relationrpc_relation_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -432,7 +432,7 @@ func (x *UrlTestRequest) String() string {
 func (*UrlTestRequest) ProtoMessage() {}
 
 func (x *UrlTestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_relation_proto_msgTypes[6]
+	mi := &file_relationrpc_relation_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -445,7 +445,7 @@ func (x *UrlTestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UrlTestRequest.ProtoReflect.Descriptor instead.
 func (*UrlTestRequest) Descriptor() ([]byte, []int) {
-	return file_relation_proto_rawDescGZIP(), []int{6}
+	return file_relationrpc_relation_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UrlTestRequest) GetTag() string {
@@ -455,11 +455,11 @@ func (x *UrlTestRequest) GetTag() string {
 	return ""
 }
 
-var File_relation_proto protoreflect.FileDescriptor
+var File_relationrpc_relation_proto protoreflect.FileDescriptor
 
-const file_relation_proto_rawDesc = "" +
+const file_relationrpc_relation_proto_rawDesc = "" +
 	"\n" +
-	"\x0erelation.proto\x12\vrelationrpc\"[\n" +
+	"\x1arelationrpc/relation.proto\x12\vrelationrpc\"[\n" +
 	"\fParseRequest\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\tR\acontent\x12\x1b\n" +
 	"\ttemp_path\x18\x02 \x01(\tR\btempPath\x12\x14\n" +
@@ -496,23 +496,23 @@ const file_relation_proto_rawDesc = "" +
 	"\x05Start\x12\x19.relationrpc.StartRequest\x1a\x19.relationrpc.BaseResponse\x125\n" +
 	"\x04Stop\x12\x12.relationrpc.Empty\x1a\x19.relationrpc.BaseResponse\x12?\n" +
 	"\aRestart\x12\x19.relationrpc.StartRequest\x1a\x19.relationrpc.BaseResponse\x12A\n" +
-	"\aUrlTest\x12\x1b.relationrpc.UrlTestRequest\x1a\x19.relationrpc.BaseResponseB\x0fZ\r./relationrpcb\x06proto3"
+	"\aUrlTest\x12\x1b.relationrpc.UrlTestRequest\x1a\x19.relationrpc.BaseResponseB\x15Z\x13methods/relationrpcb\x06proto3"
 
 var (
-	file_relation_proto_rawDescOnce sync.Once
-	file_relation_proto_rawDescData []byte
+	file_relationrpc_relation_proto_rawDescOnce sync.Once
+	file_relationrpc_relation_proto_rawDescData []byte
 )
 
-func file_relation_proto_rawDescGZIP() []byte {
-	file_relation_proto_rawDescOnce.Do(func() {
-		file_relation_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_relation_proto_rawDesc), len(file_relation_proto_rawDesc)))
+func file_relationrpc_relation_proto_rawDescGZIP() []byte {
+	file_relationrpc_relation_proto_rawDescOnce.Do(func() {
+		file_relationrpc_relation_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_relationrpc_relation_proto_rawDesc), len(file_relationrpc_relation_proto_rawDesc)))
 	})
-	return file_relation_proto_rawDescData
+	return file_relationrpc_relation_proto_rawDescData
 }
 
-var file_relation_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_relation_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
-var file_relation_proto_goTypes = []any{
+var file_relationrpc_relation_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_relationrpc_relation_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_relationrpc_relation_proto_goTypes = []any{
 	(ResponseFlag)(0),      // 0: relationrpc.ResponseFlag
 	(*ParseRequest)(nil),   // 1: relationrpc.ParseRequest
 	(*ParseResponse)(nil),  // 2: relationrpc.ParseResponse
@@ -522,7 +522,7 @@ var file_relation_proto_goTypes = []any{
 	(*Empty)(nil),          // 6: relationrpc.Empty
 	(*UrlTestRequest)(nil), // 7: relationrpc.UrlTestRequest
 }
-var file_relation_proto_depIdxs = []int32{
+var file_relationrpc_relation_proto_depIdxs = []int32{
 	0, // 0: relationrpc.ParseResponse.response_flag:type_name -> relationrpc.ResponseFlag
 	3, // 1: relationrpc.Core.Setup:input_type -> relationrpc.SetupRequest
 	1, // 2: relationrpc.Core.Parse:input_type -> relationrpc.ParseRequest
@@ -543,27 +543,27 @@ var file_relation_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_relation_proto_init() }
-func file_relation_proto_init() {
-	if File_relation_proto != nil {
+func init() { file_relationrpc_relation_proto_init() }
+func file_relationrpc_relation_proto_init() {
+	if File_relationrpc_relation_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_relation_proto_rawDesc), len(file_relation_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_relationrpc_relation_proto_rawDesc), len(file_relationrpc_relation_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_relation_proto_goTypes,
-		DependencyIndexes: file_relation_proto_depIdxs,
-		EnumInfos:         file_relation_proto_enumTypes,
-		MessageInfos:      file_relation_proto_msgTypes,
+		GoTypes:           file_relationrpc_relation_proto_goTypes,
+		DependencyIndexes: file_relationrpc_relation_proto_depIdxs,
+		EnumInfos:         file_relationrpc_relation_proto_enumTypes,
+		MessageInfos:      file_relationrpc_relation_proto_msgTypes,
 	}.Build()
-	File_relation_proto = out.File
-	file_relation_proto_goTypes = nil
-	file_relation_proto_depIdxs = nil
+	File_relationrpc_relation_proto = out.File
+	file_relationrpc_relation_proto_goTypes = nil
+	file_relationrpc_relation_proto_depIdxs = nil
 }

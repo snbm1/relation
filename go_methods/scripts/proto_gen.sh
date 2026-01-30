@@ -20,17 +20,26 @@ if ! command -v protoc-gen-go &> /dev/null; then
     export PATH="$PATH:$(go env GOPATH)/bin"
 fi 
 
+if ! command -v protoc-gen-go-grpc &> /dev/null; then
+    echo -e "${YELLOW} protoc-gen-go-grpc not found, installing...${NC}"
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+    export PATH="$PATH:$(go env GOPATH)/bin"
+fi
+
+
 echo -e "${YELLOW} Cleaning old generated files...${NC}"
 cd .. 
-cd relationrpc 
+cd relationrpc
 rm -f *.pb.go 
 
 echo -e "${YELLOW}Generating from proto files...${NC}"
 protoc \
-    --proto_path=. \
-    --go_out=. \
-    --go_opt=paths=source_relative \
-    ./*.proto
+  --proto_path=. \
+  --go_out=. \
+  --go-grpc_out=. \
+  --go_opt=paths=source_relative \
+  --go-grpc_opt=paths=source_relative \
+  relation.proto
 
 
 if [ $? -eq 0 ]; then

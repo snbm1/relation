@@ -1,7 +1,7 @@
 syntax = "proto3";
 package relationrpc; 
 
-option go_package = "./relationrpc";
+option go_package = "methods/relationrpc";
 
 enum ResponseFlag {
     OK = 0;
