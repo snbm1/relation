@@ -100,7 +100,7 @@ func StopUnlocked() (err error) {
 
 	err = Box.Close()
 	if err != nil {
-		return fmt.Errorf("Error while stopping service: %w", err.Error())
+		return fmt.Errorf("Error while stopping service: %w", err)
 	}
 
 	Box = nil
@@ -124,7 +124,7 @@ func Stop() (err error) {
 
 	err = Box.Close()
 	if err != nil {
-		return fmt.Errorf("Error while stopping service: %w", err.Error())
+		return fmt.Errorf("Error while stopping service: %w", err)
 	}
 
 	Box = nil

@@ -33,7 +33,7 @@ func (s *CoreService) Setup(ctx context.Context, req *SetupRequest) (*BaseRespon
 }
 
 func (s *CoreService) Parse(ctx context.Context, req *ParseRequest) (*ParseResponse, error) {
-	resp, err := V2.Parse(req.Content, req.TempPath, req.Debug)
+	resp, err := V2.Parse(req.Content, req.TempPath)
 
 	if err != nil {
 		return &ParseResponse{

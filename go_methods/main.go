@@ -17,11 +17,10 @@ func setup(basicPath, workingPath, tempPath *C.char, statusPort C.longlong, debu
 }
 
 //export parse
-func parse(content *C.char, tempPath *C.char, debug bool) *C.char {
+func parse(content *C.char, tempPath *C.char) *C.char {
 	res, err := V2.Parse(
 		C.GoString(content),
 		C.GoString(tempPath),
-		debug,
 	)
 
 	if err != nil {

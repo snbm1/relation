@@ -21,10 +21,10 @@ func ParseWriter(content string, filePath string) error {
 	return os.Rename(tmp, filePath)
 }
 
-func Parse(content string, tempPath string, debugger bool) (string, error) {
+func Parse(content string, tempPath string) (res string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			panic(fmt.Errorf("Parse panic: %v\n%s", r, debug.Stack()))
+			err = fmt.Errorf("Parse panic: %v\n%s", r, debug.Stack())
 		}
 	}()
 
@@ -40,7 +40,8 @@ func Parse(content string, tempPath string, debugger bool) (string, error) {
 		return "", fmt.Errorf("empty config")
 	}
 
-	parsed, err := config.ConfigParser(content)
+	var parsed []byte
+	parsed, err = config.ConfigParser(content)
 	if err != nil {
 		return "", err
 	}
