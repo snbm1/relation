@@ -1,5 +1,7 @@
+use rellib::auto_skip_none;
 use serde::{Deserialize, Serialize};
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct RealityConfig {
     pub enable: Option<bool>,
@@ -25,6 +27,7 @@ impl RealityConfig {
     }
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct UtlsConfig {
     pub enable: Option<bool>,
@@ -56,17 +59,14 @@ impl UtlsConfig {
     }
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct TlsConfig {
     pub enable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_sni: Option<bool>,
     pub server_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub insecure: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub utls: Option<UtlsConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub reality: Option<RealityConfig>,
 }
 

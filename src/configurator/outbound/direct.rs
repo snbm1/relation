@@ -1,16 +1,15 @@
 use serde::{Deserialize, Serialize};
+use rellib::auto_skip_none;
 
 use crate::configurator::shared::dialfields::DialFields;
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct DirectConfig {
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     config_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     tag: Option<String>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     dial: Option<DialFields>,
 }
 

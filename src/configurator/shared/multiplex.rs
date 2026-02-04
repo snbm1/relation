@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use rellib::auto_skip_none;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[auto_skip_none]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct MultiplexConfig {
     pub enable: Option<bool>,
     pub protocol: Option<String>,
@@ -10,9 +12,7 @@ pub struct MultiplexConfig {
 impl MultiplexConfig {
     pub fn new() -> MultiplexConfig {
         MultiplexConfig {
-            enable: None,
-            protocol: None,
-            max_streams: None,
+            ..Default::default()
         }
     }
 

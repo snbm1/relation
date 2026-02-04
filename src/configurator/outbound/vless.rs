@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use rellib::auto_skip_none;
+
 use crate::configurator::shared::Network;
 use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::multiplex::*;
@@ -62,29 +64,22 @@ enum PossibleValues {
     String(String),
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct VlessConfig {
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     config_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     tag: Option<String>,
     server: Option<String>,
     server_port: Option<u16>,
     uuid: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     flow: Option<Flow>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     network: Option<Network>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     tls: Option<TlsConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     multiplex: Option<MultiplexConfig>,
     packet_encoding: Option<PacketEncoding>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     transport: Option<TransportConfig>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     dial: Option<DialFields>,
 }
 

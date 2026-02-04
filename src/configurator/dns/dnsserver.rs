@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use rellib::auto_skip_none;
+
 use crate::configurator::shared::ListableString;
 use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::tls::TlsConfig;
@@ -57,14 +59,12 @@ impl DnsServer {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerLocal {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_go: Option<bool>,
 }
 
@@ -94,16 +94,13 @@ impl DnsServerLocal {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerHosts {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<ListableString>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub predefined: Option<HashMap<String, ListableString>>,
 }
 
@@ -133,19 +130,15 @@ impl DnsServerHosts {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerTcp {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub dial: Option<DialFields>,
 }
 
@@ -190,19 +183,15 @@ impl DnsServerTcp {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerUdp {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub dial: Option<DialFields>,
 }
 
@@ -247,21 +236,16 @@ impl DnsServerUdp {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerTls {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub dial: Option<DialFields>,
 }
 
@@ -291,21 +275,16 @@ impl DnsServerTls {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerQuic {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub dial: Option<DialFields>,
 }
 
@@ -335,25 +314,18 @@ impl DnsServerQuic {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerHttps {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<HashMap<String, String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub dial: Option<DialFields>,
 }
 
@@ -383,25 +355,18 @@ impl DnsServerHttps {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerHttp3 {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_port: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<HashMap<String, String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub dial: Option<DialFields>,
 }
 
@@ -431,17 +396,14 @@ impl DnsServerHttp3 {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerDhcp {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub interface: Option<String>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub dial: Option<DialFields>,
 }
 
@@ -471,16 +433,13 @@ impl DnsServerDhcp {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerFakeIp {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub inet4_range: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub inet6_range: Option<String>,
 }
 
@@ -510,16 +469,13 @@ impl DnsServerFakeIp {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerTailscale {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub endpoint: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub accept_default_resolvers: Option<bool>,
 }
 
@@ -549,16 +505,13 @@ impl DnsServerTailscale {
     }
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DnsServerResolved {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub service: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub accept_default_resolvers: Option<bool>,
 }
 

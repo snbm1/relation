@@ -1,19 +1,17 @@
 use crate::configurator::shared::listenfields::ListenFields;
 use serde::{Deserialize, Serialize};
+use rellib::auto_skip_none;
 
 use crate::configurator::shared;
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct MixedConfig {
     #[serde(rename = "type")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub config_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
     #[serde(flatten)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub listen: Option<ListenFields>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub set_system_proxy: Option<bool>,
 }
 

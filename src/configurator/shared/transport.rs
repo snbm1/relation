@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use rellib::auto_skip_none;
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum TransportConfig {
@@ -13,15 +15,14 @@ pub enum TransportConfig {
     HttpUpdate(HttpUpdateConfig),
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct WebSocketConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
     pub path: Option<String>,
     pub headers: Option<HashMap<String, String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_early_data: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub early_data_header_name: Option<String>,
 }
 
@@ -38,16 +39,14 @@ impl WebSocketConfig {
     }
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct GrpcConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
     pub service_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub idle_timeout: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub ping_timeout: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub permit_without_stream: Option<bool>,
 }
 
@@ -67,6 +66,7 @@ impl GrpcConfig {
     }
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct QuicConfig {
     #[serde(rename = "type")]
@@ -85,20 +85,16 @@ impl QuicConfig {
     }
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct HttpConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub host: Option<Vec<String>>,
     pub path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub method: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<HashMap<String, String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub idle_timeout: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub ping_timeout: Option<String>,
 }
 
@@ -115,14 +111,13 @@ impl HttpConfig {
     }
 }
 
+#[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct HttpUpdateConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub host: Option<Vec<String>>,
     pub path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<HashMap<String, String>>,
 }
 
