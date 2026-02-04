@@ -1,37 +1,27 @@
 use serde::{Deserialize, Serialize};
+use rellib::auto_skip_none;
 
 pub mod routerule;
 pub mod ruleset;
 use crate::configurator::outbound::OutboundConfig;
-use crate::configurator::route::routerule::RouteRule;
+use crate::configurator::route::routerule::{DefaultRouteRule, LogicalRouteRule, RouteRule};
 use crate::configurator::route::ruleset::RuleSet;
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RouteConfig {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub rules: Option<Vec<RouteRule>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub rule_set: Option<Vec<RuleSet>>,
     #[serde(rename = "final")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_detect_interface: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub override_android_vpn: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_interface: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_mark: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_domain_resolver: Option<DomainResolver>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_network_strategy: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_network_type: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_fallback_network_type: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_fallback_delay: Option<String>,
 }
 
@@ -42,11 +32,20 @@ impl RouteConfig {
         }
     }
 
-    pub fn add_rule(&mut self, rule: RouteRule) -> &mut Self {
+    pub fn add_default_rule(&mut self, rule: DefaultRouteRule) -> &mut Self {
         if let Some(rules) = self.rules.as_mut() {
-            rules.push(rule);
+            rules.push(RouteRule::Default(rule));
         } else {
-            self.rules = Some(vec![rule]);
+            self.rules = Some(vec![RouteRule::Default(rule)]);
+        }
+        self
+    }
+
+    pub fn add_logical_rule(&mut self, rule: LogicalRouteRule) -> &mut Self {
+        if let Some(rules) = self.rules.as_mut() {
+            rules.push(RouteRule::Logical(rule));
+        } else {
+            self.rules = Some(vec![RouteRule::Logical(rule)]);
         }
         self
     }
@@ -69,17 +68,13 @@ pub enum DomainResolver {
     Options(ResolveOptionsNoAction),
 }
 
+#[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ResolveOptionsNoAction {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub strategy: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_cache: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub rewrite_ttl: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub client_subnet: Option<String>,
 }
 

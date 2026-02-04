@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
 use rellib::auto_skip_none;
+use serde::{Deserialize, Serialize};
 
 use crate::configurator::inbound::InboundConfig;
-use crate::configurator::outbound::OutboundConfig;
+use crate::configurator::outbound::{OutboundConfig};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -42,12 +42,14 @@ pub struct DefaultRouteRule {
     pub rule_set: Option<Vec<String>>,
     pub rule_set_ip_cidr_match_source: Option<Vec<String>>,
     pub invert: Option<bool>,
-    pub action: Option<String>,
+    #[serde(flatten)]
+    pub action: RuleAction,
 }
 
 impl DefaultRouteRule {
     pub fn new() -> Self {
         Self {
+            action: RuleAction::Route(RouteAction::new("".to_string())),
             ..Default::default()
         }
     }
@@ -58,6 +60,52 @@ impl DefaultRouteRule {
 
     pub fn set_final_by_type(outbound: &OutboundConfig, outbound_type: &str) -> String {
         outbound.get_tag_by_type(outbound_type).unwrap()
+    }
+
+    pub fn route_action(outbound: String) -> Self {
+        Self {
+            action: RuleAction::Route(RouteAction::new(outbound)),
+            ..Default::default()
+        }
+    }
+
+    pub fn route_action_by_type(outbound: &OutboundConfig,outbound_type: String) -> Self {
+        Self {
+            action: RuleAction::Route(RouteAction::new(outbound.get_tag_by_type(&outbound_type).expect("[ERROR] cannot find that type"))),
+            ..Default::default()
+        }
+    }
+
+    pub fn reject_action() -> Self {
+        Self {
+            action: RuleAction::Reject(RejectAction::new()),
+            ..Default::default()
+        }
+    }
+
+    pub fn add_inbound(mut self, inbound: Vec<String>) -> Self {
+        if let Some(value) = self.inbound.as_mut() {
+            let _ = inbound.iter().map(|x| value.push(x.clone()));
+        }
+        else {
+            self.inbound = Some(inbound);
+        }
+        self
+    }
+
+    pub fn add_port(mut self, port: Vec<u16>) -> Self {
+        if let Some(value) = self.port.as_mut() {
+            let _ = port.iter().map(|x| value.push(*x));
+        }
+        else {
+            self.port = Some(port);
+        }
+        self
+    }
+
+    pub fn add_ip_is_private(mut self, ip_is_private: bool) -> Self {
+        self.ip_is_private = Some(ip_is_private);
+        self
     }
 }
 
@@ -85,7 +133,7 @@ impl LogicalRouteRule {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum RuleAction {
-    RouteOptions(RouteAction),
+    Route(RouteAction),
     Reject(RejectAction),
     HijackDns(HijackDnsAction),
     Sniff(SniffAction),
@@ -95,8 +143,8 @@ pub enum RuleAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RouteAction {
-    pub action: Option<String>,
-    pub outbound: Option<String>,
+    pub action: String,
+    pub outbound: String,
     pub override_address: Option<String>,
     pub override_port: Option<u16>,
     pub network_strategy: Option<String>,
@@ -110,9 +158,10 @@ pub struct RouteAction {
 }
 
 impl RouteAction {
-    pub fn new() -> Self {
+    pub fn new(outbound: String) -> Self {
         Self {
-            action: Some("route".to_string()),
+            action: "route".to_string(),
+            outbound,
             ..Default::default()
         }
     }
@@ -121,31 +170,44 @@ impl RouteAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RejectAction {
-    pub action: Option<String>,
-    pub method: Option<String>,
+    pub action: String,
+    pub method: String,
     pub no_drop: Option<bool>,
 }
 
 impl RejectAction {
     pub fn new() -> Self {
         Self {
-            action: Some("reject".to_string()),
+            action: "reject".to_string(),
+            method: "default".to_string(),
             ..Default::default()
         }
+    }
+
+    pub fn with_method(method: String) -> Self {
+        Self {
+            action: "reject".to_string(),
+            method,
+            ..Default::default()
+        }
+    }
+
+    pub fn set_no_drop(mut self, no_drop: bool) -> Self {
+        self.no_drop = Some(no_drop);
+        self
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct HijackDnsAction {
-    pub action: Option<String>,
+    pub action: String,
 }
 
 impl HijackDnsAction {
     pub fn new() -> Self {
         Self {
-            action: Some("hijack-dns".to_string()),
-            ..Default::default()
+            action: "hijack-dns".to_string(),
         }
     }
 }
@@ -153,15 +215,16 @@ impl HijackDnsAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SniffAction {
-    pub action: Option<String>,
-    pub sniffer: Option<Vec<String>>,
+    pub action: String,
+    pub sniffer: Vec<String>,
     pub timeout: Option<String>,
 }
 
 impl SniffAction {
     pub fn new() -> Self {
         Self {
-            action: Some("sniff".to_string()),
+            action: "sniff".to_string(),
+            sniffer: vec![],
             ..Default::default()
         }
     }
@@ -170,9 +233,9 @@ impl SniffAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ResolveAction {
-    pub action: Option<String>,
-    pub server: Option<String>,
-    pub strategy: Option<String>,
+    pub action: String,
+    pub server: String,
+    pub strategy: String,
     pub disable_cache: Option<bool>,
     pub rewrite_ttl: Option<u32>,
     pub client_subnet: Option<String>,
@@ -181,8 +244,16 @@ pub struct ResolveAction {
 impl ResolveAction {
     pub fn new() -> Self {
         Self {
-            action: Some("resolve".to_string()),
+            action: "resolve".to_string(),
+            server: "".to_string(),
+            strategy: "".to_string(),
             ..Default::default()
         }
+    }
+}
+
+impl Default for RuleAction {
+    fn default() -> Self {
+        RuleAction::Route(RouteAction::new("".to_string()))
     }
 }

@@ -257,7 +257,7 @@ impl VlessConfig {
 
                 PossibleKeys::Sni => match val {
                     PossibleValues::String(x) => {
-                        tls.enable = Some(true);
+                        tls.enabled = Some(true);
                         tls.server_name = Some(x);
                     }
                     _ => return Err("Invalid tls server name".into()),
@@ -265,8 +265,8 @@ impl VlessConfig {
 
                 PossibleKeys::Fp => match val {
                     PossibleValues::String(x) => {
-                        tls.enable = Some(true);
-                        utls.enable = Some(true);
+                        tls.enabled = Some(true);
+                        utls.enabled = Some(true);
                         utls.fingerprint = Some(x);
                     }
                     _ => return Err("Invalid fingerprint name".into()),
@@ -274,8 +274,8 @@ impl VlessConfig {
 
                 PossibleKeys::Security => match val {
                     PossibleValues::String(x) => match x.as_str() {
-                        "reality" => rlt.enable = Some(true),
-                        "tls" => tls.enable = Some(true),
+                        "reality" => rlt.enabled = Some(true),
+                        "tls" => tls.enabled = Some(true),
                         _ => eprintln!("{} not supported", x),
                     },
                     _ => return Err("Invalid Security type".into()),
@@ -283,8 +283,8 @@ impl VlessConfig {
 
                 PossibleKeys::Pbk => match val {
                     PossibleValues::String(x) => {
-                        tls.enable = Some(true);
-                        rlt.enable = Some(true);
+                        tls.enabled = Some(true);
+                        rlt.enabled = Some(true);
                         rlt.public_key = Some(x);
                     }
                     _ => return Err("Invalid public key".into()),
@@ -292,8 +292,8 @@ impl VlessConfig {
 
                 PossibleKeys::Sid => match val {
                     PossibleValues::String(x) => {
-                        tls.enable = Some(true);
-                        rlt.enable = Some(true);
+                        tls.enabled = Some(true);
+                        rlt.enabled = Some(true);
                         rlt.short_id = Some(x);
                     }
                     _ => return Err("Invalid short id".into()),
@@ -370,7 +370,7 @@ impl VlessConfig {
                         if utls.check() {
                             tls.utls = Some(utls);
                         }
-                        if let Some(x) = rlt.enable {
+                        if let Some(x) = rlt.enabled {
                             if x && rlt.check() {
                                 tls.reality = Some(rlt)
                             } else if x && !rlt.check() {

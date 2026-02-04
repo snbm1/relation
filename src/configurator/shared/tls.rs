@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct RealityConfig {
-    pub enable: Option<bool>,
+    pub enabled: Option<bool>,
     pub public_key: Option<String>,
     pub short_id: Option<String>,
 }
@@ -17,7 +17,7 @@ impl RealityConfig {
     }
 
     pub fn check(&self) -> bool {
-        match self.enable {
+        match self.enabled {
             None => false,
             Some(x) => match x {
                 false => true,
@@ -30,7 +30,7 @@ impl RealityConfig {
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct UtlsConfig {
-    pub enable: Option<bool>,
+    pub enabled: Option<bool>,
     pub fingerprint: Option<String>,
 }
 
@@ -43,13 +43,13 @@ impl UtlsConfig {
 
     pub fn with_fingerprint(addr: String) -> Self {
         Self {
-            enable: Some(true),
+            enabled: Some(true),
             fingerprint: Some(addr),
         }
     }
 
     pub fn check(&self) -> bool {
-        match self.enable {
+        match self.enabled {
             None => false,
             Some(x) => match x {
                 false => true,
@@ -62,7 +62,7 @@ impl UtlsConfig {
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct TlsConfig {
-    pub enable: Option<bool>,
+    pub enabled: Option<bool>,
     pub disable_sni: Option<bool>,
     pub server_name: Option<String>,
     pub insecure: Option<bool>,
@@ -95,7 +95,7 @@ impl TlsConfig {
     }
 
     pub fn check(&self) -> bool {
-        match self.enable {
+        match self.enabled {
             None => false,
             Some(x) => match x {
                 false => true,
