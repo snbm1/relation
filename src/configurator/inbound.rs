@@ -51,6 +51,12 @@ impl InboundConfig {
     pub fn get_mut_by_tag(&mut self, tag: &str) -> Option<&mut Inbound> {
         self.servers.iter_mut().find(|x| x.get_tag() == tag)
     }
+
+    pub fn get_tag_by_type(&self, name: &str) -> Option<String> {
+        self.servers
+            .iter().find(|x| x.get_type() == name)
+            .map(|x| x.get_tag())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -65,6 +71,13 @@ impl Inbound {
         match self {
             Inbound::Direct(cfg) => cfg.get_tag(),
             Inbound::Mixed(cfg) => cfg.get_tag(),
+        }
+    }
+
+    pub fn get_type(&self) -> String {
+        match self {
+            Inbound::Direct(cfg) => cfg.get_type(),
+            Inbound::Mixed(cfg) => cfg.get_type(),
         }
     }
 }

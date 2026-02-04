@@ -1,4 +1,3 @@
-use url::Url;
 mod dns;
 mod inbound;
 mod outbound;
@@ -10,6 +9,8 @@ use inbound::*;
 use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
+
+use crate::configurator::route::routerule::RouteRule;
 
 #[derive(Serialize, Deserialize)]
 pub struct Configurator {
@@ -35,6 +36,24 @@ impl Configurator {
 
         let mut outbound_config = OutboundConfig::new();
         outbound_config.add_server_from_url(input).add_direct();
+
+        let mut route_config = RouteConfig::new();
+
+        let mut route = route::routerule::DefaultRouteRule::new();
+        route.inbound = Some(vec![
+            route::routerule::DefaultRouteRule::get_inbound_tag_by_type(&inbound_config, "direct"),
+        ]);
+        route_config.add_rule(RouteRule::Default(route));
+
+        let mut route = route::routerule::DefaultRouteRule::new();
+        route.inbound = Some(vec![
+            route::routerule::DefaultRouteRule::get_inbound_tag_by_type(&inbound_config, "direct"),
+        ]);
+
+        let mut route = route::routerule::DefaultRouteRule::new();
+        route.inbound = Some(vec![
+            route::routerule::DefaultRouteRule::get_inbound_tag_by_type(&inbound_config, "direct"),
+        ]);
 
         Ok(Configurator {
             dns: dns_config,

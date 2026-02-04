@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use rellib::AutoSkipNone;
 
-use crate::configurator::dns::DnsConfig;
+use crate::configurator::inbound::InboundConfig;
 use crate::configurator::outbound::OutboundConfig;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -79,8 +80,8 @@ impl DefaultRouteRule {
         }
     }
 
-    fn get_dns_tag_by_type(dns: &DnsConfig, dns_type: &str) -> String {
-        dns.get_tag_by_type(dns_type).unwrap()
+    pub fn get_inbound_tag_by_type(inbound: &InboundConfig, inbound_type: &str) -> String {
+        inbound.get_tag_by_type(inbound_type).unwrap()
     }
 
     pub fn set_final_by_type(outbound: &OutboundConfig, outbound_type: &str) -> String {

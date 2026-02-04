@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-mod routerule;
-mod ruleset;
-use crate::configurator::dns::DnsConfig;
+pub mod routerule;
+pub mod ruleset;
 use crate::configurator::outbound::OutboundConfig;
 use crate::configurator::route::routerule::RouteRule;
 use crate::configurator::route::ruleset::RuleSet;
