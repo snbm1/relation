@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use url::Url;
+use urlencoding;
 
 use rellib::auto_skip_none;
 
@@ -46,7 +47,7 @@ enum PossibleKeys {
     Uuid,
     Security,
     Type,
-    Header,
+    Tag,
     Flow,
     Path,
     Host,
@@ -144,12 +145,11 @@ impl VlessConfig {
                 PossibleValues::String(parsed_input.username().to_owned()),
             ),
             (
-                PossibleKeys::Header,
+                PossibleKeys::Tag,
                 PossibleValues::String(
-                    parsed_input
-                        .fragment()
-                        .unwrap_or("vless_outbound")
-                        .to_owned(),
+                    urlencoding::decode(parsed_input.fragment().unwrap_or("vless_outbound"))
+                        .unwrap()
+                        .to_string(),
                 ),
             ),
         ];
@@ -375,7 +375,7 @@ impl VlessConfig {
                     _ => return Err("Invalid ServiceName type".into()),
                 },
 
-                PossibleKeys::Header => match val {
+                PossibleKeys::Tag => match val {
                     PossibleValues::String(x) => cfg.tag = x.clone(),
                     _ => return Err("Invalid ServiceName type".into()),
                 },

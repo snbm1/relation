@@ -9,6 +9,7 @@ use inbound::*;
 use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::configurator::route::routerule::DefaultRouteRule;
 
@@ -67,8 +68,7 @@ impl Configurator {
 
     pub fn set_outbound_from_url(&mut self, url: &str) -> &mut Self {
         self.outbounds.add_server_from_url(url);
-
-        self.route.set_final_by_type(&self.outbounds, "vless");
+        self.route.set_final_by_type(&self.outbounds, &self.outbounds.get_types_except_direct()[0]);
         self
     }
 
@@ -81,7 +81,7 @@ impl Configurator {
     }
 
     pub fn save_to_file(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let file = File::create(format!("{}.json", self.outbounds.get_tag_by_type("vless").unwrap()))?;
+        let file = File::create(format!("{}.json", self.outbounds.get_tags_except_direct()[0]))?;
         let writer = BufWriter::new(file);
 
         serde_json::to_writer_pretty(writer, self)?;

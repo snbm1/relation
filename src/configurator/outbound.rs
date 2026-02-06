@@ -49,8 +49,25 @@ impl OutboundConfig {
 
     pub fn get_tag_by_type(&self, name: &str) -> Option<String> {
         self.servers
-            .iter().find(|x| x.get_type() == name)
+            .iter()
+            .find(|x| x.get_type() == name)
             .map(|x| x.get_tag())
+    }
+
+    pub fn get_tags_except_direct(&self) -> Vec<String> {
+        self.servers
+            .iter()
+            .filter(|x| x.get_type() != "direct")
+            .map(|x| x.get_tag())
+            .collect()
+    }
+
+    pub fn get_types_except_direct(&self) -> Vec<String> {
+        self.servers
+            .iter()
+            .filter(|x| x.get_type() != "direct")
+            .map(|x| x.get_type())
+            .collect()
     }
 }
 
