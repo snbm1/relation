@@ -68,11 +68,11 @@ enum PossibleValues {
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct VlessConfig {
     #[serde(rename = "type")]
-    config_type: Option<String>,
-    tag: Option<String>,
-    server: Option<String>,
-    server_port: Option<u16>,
-    uuid: Option<String>,
+    config_type: String,
+    tag: String,
+    server: String,
+    server_port: u16,
+    uuid: String,
     flow: Option<Flow>,
     network: Option<Network>,
     tls: Option<TlsConfig>,
@@ -86,14 +86,22 @@ pub struct VlessConfig {
 impl VlessConfig {
     pub fn new() -> VlessConfig {
         VlessConfig {
-            config_type: Some("vless".to_string()),
-            tag: Some("outbound-vless".to_string()),
+            config_type: "vless".to_string(),
+            tag: "outbound-vless".to_string(),
+            ..Default::default()
+        }
+    }
+
+    pub fn with_tag(tag: String) -> Self {
+        Self {
+            config_type: "vless".to_string(),
+            tag,
             ..Default::default()
         }
     }
 
     pub fn check(&mut self) -> bool {
-        match self.server.is_none() || self.server_port.is_none() || self.uuid.is_none() {
+        match &self.server == ""|| self.server_port == 0 || &self.uuid == "" {
             true => false,
             false => {
                 if self.flow.is_none() {
@@ -111,11 +119,11 @@ impl VlessConfig {
     }
 
     pub fn get_type(&self) -> String {
-        self.config_type.clone().expect("[ERROR] No type")
+        self.config_type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 
     fn parser(input: &str) -> Vec<(PossibleKeys, PossibleValues)> {
@@ -236,21 +244,21 @@ impl VlessConfig {
 
                 PossibleKeys::Server => {
                     match val {
-                        PossibleValues::String(x) => cfg.server = Some(x),
+                        PossibleValues::String(x) => cfg.server = x,
                         _ => return Err("Invalid server type".into()),
                     };
                 }
 
                 PossibleKeys::ServerPort => {
                     match val {
-                        PossibleValues::U16(x) => cfg.server_port = Some(x),
+                        PossibleValues::U16(x) => cfg.server_port = x,
                         _ => return Err("Invalid port type".into()),
                     };
                 }
 
                 PossibleKeys::Uuid => {
                     match val {
-                        PossibleValues::String(x) => cfg.uuid = Some(x),
+                        PossibleValues::String(x) => cfg.uuid = x,
                         _ => return Err("Invalid uuid type".into()),
                     };
                 }

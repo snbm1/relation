@@ -34,4 +34,14 @@ impl ListenFields {
             ..Default::default()
         }
     }
+
+    pub fn with_addr(mut self, addr: String) -> Self {
+        self.listen = Some(addr);
+        self
+    }
+
+    pub fn with_port(mut self, port: u16) -> Self {
+        self.listen_port = Some(port);
+        self
+    }
 }

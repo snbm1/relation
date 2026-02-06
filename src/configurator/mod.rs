@@ -10,7 +10,7 @@ use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
 
-use crate::configurator::route::routerule::{DefaultRouteRule, RouteRule};
+use crate::configurator::route::routerule::DefaultRouteRule;
 
 #[derive(Serialize, Deserialize)]
 pub struct Configurator {
@@ -21,6 +21,15 @@ pub struct Configurator {
 }
 
 impl Configurator {
+    pub fn new() -> Self {
+        Self {
+            dns: DnsConfig::new(),
+            inbounds: InboundConfig::new(),
+            outbounds: OutboundConfig::new(),
+            route: RouteConfig::new(),
+        }
+    }
+
     pub fn from(input: &str) -> Result<Self, String> {
         let mut dns_config = DnsConfig::new();
         dns_config
@@ -28,11 +37,12 @@ impl Configurator {
             .add_local(None);
 
         let mut inbound_config = InboundConfig::new();
-        inbound_config.add_server(Inbound::Mixed(
-            mixed::MixedConfig::with_addr(Some("127.0.0.1".to_string()), Some(12334))
-                .set_system_proxy(true),
-        ));
-        inbound_config.add_direct(None);
+        inbound_config
+            .add_server(Inbound::Mixed(
+                mixed::MixedConfig::with_addr(Some("127.0.0.1".to_string()), Some(12334))
+                    .set_system_proxy(true),
+            ))
+            .add_direct(None);
 
         let mut outbound_config = OutboundConfig::new();
         outbound_config.add_server_from_url(input).add_direct();
@@ -60,5 +70,13 @@ impl Configurator {
             outbounds: outbound_config,
             route: route_config,
         })
+    }
+
+    pub fn as_ref(&self) -> &Self {
+        self
+    }
+
+    pub fn as_mut(&mut self) -> &mut Self {
+        self
     }
 }
