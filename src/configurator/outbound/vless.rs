@@ -39,6 +39,7 @@ enum PacketEncoding {
 }
 
 #[warn(dead_code)]
+#[derive(Debug)]
 enum PossibleKeys {
     Server,
     ServerPort,
@@ -58,6 +59,7 @@ enum PossibleKeys {
 }
 
 #[warn(dead_code)]
+#[derive(Debug)]
 enum PossibleValues {
     Bool(bool),
     U16(u16),
@@ -101,7 +103,7 @@ impl VlessConfig {
     }
 
     pub fn check(&mut self) -> bool {
-        match &self.server == ""|| self.server_port == 0 || &self.uuid == "" {
+        match &self.server == "" || self.server_port == 0 || &self.uuid == "" {
             true => false,
             false => {
                 if self.flow.is_none() {
@@ -128,19 +130,30 @@ impl VlessConfig {
 
     fn parser(input: &str) -> Vec<(PossibleKeys, PossibleValues)> {
         let parsed_input = Url::parse(input).unwrap();
-        let mut values: Vec<(PossibleKeys, PossibleValues)> = Vec::new();
-        values.push((
-            PossibleKeys::Server,
-            PossibleValues::String(String::from(parsed_input.host_str().unwrap())),
-        ));
-        values.push((
-            PossibleKeys::ServerPort,
-            PossibleValues::U16(parsed_input.port().unwrap_or(443)),
-        ));
-        values.push((
-            PossibleKeys::Uuid,
-            PossibleValues::String(String::from(parsed_input.username())),
-        ));
+        let mut values: Vec<(PossibleKeys, PossibleValues)> = vec![
+            (
+                PossibleKeys::Server,
+                PossibleValues::String(parsed_input.host_str().unwrap().to_owned()),
+            ),
+            (
+                PossibleKeys::ServerPort,
+                PossibleValues::U16(parsed_input.port().unwrap_or(443)),
+            ),
+            (
+                PossibleKeys::Uuid,
+                PossibleValues::String(parsed_input.username().to_owned()),
+            ),
+            (
+                PossibleKeys::Header,
+                PossibleValues::String(
+                    parsed_input
+                        .fragment()
+                        .unwrap_or("vless_outbound")
+                        .to_owned(),
+                ),
+            ),
+        ];
+
         for i in parsed_input
             .query()
             .unwrap()
@@ -201,8 +214,7 @@ impl VlessConfig {
         values
     }
 
-    pub fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>>
-    {
+    pub fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let value = VlessConfig::parser(url);
 
         let mut cfg = VlessConfig::new();
@@ -362,7 +374,11 @@ impl VlessConfig {
                     },
                     _ => return Err("Invalid ServiceName type".into()),
                 },
-                _ => {}
+
+                PossibleKeys::Header => match val {
+                    PossibleValues::String(x) => cfg.tag = x.clone(),
+                    _ => return Err("Invalid ServiceName type".into()),
+                },
             }
         }
 

@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::configurator::route::routerule::DefaultRouteRule;
 
 use std::fs::File;
-use std::io::BufWriter;
 use std::io::BufReader;
+use std::io::BufWriter;
 
 #[derive(Serialize, Deserialize)]
 pub struct Configurator {
@@ -81,16 +81,20 @@ impl Configurator {
     }
 
     pub fn save_to_file(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let file = File::create("config.json")?;
+        let file = File::create(format!("{}.json", self.outbounds.get_tag_by_type("vless").unwrap()))?;
         let writer = BufWriter::new(file);
+
         serde_json::to_writer_pretty(writer, self)?;
         Ok(())
     }
 
-    pub fn load_from_file() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load_from_file(&mut self) -> Result<&mut Self, Box<dyn std::error::Error>> {
         let file = File::open("config.json")?;
         let reader = BufReader::new(file);
-        let configurator = serde_json::from_reader(reader)?;
-        Ok(configurator)
+
+        let configurator: Self = serde_json::from_reader(reader)?;
+
+        *self = configurator;
+        Ok(self)
     }
 }
