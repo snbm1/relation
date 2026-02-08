@@ -16,6 +16,7 @@ use crate::configurator::route::routerule::DefaultRouteRule;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufWriter;
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 pub struct Configurator {
@@ -68,7 +69,10 @@ impl Configurator {
 
     pub fn set_outbound_from_url(&mut self, url: &str) -> &mut Self {
         self.outbounds.add_server_from_url(url);
-        self.route.set_final_by_type(&self.outbounds, &self.outbounds.get_types_except_direct()[0]);
+        self.route.set_final_by_type(
+            &self.outbounds,
+            &self.outbounds.get_types_except_direct()[0],
+        );
         self
     }
 
@@ -80,15 +84,23 @@ impl Configurator {
         self
     }
 
-    pub fn save_to_file(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let file = File::create(format!("{}.json", self.outbounds.get_tags_except_direct()[0]))?;
+    pub fn save_to_file(&self, dir: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let tag = &self.outbounds.get_tags_except_direct()[0];
+
+        let file_path = dir.join(format!("{tag}.json"));
+
+        let file = File::create(&file_path)?;
         let writer = BufWriter::new(file);
 
         serde_json::to_writer_pretty(writer, self)?;
+
         Ok(())
     }
 
-    pub fn load_from_file(&mut self) -> Result<&mut Self, Box<dyn std::error::Error>> {
+    pub fn load_from_file(
+        &mut self,
+        path: PathBuf,
+    ) -> Result<&mut Self, Box<dyn std::error::Error>> {
         let file = File::open("config.json")?;
         let reader = BufReader::new(file);
 

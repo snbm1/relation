@@ -1,13 +1,18 @@
 mod configurator;
 mod ui;
+mod datamanager;
+
 use clap::Parser;
 use ui::Cli;
 use configurator::Configurator;
+use datamanager::DataManager;
 
 fn main() {
-    let mut config = Configurator::new();
+    let mut configurator = Configurator::new();
+
+    let mut datamanager = DataManager::new("relation");
 
     let mut cli = Cli::parse();
 
-    cli.run(&mut config);
+    cli.run(&mut datamanager);
 }
