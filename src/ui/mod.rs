@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::configurator::Configurator;
+use crate::{configurator::Configurator, datamanager::DataManager};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -17,18 +17,25 @@ enum Commands {
         #[arg(short, long)]
         url: Option<String>,
     },
+
+    List
 }
 
 impl Cli {
-    pub fn run(&mut self, handler: &mut Configurator) {
+    pub fn run(&mut self, manager: &mut DataManager) {
         match &self.command {
             Commands::Add { url } => {
                 if let Some(value) = url {
-                    handler
+                    manager
+                        .handler_mut()
                         .default()
-                        .set_outbound_from_url(value)
-                        .save_to_file()
-                        .unwrap();
+                        .set_outbound_from_url(value);
+                    manager.add_config();
+                }
+            }
+            Commands::List => {
+                for i in manager.configs_list() {
+                    println!("{}", i);
                 }
             }
         }
