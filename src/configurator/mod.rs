@@ -84,7 +84,7 @@ impl Configurator {
         self
     }
 
-    pub fn save_to_file(&self, dir: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save_to_file(&self, dir: PathBuf) -> Result<String, Box<dyn std::error::Error>> {
         let tag = &self.outbounds.get_tags_except_direct()[0];
 
         let file_path = dir.join(format!("{tag}.json"));
@@ -94,7 +94,7 @@ impl Configurator {
 
         serde_json::to_writer_pretty(writer, self)?;
 
-        Ok(())
+        Ok(self.outbounds.get_tags_except_direct()[0].clone())
     }
 
     pub fn load_from_file(
