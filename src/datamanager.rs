@@ -7,7 +7,8 @@ use crate::configurator::Configurator;
 
 pub struct DataManager {
     data_dir: PathBuf,
-    handler: Configurator
+    configs: Vec<String>,
+    handler: Configurator,
 }
 
 impl DataManager {
@@ -22,13 +23,17 @@ impl DataManager {
 
         fs::create_dir_all(&config_dir).expect("[ERROR] Failed to create config directory");
 
-        Self { 
+        let mut mng = Self {
             data_dir,
-            handler: Configurator::new()
-        }
+            configs: vec![],
+            handler: Configurator::new(),
+        };
+
+        mng.configs = mng.read_configs();
+        mng
     }
 
-    pub fn configs_list(&self) -> Vec<String> {
+    pub fn read_configs(&mut self) -> Vec<String> {
         let mut result = Vec::new();
 
         let entries = std::fs::read_dir(&self.get_configs_path())
@@ -49,8 +54,40 @@ impl DataManager {
         result
     }
 
+    pub fn remove_config(&mut self, name: &str) {
+        let file_path = self.get_configs_path().join(format!("{name}.json"));
+
+        if !file_path.exists() {
+            panic!(
+                "[ERROR] Config file '{}' does not exist",
+                file_path.display()
+            );
+        }
+
+        fs::remove_file(&file_path).expect("[ERROR] Failed to remove config file");
+
+        self.configs.retain(|x| x != name);
+    }
+
+    pub fn remove_config_by_number(&mut self, number: usize) {
+        let file_path = self.get_configs_path().join(format!("{}.json", self.configs[number]));
+
+        if !file_path.exists() {
+            panic!(
+                "[ERROR] Config file '{}' does not exist",
+                file_path.display()
+            );
+        }
+
+        fs::remove_file(&file_path).expect("[ERROR] Failed to remove config file");
+
+        self.configs.remove(number);
+    }
+
     pub fn add_config(&mut self) -> &mut Self {
-        self.handler.save_to_file(self.get_configs_path()).unwrap();
+        self.configs
+            .push(self.handler.save_to_file(self.get_configs_path()).unwrap());
+        self.configs.sort();
         self
     }
 
@@ -68,5 +105,9 @@ impl DataManager {
 
     pub fn get_settings_path(&self) -> PathBuf {
         self.data_dir.clone().join("settings.toml")
+    }
+
+    pub fn get_list(&self) -> Vec<String> {
+        self.configs.clone()
     }
 }
