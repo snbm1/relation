@@ -1,5 +1,4 @@
 use directories::ProjectDirs;
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -12,7 +11,7 @@ pub struct DataManager {
 }
 
 impl DataManager {
-    /// ~/.local/share/<app_name>
+
     pub fn new(app_name: &str) -> Self {
         let proj_dirs = ProjectDirs::from("", "", app_name)
             .expect("[ERROR] Unable to determine project directories");

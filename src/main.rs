@@ -1,6 +1,7 @@
 mod configurator;
 mod ui;
 mod datamanager;
+mod bridge;
 
 use clap::Parser;
 use ui::Cli;
