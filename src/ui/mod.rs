@@ -36,11 +36,11 @@ enum Commands {
         )]
         number: Option<u16>,
     },
-    
+
     Run {
         #[arg(long)]
-        name: String
-    }
+        name: String,
+    },
 }
 
 impl Cli {
@@ -70,8 +70,9 @@ impl Cli {
             }
             Commands::Run { name } => {
                 let file_path = manager.get_configs_path().join(format!("{name}.json"));
-                bridge::setup_safe("", "", "", 0, false, true);
-                bridge::start_safe(file_path.to_str().unwrap(), 0);
+                bridge::parse_safe("", file_path.to_str().unwrap());
+                bridge::start_safe(file_path.to_str().unwrap(), 255);
+                std::thread::park();
             }
         }
     }
