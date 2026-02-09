@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 
 use crate::{configurator::Configurator, datamanager::DataManager};
 
+use crate::bridge;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
@@ -22,13 +24,23 @@ enum Commands {
 
     Remove {
         /// Name of config
-        #[arg(short, long)]
+        #[arg(long, required_unless_present = "number", conflicts_with = "number")]
         name: Option<String>,
 
         /// Number of config
-        #[arg(long, value_parser = clap::value_parser!(u16).range(1..))]
+        #[arg(
+            long,
+            required_unless_present = "name",
+            conflicts_with = "name",
+            value_parser = clap::value_parser!(u16).range(1..)
+        )]
         number: Option<u16>,
     },
+    
+    Run {
+        #[arg(long)]
+        name: String
+    }
 }
 
 impl Cli {
@@ -42,7 +54,7 @@ impl Cli {
             }
             Commands::List => {
                 if manager.get_list().len() == 0 {
-                    println!("No configs");
+                    println!("There are no configurations");
                 } else {
                     for i in manager.get_list().iter().enumerate() {
                         println!("[{}]: {}", i.0 + 1, i.1);
@@ -55,6 +67,11 @@ impl Cli {
                 } else if let Some(n) = number {
                     manager.remove_config_by_number(usize::from(*n) - 1);
                 }
+            }
+            Commands::Run { name } => {
+                let file_path = manager.get_configs_path().join(format!("{name}.json"));
+                bridge::setup_safe("", "", "", 0, false, true);
+                bridge::start_safe(file_path.to_str().unwrap(), 0);
             }
         }
     }
