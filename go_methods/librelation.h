@@ -21,6 +21,11 @@ extern const char *_GoStringPtr(_GoString_ s);
 /* Start of preamble from import "C" comments.  */
 
 
+#line 3 "main.go"
+
+#include <stdlib.h>
+
+#line 1 "cgo-generated-wrapper"
 
 
 /* End of preamble from import "C" comments.  */
@@ -84,6 +89,7 @@ extern "C" {
 
 extern char* setup(char* basicPath, char* workingPath, char* tempPath, long long int statusPort, GoUint8 debug, GoUint8 enableservices);
 extern char* parse(char* content, char* tempPath);
+extern void freedom(char* ptr);
 extern char* start(char* configPath, GoUint8 Memorylimit);
 extern char* restart(char* configPath, GoUint8 Memorylimit);
 extern char* stop(void);

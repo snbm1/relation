@@ -3,13 +3,14 @@ package main
 /*
 #include <stdlib.h>
 */
-
 import "C"
+
 import (
 	_ "fmt"
 	V2 "methods/V2"
 	"methods/grpcserver"
 	_ "methods/manager"
+	"unsafe"
 
 	"github.com/sagernet/sing-box/log"
 )
@@ -34,6 +35,11 @@ func parse(content *C.char, tempPath *C.char) *C.char {
 
 	return C.CString(res)
 
+}
+
+//export freedom
+func freedom(ptr *C.char) {
+	C.free(unsafe.Pointer(ptr))
 }
 
 //export start
@@ -75,4 +81,5 @@ func errorOrNot(err error) *C.char {
 	return C.CString(err.Error())
 }
 
-func main() {}
+func main() {
+}
