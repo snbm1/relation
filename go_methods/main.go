@@ -73,6 +73,12 @@ func startCoreGrpcServer(listenAddress *C.char) *C.char {
 	return errorOrNot(err)
 }
 
+//export enableSystemProxy
+func enableSystemProxy(host *C.char, port C.longlong, supp_socks bool) *C.char {
+	err := V2.EnableSystemProxy(C.GoString(host), int(port), supp_socks)
+	return errorOrNot(err)
+}
+
 func errorOrNot(err error) *C.char {
 	if err == nil {
 		return C.CString("")
@@ -81,5 +87,4 @@ func errorOrNot(err error) *C.char {
 	return C.CString(err.Error())
 }
 
-func main() {
-}
+func main() {}
