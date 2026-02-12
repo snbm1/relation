@@ -79,6 +79,12 @@ func enableSystemProxy(host *C.char, port C.longlong, supp_socks bool) *C.char {
 	return errorOrNot(err)
 }
 
+//export disableSystemProxy
+func disableSystemProxy() *C.char {
+	err := V2.DisableSystemProxy()
+	return errorOrNot(err)
+}
+
 func errorOrNot(err error) *C.char {
 	if err == nil {
 		return C.CString("")
