@@ -38,7 +38,7 @@ impl Configurator {
 
     pub fn default(&mut self) -> &mut Self {
         self.dns
-            .add_udp(Some("8.8.8.8".to_string()), None, None)
+            .add_udp("8.8.8.8".to_string(), None, None)
             .add_local(None);
 
         self.inbounds

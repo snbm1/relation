@@ -70,7 +70,7 @@ impl Cli {
             }
             Commands::Run { name } => {
                 let file_path = manager.get_configs_path().join(format!("{name}.json"));
-                bridge::parse_safe("", file_path.to_str().unwrap());
+                bridge::enable_system_proxy_safe("127.0.0.1", 12334, false);
                 bridge::start_safe(file_path.to_str().unwrap(), 255);
                 std::thread::park();
             }
