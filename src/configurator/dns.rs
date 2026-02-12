@@ -69,7 +69,7 @@ impl DnsConfig {
 
     pub fn add_tcp(
         &mut self,
-        server: Option<String>,
+        server: String,
         server_port: Option<u16>,
         tag: Option<String>,
     ) -> &mut Self {
@@ -91,7 +91,7 @@ impl DnsConfig {
 
     pub fn add_udp(
         &mut self,
-        server: Option<String>,
+        server: String,
         server_port: Option<u16>,
         tag: Option<String>,
     ) -> &mut Self {

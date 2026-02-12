@@ -3,7 +3,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(dead_code)]
 
-use libc::{c_void, free};
+use libc::{c_void, free as os_free};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
@@ -16,7 +16,7 @@ unsafe fn take_go_string(ptr: *mut c_char) -> Option<String> {
         return None;
     }
     let s = CStr::from_ptr(ptr).to_string_lossy().into_owned();
-    free(ptr as *mut c_void);
+    os_free(ptr as *mut c_void);
     Some(s)
 }
 
@@ -86,4 +86,26 @@ pub fn start_core_grpc_server_safe(listen_address: &str) -> Option<String> {
     let c_addr = to_c_mut(listen_address);
 
     unsafe { take_go_string(startCoreGrpcServer(c_addr.as_ptr() as *mut c_char)) }
+}
+
+pub fn enable_system_proxy_safe(
+    host: &str,
+    port: i64,
+    support_socks: bool,
+) -> Option<String> {
+    let host_c = to_c_mut(host);
+
+    unsafe {
+        take_go_string(enableSystemProxy(
+            host_c.as_ptr() as *mut c_char,
+            port,
+            support_socks as GoUint8,
+        ))
+    }
+}
+
+pub fn disable_system_proxy_safe() -> Option<String> {
+    unsafe {
+        take_go_string(disableSystemProxy())
+    }
 }
