@@ -95,6 +95,8 @@ extern char* restart(char* configPath, GoUint8 Memorylimit);
 extern char* stop(void);
 extern char* urlTest(char* tag);
 extern char* startCoreGrpcServer(char* listenAddress);
+extern char* enableSystemProxy(char* host, long long int port, GoUint8 supp_socks);
+extern char* disableSystemProxy(void);
 
 #ifdef __cplusplus
 }
