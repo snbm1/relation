@@ -1,8 +1,26 @@
+#![warn(clippy::never_loop)]
 use clap::{Parser, Subcommand};
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::{configurator::Configurator, datamanager::DataManager};
+use crate::datamanager::DataManager;
+
+use signal_hook::consts::SIGINT;
+use signal_hook::iterator::Signals;
 
 use crate::bridge;
+
+static RUNNING: AtomicBool = AtomicBool::new(true);
+
+fn setup_signal_handler() {
+    let mut signals = Signals::new([SIGINT]).unwrap();
+
+    std::thread::spawn(move || {
+        for _ in signals.forever() {
+            RUNNING.store(false, Ordering::SeqCst);
+            break;
+        }
+    });
+}
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -69,10 +87,21 @@ impl Cli {
                 }
             }
             Commands::Run { name } => {
+                setup_signal_handler();
+
                 let file_path = manager.get_configs_path().join(format!("{name}.json"));
+
                 bridge::enable_system_proxy_safe("127.0.0.1", 12334, false);
                 bridge::start_safe(file_path.to_str().unwrap(), 255);
-                std::thread::park();
+
+                while RUNNING.load(Ordering::SeqCst) {
+                    std::thread::sleep(std::time::Duration::from_millis(200));
+                }
+
+                println!("Shutdown Relation");
+
+                bridge::disable_system_proxy_safe();
+                bridge::stop_safe();
             }
         }
     }

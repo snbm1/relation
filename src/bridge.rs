@@ -25,10 +25,6 @@ fn to_c_mut(s: &str) -> CString {
     CString::new(s).expect("string contains NUL byte")
 }
 
-/* ---------------------------------------------------------
-   SAFE API (ТО, ЧТО ТЫ БУДЕШЬ ИСПОЛЬЗОВАТЬ)
----------------------------------------------------------- */
-
 pub fn setup_safe(
     basic_path: &str,
     working_path: &str,
@@ -57,19 +53,34 @@ pub fn parse_safe(content: &str, temp_path: &str) -> Option<String> {
     let c_content = to_c_mut(content);
     let c_temp = to_c_mut(temp_path);
 
-    unsafe { take_go_string(parse(c_content.as_ptr() as *mut c_char, c_temp.as_ptr() as *mut c_char)) }
+    unsafe {
+        take_go_string(parse(
+            c_content.as_ptr() as *mut c_char,
+            c_temp.as_ptr() as *mut c_char,
+        ))
+    }
 }
 
 pub fn start_safe(config_path: &str, memory_limit: u8) -> Option<String> {
     let c_cfg = to_c_mut(config_path);
 
-    unsafe { take_go_string(start(c_cfg.as_ptr() as *mut c_char, memory_limit as GoUint8)) }
+    unsafe {
+        take_go_string(start(
+            c_cfg.as_ptr() as *mut c_char,
+            memory_limit as GoUint8,
+        ))
+    }
 }
 
 pub fn restart_safe(config_path: &str, memory_limit: u8) -> Option<String> {
     let c_cfg = to_c_mut(config_path);
 
-    unsafe { take_go_string(restart(c_cfg.as_ptr() as *mut c_char, memory_limit as GoUint8)) }
+    unsafe {
+        take_go_string(restart(
+            c_cfg.as_ptr() as *mut c_char,
+            memory_limit as GoUint8,
+        ))
+    }
 }
 
 pub fn stop_safe() -> Option<String> {
@@ -88,11 +99,7 @@ pub fn start_core_grpc_server_safe(listen_address: &str) -> Option<String> {
     unsafe { take_go_string(startCoreGrpcServer(c_addr.as_ptr() as *mut c_char)) }
 }
 
-pub fn enable_system_proxy_safe(
-    host: &str,
-    port: i64,
-    support_socks: bool,
-) -> Option<String> {
+pub fn enable_system_proxy_safe(host: &str, port: i64, support_socks: bool) -> Option<String> {
     let host_c = to_c_mut(host);
 
     unsafe {
@@ -105,7 +112,5 @@ pub fn enable_system_proxy_safe(
 }
 
 pub fn disable_system_proxy_safe() -> Option<String> {
-    unsafe {
-        take_go_string(disableSystemProxy())
-    }
+    unsafe { take_go_string(disableSystemProxy()) }
 }
