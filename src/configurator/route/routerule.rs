@@ -143,7 +143,6 @@ pub enum RuleAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RouteAction {
-    pub action: String,
     pub outbound: String,
     pub override_address: Option<String>,
     pub override_port: Option<u16>,
@@ -160,7 +159,6 @@ pub struct RouteAction {
 impl RouteAction {
     pub fn new(outbound: String) -> Self {
         Self {
-            action: "route".to_string(),
             outbound,
             ..Default::default()
         }
@@ -170,7 +168,6 @@ impl RouteAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RejectAction {
-    pub action: String,
     pub method: String,
     pub no_drop: Option<bool>,
 }
@@ -178,7 +175,6 @@ pub struct RejectAction {
 impl RejectAction {
     pub fn new() -> Self {
         Self {
-            action: "reject".to_string(),
             method: "default".to_string(),
             ..Default::default()
         }
@@ -186,7 +182,6 @@ impl RejectAction {
 
     pub fn with_method(method: String) -> Self {
         Self {
-            action: "reject".to_string(),
             method,
             ..Default::default()
         }
@@ -201,13 +196,11 @@ impl RejectAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct HijackDnsAction {
-    pub action: String,
 }
 
 impl HijackDnsAction {
     pub fn new() -> Self {
         Self {
-            action: "hijack-dns".to_string(),
         }
     }
 }
@@ -215,7 +208,6 @@ impl HijackDnsAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SniffAction {
-    pub action: String,
     pub sniffer: Vec<String>,
     pub timeout: Option<String>,
 }
@@ -223,7 +215,6 @@ pub struct SniffAction {
 impl SniffAction {
     pub fn new() -> Self {
         Self {
-            action: "sniff".to_string(),
             sniffer: vec![],
             ..Default::default()
         }
@@ -233,7 +224,6 @@ impl SniffAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ResolveAction {
-    pub action: String,
     pub server: String,
     pub strategy: String,
     pub disable_cache: Option<bool>,
@@ -244,7 +234,6 @@ pub struct ResolveAction {
 impl ResolveAction {
     pub fn new() -> Self {
         Self {
-            action: "resolve".to_string(),
             server: "".to_string(),
             strategy: "".to_string(),
             ..Default::default()
