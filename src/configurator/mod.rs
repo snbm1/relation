@@ -3,14 +3,15 @@ mod inbound;
 mod outbound;
 mod route;
 mod shared;
+mod log;
 
 use dns::*;
 use inbound::*;
 use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
-use url::Url;
 
+use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
 
 use std::fs::File;
@@ -20,6 +21,7 @@ use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 pub struct Configurator {
+    log: LogConfig,
     dns: DnsConfig,
     inbounds: InboundConfig,
     outbounds: OutboundConfig,
@@ -29,6 +31,7 @@ pub struct Configurator {
 impl Configurator {
     pub fn new() -> Self {
         Self {
+            log: LogConfig::new(),
             dns: DnsConfig::new(),
             inbounds: InboundConfig::new(),
             outbounds: OutboundConfig::new(),
