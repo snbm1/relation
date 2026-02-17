@@ -2,7 +2,7 @@ use rellib::auto_skip_none;
 use serde::{Deserialize, Serialize};
 
 use crate::configurator::inbound::InboundConfig;
-use crate::configurator::outbound::{OutboundConfig};
+use crate::configurator::outbound::OutboundConfig;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -69,9 +69,13 @@ impl DefaultRouteRule {
         }
     }
 
-    pub fn route_action_by_type(outbound: &OutboundConfig,outbound_type: String) -> Self {
+    pub fn route_action_by_type(outbound: &OutboundConfig, outbound_type: String) -> Self {
         Self {
-            action: RuleAction::Route(RouteAction::new(outbound.get_tag_by_type(&outbound_type).expect("[ERROR] cannot find that type"))),
+            action: RuleAction::Route(RouteAction::new(
+                outbound
+                    .get_tag_by_type(&outbound_type)
+                    .expect("[ERROR] cannot find that type"),
+            )),
             ..Default::default()
         }
     }
@@ -86,8 +90,7 @@ impl DefaultRouteRule {
     pub fn add_inbound(mut self, inbound: Vec<String>) -> Self {
         if let Some(value) = self.inbound.as_mut() {
             let _ = inbound.iter().map(|x| value.push(x.clone()));
-        }
-        else {
+        } else {
             self.inbound = Some(inbound);
         }
         self
@@ -96,8 +99,7 @@ impl DefaultRouteRule {
     pub fn add_port(mut self, port: Vec<u16>) -> Self {
         if let Some(value) = self.port.as_mut() {
             let _ = port.iter().map(|x| value.push(*x));
-        }
-        else {
+        } else {
             self.port = Some(port);
         }
         self
@@ -195,13 +197,11 @@ impl RejectAction {
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct HijackDnsAction {
-}
+pub struct HijackDnsAction {}
 
 impl HijackDnsAction {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 }
 

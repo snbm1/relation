@@ -14,9 +14,9 @@ use crate::configurator::shared::transport::*;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 enum Flow {
+    #[default]
     #[serde(rename = "")]
     None,
-    #[default]
     #[serde(rename = "xtls-rprx-vision")]
     XtlsRprxVision,
 }

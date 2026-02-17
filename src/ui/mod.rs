@@ -42,22 +42,44 @@ enum Commands {
 
     Remove {
         /// Name of config
-        #[arg(long, required_unless_present = "number", conflicts_with = "number")]
-        name: Option<String>,
+        #[arg(
+            long,
+            short,
+            required_unless_present = "number",
+            conflicts_with = "number"
+        )]
+        tag: Option<String>,
 
         /// Number of config
         #[arg(
             long,
-            required_unless_present = "name",
-            conflicts_with = "name",
+            short,
+            required_unless_present = "tag",
+            conflicts_with = "tag",
             value_parser = clap::value_parser!(u16).range(1..)
         )]
         number: Option<u16>,
     },
 
     Run {
-        #[arg(long)]
-        name: String,
+        /// Name of config
+        #[arg(
+            long,
+            short,
+            required_unless_present = "number",
+            conflicts_with = "number"
+        )]
+        tag: Option<String>,
+
+        /// Number of config
+        #[arg(
+            long,
+            short,
+            required_unless_present = "tag",
+            conflicts_with = "tag",
+            value_parser = clap::value_parser!(u16).range(1..)
+        )]
+        number: Option<u16>,
     },
 }
 
@@ -79,17 +101,27 @@ impl Cli {
                     }
                 }
             }
-            Commands::Remove { name, number } => {
-                if let Some(n) = name {
+            Commands::Remove { tag, number } => {
+                if let Some(n) = tag {
                     manager.remove_config(&n);
                 } else if let Some(n) = number {
                     manager.remove_config_by_number(usize::from(*n) - 1);
                 }
             }
-            Commands::Run { name } => {
+            Commands::Run { tag, number } => {
                 setup_signal_handler();
-
-                let file_path = manager.get_configs_path().join(format!("{name}.json"));
+                let file_path;
+                if let Some(n) = tag {
+                    file_path = manager.get_configs_path().join(format!("{}.json", n));
+                } else if let Some(n) = number {
+                    file_path = manager
+                        .get_configs_path()
+                        .join(format!("{}.json", manager.get_list()[*n as usize -1]))
+                } else {
+                    file_path = manager
+                        .get_configs_path()
+                        .join(format!("{}.json", manager.get_list()[0]))
+                }
 
                 bridge::enable_system_proxy_safe("127.0.0.1", 12334, false);
                 bridge::start_safe(file_path.to_str().unwrap(), 255);
