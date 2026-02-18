@@ -1,6 +1,6 @@
 use crate::configurator::shared::listenfields::ListenFields;
-use serde::{Deserialize, Serialize};
 use rellib::auto_skip_none;
+use serde::{Deserialize, Serialize};
 
 use crate::configurator::shared;
 
@@ -47,8 +47,18 @@ impl MixedConfig {
         self
     }
 
-    pub fn check(&self) -> bool {
-        !(self.listen.is_none())
+    pub fn get_address(&self) -> Option<String> {
+        if let Some(x) = &self.listen {
+            return x.listen.clone();
+        }
+        None
+    }
+
+    pub fn get_address_port(&self) -> Option<u16> {
+        if let Some(x) = &self.listen {
+            return x.listen_port.clone();
+        }
+        None
     }
 
     pub fn get_type(&self) -> String {
@@ -57,5 +67,12 @@ impl MixedConfig {
 
     pub fn get_tag(&self) -> String {
         self.tag.clone().expect("[ERROR] No tag")
+    }
+
+    pub fn is_system_proxy(&self) -> bool {
+        if let Some(x) = self.set_system_proxy {
+            return x;
+        }
+        false
     }
 }

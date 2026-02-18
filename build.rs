@@ -2,17 +2,17 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    let go_dir = PathBuf::from("go_methods");
+    let go_dir = PathBuf::from(".");
 
     println!("cargo:rustc-link-search=native={}", go_dir.display());
     println!("cargo:rustc-link-lib=dylib=relation");
 
     println!(
-        "cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/go_methods"
+        "cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN"
     );
 
     let bindings = bindgen::Builder::default()
-        .header("go_methods/librelation.h")
+        .header("librelation.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("bindgen failed");

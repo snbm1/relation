@@ -66,7 +66,6 @@ enum Commands {
         #[arg(
             long,
             short,
-            required_unless_present = "number",
             conflicts_with = "number"
         )]
         tag: Option<String>,
@@ -75,7 +74,6 @@ enum Commands {
         #[arg(
             long,
             short,
-            required_unless_present = "tag",
             conflicts_with = "tag",
             value_parser = clap::value_parser!(u16).range(1..)
         )]
@@ -103,7 +101,7 @@ impl Cli {
             }
             Commands::Remove { tag, number } => {
                 if let Some(n) = tag {
-                    manager.remove_config(&n);
+                    manager.remove_config(n);
                 } else if let Some(n) = number {
                     manager.remove_config_by_number(usize::from(*n) - 1);
                 }
@@ -123,8 +121,13 @@ impl Cli {
                         .join(format!("{}.json", manager.get_list()[0]))
                 }
 
-                bridge::enable_system_proxy_safe("127.0.0.1", 12334, false);
-                bridge::start_safe(file_path.to_str().unwrap(), 255);
+                if manager.handler_ref().get_list_of_system_proxies().len() > 1 {
+                    panic!("[ERROR] A more than 1 system proxy");
+                } else if let Some((host,port, support_socks)) = manager.handler_ref().get_list_of_system_proxies().get(0) {
+                    bridge::enable_system_proxy_safe(host, *port as i64, *support_socks);
+                }
+
+                bridge::start_safe(file_path.to_str().unwrap(), 0);
 
                 while RUNNING.load(Ordering::SeqCst) {
                     std::thread::sleep(std::time::Duration::from_millis(200));
