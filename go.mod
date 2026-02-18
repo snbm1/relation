@@ -18,7 +18,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344
 	github.com/hiddify/ray2sing v0.0.0-00010101000000-000000000000
 	github.com/sagernet/sing v0.4.3
-	github.com/sagernet/sing-box v1.8.9
+	github.com/sagernet/sing-box v1.12.22
 	github.com/xmdhs/clash2singbox v0.1.4
 	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2

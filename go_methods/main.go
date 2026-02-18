@@ -7,9 +7,9 @@ import "C"
 
 import (
 	_ "fmt"
-	V2 "methods/V2"
-	"methods/grpcserver"
-	_ "methods/manager"
+	V2 "methods/go_methods/V2"
+	"methods/go_methods/grpcserver"
+	_ "methods/go_methods/manager"
 	"unsafe"
 
 	"github.com/sagernet/sing-box/log"

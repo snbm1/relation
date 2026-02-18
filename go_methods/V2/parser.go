@@ -2,7 +2,7 @@ package V2
 
 import (
 	"fmt"
-	"methods/config"
+	"methods/go_methods/config"
 	"os"
 	"runtime/debug"
 )

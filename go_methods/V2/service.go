@@ -3,7 +3,7 @@ package V2
 import (
 	"context"
 	"io"
-	"methods/manager"
+	"methods/go_methods/manager"
 	"os"
 	"runtime"
 	runtimeDebug "runtime/debug"

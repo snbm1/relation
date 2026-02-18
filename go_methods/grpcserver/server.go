@@ -2,7 +2,7 @@ package grpcserver
 
 import (
 	"log"
-	"methods/relationrpc"
+	"methods/go_methods/relationrpc"
 	"net"
 
 	"google.golang.org/grpc"

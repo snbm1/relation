@@ -2,7 +2,7 @@ package relationrpc
 
 import (
 	"context"
-	"methods/V2"
+	"methods/go_methods/V2"
 )
 
 type CoreService struct {
