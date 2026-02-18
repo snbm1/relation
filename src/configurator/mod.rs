@@ -79,6 +79,16 @@ impl Configurator {
         self
     }
 
+    pub fn get_list_of_system_proxies(&self) -> Vec<(String, u16, bool)> {
+        let mut res = vec![];
+        for i in self.inbounds.get_vec_ref() {
+            if i.get_system_proxy_status().is_some() {
+                res.push(i.get_system_proxy_status().unwrap());
+            }
+        }
+        res
+    }
+
     pub fn as_ref(&self) -> &Self {
         self
     }

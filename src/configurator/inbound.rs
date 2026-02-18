@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::configurator::{
     inbound::{direct::DirectConfig, mixed::MixedConfig},
-    shared::{listenfields::ListenFields},
+    shared::listenfields::ListenFields,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,8 +54,13 @@ impl InboundConfig {
 
     pub fn get_tag_by_type(&self, name: &str) -> Option<String> {
         self.servers
-            .iter().find(|x| x.get_type() == name)
+            .iter()
+            .find(|x| x.get_type() == name)
             .map(|x| x.get_tag())
+    }
+
+    pub fn get_vec_ref(&self) -> &Vec<Inbound> {
+        &self.servers
     }
 }
 
@@ -78,6 +83,27 @@ impl Inbound {
         match self {
             Inbound::Direct(cfg) => cfg.get_type(),
             Inbound::Mixed(cfg) => cfg.get_type(),
+        }
+    }
+    pub fn get_system_proxy_status(&self) -> Option<(String, u16, bool)> {
+        match self {
+            Inbound::Direct(cfg) => None,
+            Inbound::Mixed(cfg) => {
+                if cfg.is_system_proxy() {
+                    let socks_status = if cfg.get_type() == "socks" {
+                        true
+                    } else {
+                        false
+                    };
+                    Some((
+                        cfg.get_address().unwrap(),
+                        cfg.get_address_port().unwrap(),
+                        socks_status,
+                    ))
+                } else {
+                    None
+                }
+            }
         }
     }
 }

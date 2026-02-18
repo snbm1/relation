@@ -90,6 +90,10 @@ impl DataManager {
         self
     }
 
+    pub fn handler_ref(&self) -> &Configurator {
+        &self.handler
+    }
+
     pub fn handler_mut(&mut self) -> &mut Configurator {
         &mut self.handler
     }
