@@ -45,7 +45,6 @@ enum Commands {
         #[arg(
             long,
             short,
-            required_unless_present = "number",
             conflicts_with = "number"
         )]
         tag: Option<String>,
@@ -54,7 +53,6 @@ enum Commands {
         #[arg(
             long,
             short,
-            required_unless_present = "tag",
             conflicts_with = "tag",
             value_parser = clap::value_parser!(u16).range(1..)
         )]
@@ -104,6 +102,10 @@ impl Cli {
                     manager.remove_config(n);
                 } else if let Some(n) = number {
                     manager.remove_config_by_number(usize::from(*n) - 1);
+                } else {
+                    for i in manager.get_list() {
+                        manager.remove_config(&i);
+                    }
                 }
             }
             Commands::Run { tag, number } => {
