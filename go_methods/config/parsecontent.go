@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/ghodss/yaml"
-	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -27,10 +26,6 @@ func ConfigParser(contentstr string) ([]byte, error) {
 			return nil, err
 		}
 		return validateResult(normal, "SingBoxJson")
-	}
-
-	if v2raystr, err := ray2sing.Ray2Singbox(string(content), false); err == nil {
-		return validateResult([]byte(v2raystr), "V2ray")
 	}
 
 	var clashobj clash.Clash
