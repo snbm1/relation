@@ -7,18 +7,15 @@ import (
 	"io"
 	"os"
 	"runtime"
-	runtimeDebug "runtime/debug"
 	"time"
 
-	SingBox "github.com/sagernet/sing-box"
 	box "github.com/sagernet/sing-box"
-	"github.com/sagernet/sing-box/common/urltest"
 	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/include"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
 	Ex "github.com/sagernet/sing/common/exceptions"
-	"github.com/sagernet/sing/service"
-	"github.com/sagernet/sing/service/filemanager"
+	sbjson "github.com/sagernet/sing/common/json"
 )
 
 var (
@@ -27,7 +24,7 @@ var (
 	UserID                    int
 	GroupID                   int
 	thisstatusPropagationPort int64
-	coreLogFactory            log.Factory //Исправить, дописать файл который будет его импортировать!!!
+	coreLogFactory            log.Factory
 )
 
 type NewOption struct {
@@ -75,31 +72,27 @@ func Setup(basicPath, workingPath, tempPath string, statusPort int64, debug bool
 	return nil
 }
 
-func NewService(options option.Options) (*box.Box, error) {
-	runtimeDebug.FreeOSMemory()
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = filemanager.WithDefault(ctx, thisworkingPath, thisTempPath, UserID, GroupID)
-	urlTestHistoryStorage := urltest.NewHistoryStorage()
-	ctx = service.ContextWithPtr(ctx, urlTestHistoryStorage)
-	instance, err := SingBox.New(SingBox.Options{
-		Context: ctx,
-		Options: options,
-	})
+func NewService(ctx context.Context, opts option.Options) (*box.Box, context.CancelFunc, error) {
+	ctx = include.Context(ctx)
 
+	runCtx, cancel := context.WithCancel(ctx)
+	instance, err := box.New(box.Options{
+		Context: runCtx,
+		Options: opts,
+	})
 	if err != nil {
 		cancel()
-		return nil, Ex.Cause(err, "error creating sing-box service")
+		return nil, nil, err
 	}
-
-	runtimeDebug.FreeOSMemory()
-	return instance, nil
+	return instance, cancel, nil
 }
 
-func readOptions(configContent string) (option.Options, error) {
-	var options NewOption
-	err := options.UnmarshalJSON([]byte(configContent))
+func readOptions(ctx context.Context, configContent []byte) (option.Options, context.Context, error) {
+	ctx = include.Context(ctx)
+
+	opts, err := sbjson.UnmarshalExtendedContext[option.Options](ctx, configContent)
 	if err != nil {
-		return option.Options{}, Ex.Cause(err, "error decoding config")
+		return option.Options{}, ctx, err
 	}
-	return options.Options, nil
+	return opts, ctx, nil
 }
