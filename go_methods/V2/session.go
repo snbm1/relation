@@ -7,11 +7,12 @@ import (
 	"sync"
 	"time"
 
+	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
 var (
-	Box *libbox.BoxService
+	Box *box.Box
 	mut sync.Mutex
 )
 

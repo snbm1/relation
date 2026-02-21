@@ -87,7 +87,7 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern char* setup(char* basicPath, char* workingPath, char* tempPath, long long int statusPort, GoUint8 debug, GoUint8 enableservices);
+extern char* setup(char* basicPath, char* workingPath, char* tempPath, long long int statusPort, GoUint8 debug);
 extern char* parse(char* content, char* tempPath);
 extern void freedom(char* ptr);
 extern char* start(char* configPath, GoUint8 Memorylimit);
