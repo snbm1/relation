@@ -44,7 +44,6 @@ pub fn setup_safe(
             temp.as_ptr() as *mut c_char,
             status_port,
             debug as GoUint8,
-            enable_services as GoUint8,
         ))
     }
 }
