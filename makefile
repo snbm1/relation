@@ -13,7 +13,7 @@ build:
 
 
 release: 
-	CGO_ENABLED=1 go build -tags "$(TAGS)" -ldflags "-s -w" -buildmode=c-shared -o ../$(LIB_NAME) $(SRC_DIR)/...
+	CGO_ENABLED=1 go build -tags "$(TAGS)" -ldflags "-s -w" -buildmode=c-shared -o ./$(LIB_NAME) ./$(SRC_DIR)
 
 test: 
 	go test -tags "$(TAGS)" ./... -v 

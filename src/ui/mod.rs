@@ -107,7 +107,6 @@ impl Cli {
                 }
             }
             Commands::Run { tag, number } => {
-                setup_signal_handler();
                 let file_path;
                 if let Some(n) = tag {
                     file_path = manager.get_configs_path().join(format!("{}.json", n));
@@ -121,13 +120,13 @@ impl Cli {
                         .join(format!("{}.json", manager.get_list()[0]))
                 }
 
+                bridge::start_safe(file_path.to_str().unwrap(), 0);
+
                 if manager.handler_ref().get_list_of_system_proxies().len() > 1 {
                     panic!("[ERROR] A more than 1 system proxy");
                 } else if let Some((host,port, support_socks)) = manager.handler_ref().get_list_of_system_proxies().get(0) {
                     bridge::enable_system_proxy_safe(host, *port as i64, *support_socks);
                 }
-
-                bridge::start_safe(file_path.to_str().unwrap(), 0);
 
                 while RUNNING.load(Ordering::SeqCst) {
                     std::thread::sleep(std::time::Duration::from_millis(200));
