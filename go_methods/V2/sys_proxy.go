@@ -60,7 +60,7 @@ func DisableSystemProxy() error {
 	sysmut.Lock()
 	defer sysmut.Unlock()
 
-	if systemProxy == nil && !systemProxy.IsEnabled() {
+	if systemProxy == nil {
 		return nil
 	}
 

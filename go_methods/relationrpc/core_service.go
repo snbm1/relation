@@ -16,7 +16,6 @@ func (s *CoreService) Setup(ctx context.Context, req *SetupRequest) (*BaseRespon
 		req.TempPath,
 		req.StatusPort,
 		req.Debug,
-		req.EnableServices,
 	)
 
 	if err != nil {

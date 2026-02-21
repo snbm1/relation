@@ -9,15 +9,14 @@ import (
 	_ "fmt"
 	V2 "methods/go_methods/V2"
 	"methods/go_methods/grpcserver"
-	_ "methods/go_methods/manager"
 	"unsafe"
 
 	"github.com/sagernet/sing-box/log"
 )
 
 //export setup
-func setup(basicPath, workingPath, tempPath *C.char, statusPort C.longlong, debug, enableservices bool) *C.char {
-	err := V2.Setup(C.GoString(basicPath), C.GoString(workingPath), C.GoString(tempPath), int64(statusPort), debug, enableservices)
+func setup(basicPath, workingPath, tempPath *C.char, statusPort C.longlong, debug bool) *C.char {
+	err := V2.Setup(C.GoString(basicPath), C.GoString(workingPath), C.GoString(tempPath), int64(statusPort), debug)
 	return errorOrNot(err)
 }
 

@@ -1,18 +1,22 @@
 package V2
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime/debug"
 	"sync"
 	"time"
 
+	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/include"
 )
 
 var (
-	Box *libbox.BoxService
-	mut sync.Mutex
+	Box       *box.Box
+	boxCancel context.CancelFunc
+	mut       sync.Mutex
 )
 
 func Start(configPath string, Memorylimit bool) (err error) {
@@ -26,41 +30,16 @@ func Start(configPath string, Memorylimit bool) (err error) {
 	defer mut.Unlock()
 
 	if Box != nil {
-		StopUnlocked()
-		Box = nil
+		if stopErr := stopUnlocked(); stopErr != nil {
+			return stopErr
+		}
 	}
 
 	libbox.SetMemoryLimit(Memorylimit)
 
-	return StartService(configPath)
-}
+	debug.FreeOSMemory()
 
-func StartService(configPath string) error {
-
-	file, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("Can't read the file with config: %w", err)
-	}
-
-	content := string(file)
-	parsedContent, err := readOptions(content)
-
-	if err != nil {
-		return fmt.Errorf("Can't parse config correctly: %w", err)
-	}
-
-	instance, err := NewService(parsedContent)
-	if err != nil {
-		return fmt.Errorf("Can't start New Service successfully: %w", err)
-	}
-
-	err = instance.Start()
-	if err != nil {
-		return fmt.Errorf("Can't start instance successfully: %w", err)
-	}
-
-	Box = instance
-	return nil
+	return startServiceUnlocked(configPath)
 }
 
 func Restart(configPath string, Memorylimit bool) (err error) {
@@ -77,56 +56,78 @@ func Restart(configPath string, Memorylimit bool) (err error) {
 		return fmt.Errorf("instance not found")
 	}
 
-	if err = StopUnlocked(); err != nil {
-		return err
+	if stopErr := stopUnlocked(); stopErr != nil {
+		return stopErr
 	}
 
 	time.Sleep(100 * time.Millisecond)
 
 	libbox.SetMemoryLimit(Memorylimit)
-	return StartService(configPath)
-}
+	debug.FreeOSMemory()
 
-func StopUnlocked() (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("Panic in StopUnlocked function: %v\n%s", r, debug.Stack())
-		}
-	}()
-
-	if Box == nil {
-		return fmt.Errorf("Sing-Box is not running")
-	}
-
-	err = Box.Close()
-	if err != nil {
-		return fmt.Errorf("Error while stopping service: %w", err)
-	}
-
-	Box = nil
-	return
+	return startServiceUnlocked(configPath)
 }
 
 func Stop() (err error) {
-
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("Panic in StopFunc: %v\n%s", r, debug.Stack())
+			err = fmt.Errorf("Panic in Stop func: %v\n%s", r, debug.Stack())
 		}
 	}()
 
 	mut.Lock()
 	defer mut.Unlock()
 
+	return stopUnlocked()
+}
+
+func startServiceUnlocked(configPath string) error {
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("Can't read the file with config: %w", err)
+	}
+
+	baseCtx := include.Context(context.Background())
+	opts, ctx, err := readOptions(baseCtx, configBytes)
+
+	if err != nil {
+		return fmt.Errorf("Can't parse config correctly: %w", err)
+	}
+
+	instance, cancel, err := NewService(ctx, opts)
+
+	if err != nil {
+		cancel()
+		return fmt.Errorf("Can't start New Service successfully: error creating sing-box instance: %w", err)
+	}
+
+	if err := instance.Start(); err != nil {
+		cancel()
+		return fmt.Errorf("Can't start instance successfully: %w", err)
+	}
+
+	Box = instance
+	boxCancel = cancel
+	return nil
+}
+
+func stopUnlocked() error {
 	if Box == nil {
 		return fmt.Errorf("Sing-Box is not running")
 	}
 
-	err = Box.Close()
+	if boxCancel != nil {
+		boxCancel()
+		boxCancel = nil
+	}
+
+	err := Box.Close()
+	Box = nil
+
 	if err != nil {
 		return fmt.Errorf("Error while stopping service: %w", err)
 	}
 
-	Box = nil
-	return
+	debug.FreeOSMemory()
+	return nil
 }
