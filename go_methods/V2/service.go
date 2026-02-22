@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"runtime"
 	"time"
 
 	box "github.com/sagernet/sing-box"
@@ -44,8 +43,8 @@ func (o *NewOption) UnmarshalJSON(content []byte) error {
 
 func Setup(basicPath, workingPath, tempPath string, statusPort int64, debug bool) error {
 	thisstatusPropagationPort = int64(statusPort)
-	tcpConn := runtime.GOOS == "windows"
-	libbox.Setup(basicPath, workingPath, tempPath, tcpConn)
+	var options libbox.SetupOptions = libbox.SetupOptions{BasePath: basicPath, WorkingPath: workingPath, TempPath: tempPath}
+	libbox.Setup(&options)
 	thisworkingPath = workingPath
 	thisTempPath = tempPath
 	os.Chdir(thisworkingPath)
