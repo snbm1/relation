@@ -6,12 +6,12 @@ mod bridge;
 use clap::Parser;
 use ui::Cli;
 use configurator::Configurator;
-use datamanager::DataManager;
+use datamanager::App;
 
 fn main() {
     let mut configurator = Configurator::new();
 
-    let mut datamanager = DataManager::new("relation");
+    let mut datamanager = App::new("relation");
 
     let mut cli = Cli::parse();
 
