@@ -2,7 +2,7 @@
 use clap::{Parser, Subcommand};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::datamanager::DataManager;
+use crate::datamanager::App;
 
 use signal_hook::consts::SIGINT;
 use signal_hook::iterator::Signals;
@@ -42,11 +42,7 @@ enum Commands {
 
     Remove {
         /// Name of config
-        #[arg(
-            long,
-            short,
-            conflicts_with = "number"
-        )]
+        #[arg(long, short, conflicts_with = "number")]
         tag: Option<String>,
 
         /// Number of config
@@ -61,11 +57,7 @@ enum Commands {
 
     Run {
         /// Name of config
-        #[arg(
-            long,
-            short,
-            conflicts_with = "number"
-        )]
+        #[arg(long, short, conflicts_with = "number")]
         tag: Option<String>,
 
         /// Number of config
@@ -76,11 +68,14 @@ enum Commands {
             value_parser = clap::value_parser!(u16).range(1..)
         )]
         number: Option<u16>,
+
+        #[arg(long, short)]
+        unable_system_proxy: bool,
     },
 }
 
 impl Cli {
-    pub fn run(&mut self, manager: &mut DataManager) {
+    pub fn run(&mut self, manager: &mut App) {
         match &self.command {
             Commands::Add { url } => {
                 if let Some(value) = url {
@@ -89,7 +84,7 @@ impl Cli {
                 }
             }
             Commands::List => {
-                if manager.get_list().len() == 0 {
+                if manager.get_list().is_empty() {
                     println!("There are no configurations");
                 } else {
                     for i in manager.get_list().iter().enumerate() {
@@ -101,44 +96,26 @@ impl Cli {
                 if let Some(n) = tag {
                     manager.remove_config(n);
                 } else if let Some(n) = number {
-                    manager.remove_config_by_number(usize::from(*n) - 1);
+                    manager.remove_config_by_number(*n as usize - 1);
                 } else {
                     for i in manager.get_list() {
                         manager.remove_config(&i);
                     }
                 }
             }
-            Commands::Run { tag, number } => {
+            Commands::Run {
+                tag,
+                number,
+                unable_system_proxy,
+            } => {
                 setup_signal_handler();
-                let file_path;
-                if let Some(n) = tag {
-                    file_path = manager.get_configs_path().join(format!("{}.json", n));
-                } else if let Some(n) = number {
-                    file_path = manager
-                        .get_configs_path()
-                        .join(format!("{}.json", manager.get_list()[*n as usize -1]))
-                } else {
-                    file_path = manager
-                        .get_configs_path()
-                        .join(format!("{}.json", manager.get_list()[0]))
-                }
-
-                bridge::start_safe(file_path.to_str().unwrap(), 0);
-
-                if manager.handler_ref().get_list_of_system_proxies().len() > 1 {
-                    panic!("[ERROR] A more than 1 system proxy");
-                } else if let Some((host,port, support_socks)) = manager.handler_ref().get_list_of_system_proxies().get(0) {
-                    bridge::enable_system_proxy_safe(host, *port as i64, *support_socks);
-                }
+                manager.run_app(tag.clone(), *number, *unable_system_proxy);
 
                 while RUNNING.load(Ordering::SeqCst) {
                     std::thread::sleep(std::time::Duration::from_millis(200));
                 }
 
-                println!("Shutdown Relation");
-
-                bridge::disable_system_proxy_safe();
-                bridge::stop_safe();
+                manager.stop_app();
             }
         }
     }
