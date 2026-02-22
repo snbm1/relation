@@ -109,6 +109,7 @@ impl Cli {
                 }
             }
             Commands::Run { tag, number } => {
+                setup_signal_handler();
                 let file_path;
                 if let Some(n) = tag {
                     file_path = manager.get_configs_path().join(format!("{}.json", n));
