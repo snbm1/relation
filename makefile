@@ -9,14 +9,14 @@ clean:
 	rm librelation.*
 	rm relation
 
-build: clean
+build:
 	CGO_ENABLED=1 go build -tags "$(TAGS)" -buildmode=c-shared -o ./$(LIB_NAME) ./$(SRC_DIR)
 	cargo build
 	cp target/debug/relation .
 
 
-release: clean
-	CGO_ENABLED=1 go build -tags "$(TAGS)" -ldflags "-s -w" -buildmode=c-shared -o ./$(LIB_NAME) ./$(SRC_DIR)
+release:
+	CGO_ENABLED=1 go build -tags "$(TAGS)" -ldflags "-s -w" -buildmode=c-static -o ./$(LIB_NAME) ./$(SRC_DIR)
 	cargo build --release
 	cp target/release/relation .
 

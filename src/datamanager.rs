@@ -16,7 +16,6 @@ pub struct Settings {
 
 impl Settings {
     pub fn new(setting_file: PathBuf) -> Result<Self, Box<dyn Error>> {
-        // Try to read the file, if it doesn't exist, create default settings and save
         match fs::read_to_string(&setting_file) {
             Ok(content) => Ok(toml::from_str(&content)?),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
