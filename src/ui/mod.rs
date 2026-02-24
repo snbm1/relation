@@ -31,16 +31,20 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Add config
     Add {
         /// Config url
         #[arg(short, long)]
         url: Option<String>,
     },
 
+    /// Dispay list of possible configs
     List,
 
+    /// Run terminal user interface
     Tui,
 
+    /// Remove config
     Remove {
         /// Name of config
         #[arg(long, short, conflicts_with = "number")]
@@ -56,6 +60,7 @@ enum Commands {
         number: Option<u16>,
     },
 
+    /// Run application with selected config
     Run {
         /// Name of config
         #[arg(long, short, conflicts_with = "number")]
