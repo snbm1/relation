@@ -1,4 +1,5 @@
 #![warn(clippy::never_loop)]
+mod tui;
 use clap::{Parser, Subcommand};
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -6,8 +7,6 @@ use crate::datamanager::App;
 
 use signal_hook::consts::SIGINT;
 use signal_hook::iterator::Signals;
-
-use crate::bridge;
 
 static RUNNING: AtomicBool = AtomicBool::new(true);
 
