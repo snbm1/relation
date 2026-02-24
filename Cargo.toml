@@ -17,6 +17,8 @@ directories = "6"
 libc = "0.2"
 toml = "*"
 signal-hook = "0.4"
+ratatui = "*"
+crossterm = "*"
 
 [build-dependencies]
 bindgen = "0.72"
