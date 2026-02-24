@@ -39,6 +39,8 @@ enum Commands {
 
     List,
 
+    Tui,
+
     Remove {
         /// Name of config
         #[arg(long, short, conflicts_with = "number")]
@@ -115,6 +117,9 @@ impl Cli {
                 }
 
                 manager.stop_app();
+            },
+            Commands::Tui => {
+                let _ = tui::run();
             }
         }
     }
