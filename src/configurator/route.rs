@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use rellib::auto_skip_none;
+use serde::{Deserialize, Serialize};
 
 pub mod routerule;
 pub mod ruleset;
@@ -8,9 +8,9 @@ use crate::configurator::route::routerule::{DefaultRouteRule, LogicalRouteRule, 
 use crate::configurator::route::ruleset::RuleSet;
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct RouteConfig {
-    pub rules: Option<Vec<RouteRule>>,
+    pub rules: Vec<RouteRule>,
     pub rule_set: Option<Vec<RuleSet>>,
     #[serde(rename = "final")]
     pub default: Option<String>,
@@ -28,25 +28,18 @@ pub struct RouteConfig {
 impl RouteConfig {
     pub fn new() -> Self {
         Self {
+            rules: vec![],
             ..Default::default()
         }
     }
 
     pub fn add_default_rule(&mut self, rule: DefaultRouteRule) -> &mut Self {
-        if let Some(rules) = self.rules.as_mut() {
-            rules.push(RouteRule::Default(rule));
-        } else {
-            self.rules = Some(vec![RouteRule::Default(rule)]);
-        }
+        self.rules.push(RouteRule::Default(rule));
         self
     }
 
     pub fn add_logical_rule(&mut self, rule: LogicalRouteRule) -> &mut Self {
-        if let Some(rules) = self.rules.as_mut() {
-            rules.push(RouteRule::Logical(rule));
-        } else {
-            self.rules = Some(vec![RouteRule::Logical(rule)]);
-        }
+        self.rules.push(RouteRule::Logical(rule));
         self
     }
 
@@ -55,13 +48,27 @@ impl RouteConfig {
         self
     }
 
-    pub fn set_final_by_type(&mut self, outbound: &OutboundConfig, outbound_type: &str) -> &mut Self {
+    pub fn set_final_by_type(
+        &mut self,
+        outbound: &OutboundConfig,
+        outbound_type: &str,
+    ) -> &mut Self {
         self.default = Some(outbound.get_tag_by_type(outbound_type).unwrap());
         self
     }
+
+    pub fn get_list(&self) -> Vec<RouteRule> {
+        self.rules.clone()
+    }
+
+    pub fn clean(&mut self) -> Vec<RouteRule> {
+        let a = self.get_list();
+        self.rules = vec![];
+        a
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum DomainResolver {
     Tag(String),
@@ -69,7 +76,7 @@ pub enum DomainResolver {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct ResolveOptionsNoAction {
     pub server: Option<String>,
     pub strategy: Option<String>,
