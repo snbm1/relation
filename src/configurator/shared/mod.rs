@@ -6,7 +6,7 @@ pub mod transport;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Network {
     #[serde(rename = "tcp")]
     Tcp,

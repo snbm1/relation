@@ -12,13 +12,11 @@ use route::*;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::configurator::dns::dnsserver::DnsServer;
-use crate::configurator::dns::dnsserver::DnsServerLocal;
-use crate::configurator::dns::dnsserver::DnsServerTcp;
-use crate::configurator::dns::dnsserver::DnsServerUdp;
+use crate::configurator::dns::dnsserver::*;
 use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
 
+use core::panic;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufWriter;
@@ -98,6 +96,52 @@ impl Configurator {
         self.dns.get_list()
     }
 
+    pub fn set_route_rules(&mut self, rules: Vec<String>) -> &mut Self {
+        let _ = self.route.clean();
+        for i in rules {
+            let mut rh;
+            let ri: Vec<&str> = i.split(":").collect();
+
+            if ri.len() < 2 {
+                panic!("[ERROR] Invalid route rules input. Not enough input or incorrect")
+            }
+            match ri[0] {
+                "ib" => {
+                    match ri[2] {
+                        "r" => rh = Some(DefaultRouteRule::reject_action()),
+                        x => {
+                            rh = Some(DefaultRouteRule::route_action_by_type(
+                                &self.outbounds,
+                                x.to_string(),
+                            ))
+                        }
+                    }
+                    rh = Some(
+                        rh.unwrap()
+                            .add_inbound_by_type(&self.inbounds, ri[1].to_string()),
+                    );
+                }
+                "pt" => {
+                    match ri[2] {
+                        "r" => rh = Some(DefaultRouteRule::reject_action()),
+                        x => {
+                            rh = Some(DefaultRouteRule::route_action_by_type(
+                                &self.outbounds,
+                                x.to_string(),
+                            ))
+                        }
+                    }
+                    rh = Some(rh.unwrap().add_port(vec![ri[1].parse().unwrap()]));
+                }
+                _ => rh = None,
+            }
+            if let Some(value) = rh {
+                self.route.add_default_rule(value);
+            }
+        }
+        self
+    }
+
     pub fn set_dns_servers(&mut self, dns: Vec<String>) -> &mut Self {
         let _ = self.dns.clean();
         for i in dns {
@@ -116,9 +160,15 @@ impl Configurator {
                             df.port(),
                         ))
                     }
+                    "udp" => {
+                        dh = DnsServer::Udp(DnsServerUdp::with_server(
+                            df.host_str().unwrap().to_string(),
+                            df.port(),
+                        ))
+                    }
                     _ => panic!("[ERROR] Cant parse that type of dns yet"),
                 }
-            } else if i == "localhost" {
+            } else if i == "local" {
                 dh = DnsServer::Local(DnsServerLocal::new());
             } else {
                 panic!("[ERROR] Invalid dns input")

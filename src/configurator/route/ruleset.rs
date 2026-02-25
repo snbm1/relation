@@ -3,14 +3,14 @@ use rellib::auto_skip_none;
 
 use crate::configurator::shared::Network;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum NumOrStr {
     Num(u16),
     Str(String),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum RuleSet {
     Inline(RuleSetInline),
@@ -19,7 +19,7 @@ pub enum RuleSet {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct RuleSetInline {
     pub r#type: Option<String>,
     pub tag: Option<String>,
@@ -35,7 +35,7 @@ impl RuleSetInline {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct RuleSetLocal {
     pub r#type: Option<String>,
     pub tag: Option<String>,
@@ -52,7 +52,7 @@ impl RuleSetLocal {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct RuleSetRemote {
     pub r#type: Option<String>,
     pub tag: Option<String>,
@@ -70,7 +70,7 @@ impl RuleSetRemote {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum HeadlessRule {
     Default(HeadlessDefaultRule),
@@ -78,7 +78,7 @@ pub enum HeadlessRule {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct HeadlessDefaultRule {
     pub query_type: Option<Vec<NumOrStr>>,
     pub network: Option<Vec<Network>>,
@@ -109,7 +109,7 @@ impl HeadlessDefaultRule {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct HeadlessLogicalRule {
     #[serde(rename = "type")]
     pub rule_type: Option<String>,

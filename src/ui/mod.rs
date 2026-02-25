@@ -3,7 +3,6 @@ mod tui;
 use clap::{Parser, Subcommand};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::configurator::dns;
 use crate::datamanager::App;
 
 use signal_hook::consts::SIGINT;
@@ -37,9 +36,14 @@ enum Commands {
         /// Config url
         #[arg(short, long)]
         url: Option<String>,
+
         /// Set dns servers
         #[arg(long)]
         dns: Option<Vec<String>>,
+
+        /// Set Route rules [<type>:<value>:<action>]
+        #[arg(long)]
+        route: Option<Vec<String>>,
     },
 
     /// Dispay list of possible configs
@@ -87,11 +91,14 @@ enum Commands {
 impl Cli {
     pub fn run(&mut self, manager: &mut App) {
         match &self.command {
-            Commands::Add { url, dns } => {
+            Commands::Add { url, dns, route } => {
                 if let Some(value) = url {
                     manager.handler_mut().default().set_outbound_from_url(value);
                     if let Some(value) = dns {
                         manager.handler_mut().set_dns_servers(value.clone());
+                    }
+                    if let Some(value) = route {
+                        manager.handler_mut().set_route_rules(value.clone());
                     }
                     manager.add_config();
                 }
@@ -101,7 +108,7 @@ impl Cli {
                     println!("There are no configurations");
                 } else {
                     for i in manager.get_list().iter().enumerate() {
-                        println!("[{}]: {}", i.0 + 1, i.1);
+                        println!("[{:2}]: {}", i.0 + 1, i.1);
                     }
                 }
             }

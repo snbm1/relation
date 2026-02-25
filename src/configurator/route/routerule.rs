@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::configurator::inbound::InboundConfig;
 use crate::configurator::outbound::OutboundConfig;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum RouteRule {
     Default(DefaultRouteRule),
@@ -12,7 +12,7 @@ pub enum RouteRule {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DefaultRouteRule {
     pub inbound: Option<Vec<String>>,
     pub ip_version: Option<u8>,
@@ -96,6 +96,16 @@ impl DefaultRouteRule {
         self
     }
 
+    pub fn add_inbound_by_type(mut self, inbound: &InboundConfig, inbound_type: String) -> Self {
+        let tag = inbound
+            .get_tag_by_type(&inbound_type)
+            .expect("[ERROR] cannot find that inbound type");
+
+        self.inbound.get_or_insert_with(Vec::new).push(tag);
+
+        self
+    }
+
     pub fn add_port(mut self, port: Vec<u16>) -> Self {
         if let Some(value) = self.port.as_mut() {
             let _ = port.iter().map(|x| value.push(*x));
@@ -112,7 +122,7 @@ impl DefaultRouteRule {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct LogicalRouteRule {
     #[serde(rename = "type")]
     pub rule_type: Option<String>,
@@ -132,7 +142,7 @@ impl LogicalRouteRule {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum RuleAction {
     Route(RouteAction),
@@ -143,7 +153,7 @@ pub enum RuleAction {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct RouteAction {
     pub outbound: String,
     pub override_address: Option<String>,
@@ -168,7 +178,7 @@ impl RouteAction {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct RejectAction {
     pub method: String,
     pub no_drop: Option<bool>,
@@ -196,7 +206,7 @@ impl RejectAction {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct HijackDnsAction {}
 
 impl HijackDnsAction {
@@ -206,7 +216,7 @@ impl HijackDnsAction {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct SniffAction {
     pub sniffer: Vec<String>,
     pub timeout: Option<String>,
@@ -222,7 +232,7 @@ impl SniffAction {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct ResolveAction {
     pub server: String,
     pub strategy: String,
