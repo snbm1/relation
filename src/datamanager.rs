@@ -43,6 +43,7 @@ impl DnsSettings {
 
 use crate::bridge;
 use crate::configurator::Configurator;
+use crate::configurator::dns::dnsserver::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Settings {
@@ -186,7 +187,7 @@ impl App {
     }
 
     pub fn run_app(&mut self, tag: Option<String>, number: Option<u16>, unable_system_proxy: bool) {
-        self.stg_handler.read(self.get_settings_path());
+        let _ = self.stg_handler.read(self.get_settings_path());
 
         let file_path;
         if let Some(n) = tag {
@@ -231,6 +232,17 @@ impl App {
         bridge::stop_safe();
         let _ = self.stg_handler.save(self.get_settings_path());
         println!("[INFO] Shutdown Relation");
+    }
+
+    pub fn set_handler_config_by_name(&mut self, name: String) {
+        let _ = self
+            .cfg_handler
+            .load_from_file(self.get_configs_path().join(format!("{}.json", name)));
+    }
+
+    pub fn save_config(&mut self) -> &mut Self {
+        let _ = self.cfg_handler.save_to_file(self.get_configs_path());
+        self
     }
 
     pub fn handler_ref(&self) -> &Configurator {

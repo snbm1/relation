@@ -8,7 +8,7 @@ use crate::configurator::shared::ListableString;
 use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::tls::TlsConfig;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum DnsServer {
     Local(DnsServerLocal),
@@ -61,7 +61,7 @@ impl DnsServer {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerLocal {
     pub tag: Option<String>,
     pub address: String,
@@ -95,7 +95,7 @@ impl DnsServerLocal {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHosts {
     pub tag: Option<String>,
     pub address: String,
@@ -130,7 +130,7 @@ impl DnsServerHosts {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTcp {
     pub tag: Option<String>,
     #[serde(rename = "type")]
@@ -179,7 +179,7 @@ impl DnsServerTcp {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerUdp {
     pub tag: Option<String>,
     pub address: String,
@@ -227,7 +227,7 @@ impl DnsServerUdp {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTls {
     pub tag: Option<String>,
     #[serde(rename = "type")]
@@ -272,7 +272,7 @@ impl DnsServerTls {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerQuic {
     pub tag: Option<String>,
     #[serde(rename = "type")]
@@ -317,7 +317,7 @@ impl DnsServerQuic {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttps {
     pub tag: Option<String>,
     #[serde(rename = "type")]
@@ -364,7 +364,7 @@ impl DnsServerHttps {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttp3 {
     pub tag: Option<String>,
     #[serde(rename = "type")]
@@ -411,7 +411,7 @@ impl DnsServerHttp3 {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerDhcp {
     pub tag: Option<String>,
     #[serde(rename = "type")]
@@ -456,7 +456,7 @@ impl DnsServerDhcp {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerFakeIp {
     pub tag: Option<String>,
     pub address: String,
@@ -484,7 +484,7 @@ impl DnsServerFakeIp {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTailscale {
     pub tag: Option<String>,
     #[serde(rename = "type")]
@@ -512,7 +512,7 @@ impl DnsServerTailscale {
 }
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerResolved {
     pub tag: Option<String>,
     pub address: String,

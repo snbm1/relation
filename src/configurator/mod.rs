@@ -1,9 +1,9 @@
-mod dns;
-mod inbound;
-mod outbound;
-mod route;
-mod shared;
-mod log;
+pub mod dns;
+pub mod inbound;
+pub mod outbound;
+pub mod route;
+pub mod shared;
+pub mod log;
 
 use dns::*;
 use inbound::*;
@@ -11,6 +11,7 @@ use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
 
+use crate::configurator::dns::dnsserver::DnsServer;
 use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
 
@@ -89,6 +90,18 @@ impl Configurator {
         res
     }
 
+    pub fn get_dns_list(&self) -> Vec<DnsServer> {
+        self.dns.get_list()
+    }
+
+    pub fn set_dns_servers(&mut self, dns: Vec<DnsServer>) -> &mut Self {
+        let _ = self.dns.clean();
+        for i in dns {
+            self.dns.add_server(i);
+        }
+        self
+    }
+
     pub fn as_ref(&self) -> &Self {
         self
     }
@@ -114,7 +127,7 @@ impl Configurator {
         &mut self,
         path: PathBuf,
     ) -> Result<&mut Self, Box<dyn std::error::Error>> {
-        let file = File::open("config.json")?;
+        let file = File::open(path)?;
         let reader = BufReader::new(file);
 
         let configurator: Self = serde_json::from_reader(reader)?;
