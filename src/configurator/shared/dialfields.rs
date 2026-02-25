@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use rellib::auto_skip_none;
 
 #[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DialFields {
     pub detour: Option<String>,
     pub bind_interface: Option<String>,

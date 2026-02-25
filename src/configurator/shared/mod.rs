@@ -14,7 +14,7 @@ pub enum Network {
     Udp,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Listable<T> {
     One(T),

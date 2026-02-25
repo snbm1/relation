@@ -10,7 +10,7 @@ use dnsserver::*;
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Default)]
 pub struct DnsConfig {
-    pub servers: Option<Vec<DnsServer>>,
+    pub servers: Vec<DnsServer>,
     pub rules: Option<Vec<String>>,
     #[serde(rename = "final")]
     pub default: Option<String>,
@@ -26,15 +26,15 @@ pub struct DnsConfig {
 impl DnsConfig {
     pub fn new() -> Self {
         DnsConfig {
-            servers: Some(vec![]),
+            servers: vec![],
             ..Default::default()
         }
     }
 
     pub fn get_tag_by_type(&self, name: &str) -> Option<String> {
         self.servers
-            .as_ref()
-            .and_then(|s| s.iter().find(|x| x.get_type() == name))
+            .iter()
+            .find(|x| x.get_type() == name)
             .map(|x| x.get_tag())
     }
 
@@ -44,25 +44,16 @@ impl DnsConfig {
     }
 
     pub fn add_server(&mut self, server: DnsServer) -> &mut Self {
-        match &mut self.servers {
-            Some(servers) => servers.push(server),
-            None => self.servers = Some(vec![server]),
-        }
-
+        self.servers.push(server);
         self
     }
 
     pub fn add_local(&mut self, tag: Option<String>) -> &mut Self {
         if let Some(name) = tag {
             self.servers
-                .as_mut()
-                .unwrap()
                 .push(DnsServer::Local(DnsServerLocal::with_tag(name)));
         } else {
-            self.servers
-                .as_mut()
-                .unwrap()
-                .push(DnsServer::Local(DnsServerLocal::new()));
+            self.servers.push(DnsServer::Local(DnsServerLocal::new()));
         }
         self
     }
@@ -74,17 +65,14 @@ impl DnsConfig {
         tag: Option<String>,
     ) -> &mut Self {
         if let Some(name) = tag {
-            self.servers.as_mut().unwrap().push(DnsServer::Tcp(
+            self.servers.push(DnsServer::Tcp(
                 DnsServerTcp::with_server(server, server_port).change_tag(name),
             ));
         } else {
-            self.servers
-                .as_mut()
-                .unwrap()
-                .push(DnsServer::Tcp(DnsServerTcp::with_server(
-                    server,
-                    server_port,
-                )));
+            self.servers.push(DnsServer::Tcp(DnsServerTcp::with_server(
+                server,
+                server_port,
+            )));
         }
         self
     }
@@ -96,32 +84,35 @@ impl DnsConfig {
         tag: Option<String>,
     ) -> &mut Self {
         if let Some(name) = tag {
-            self.servers.as_mut().unwrap().push(DnsServer::Udp(
+            self.servers.push(DnsServer::Udp(
                 DnsServerUdp::with_server(server, server_port).change_tag(name),
             ));
         } else {
-            self.servers
-                .as_mut()
-                .unwrap()
-                .push(DnsServer::Udp(DnsServerUdp::with_server(
-                    server,
-                    server_port,
-                )));
+            self.servers.push(DnsServer::Udp(DnsServerUdp::with_server(
+                server,
+                server_port,
+            )));
         }
         self
     }
 
     pub fn remove_server_by_type(&mut self, name: &str) -> &mut Self {
-        if let Some(servers) = self.servers.as_mut() {
-            servers.retain(|x| x.get_type() != name);
-        }
+        self.servers.retain(|x| x.get_type() != name);
         self
     }
 
     pub fn remove_server_by_tag(&mut self, name: &str) -> &mut Self {
-        if let Some(servers) = self.servers.as_mut() {
-            servers.retain(|x| x.get_tag() != name);
-        }
+        self.servers.retain(|x| x.get_tag() != name);
         self
+    }
+
+    pub fn clean(&mut self) -> Vec<DnsServer> {
+        let a = self.get_list();
+        self.servers = vec![];
+        a
+    }
+
+    pub fn get_list(&self) -> Vec<DnsServer> {
+        self.servers.clone()
     }
 }

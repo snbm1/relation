@@ -2,7 +2,7 @@ use rellib::auto_skip_none;
 use serde::{Deserialize, Serialize};
 
 #[auto_skip_none]
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct RealityConfig {
     pub enabled: Option<bool>,
     pub public_key: Option<String>,
@@ -28,7 +28,7 @@ impl RealityConfig {
 }
 
 #[auto_skip_none]
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct UtlsConfig {
     pub enabled: Option<bool>,
     pub fingerprint: Option<String>,
@@ -60,7 +60,7 @@ impl UtlsConfig {
 }
 
 #[auto_skip_none]
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct TlsConfig {
     pub enabled: Option<bool>,
     pub disable_sni: Option<bool>,
