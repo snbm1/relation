@@ -3,6 +3,7 @@ mod tui;
 use clap::{Parser, Subcommand};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::configurator::dns;
 use crate::datamanager::App;
 
 use signal_hook::consts::SIGINT;
@@ -36,6 +37,9 @@ enum Commands {
         /// Config url
         #[arg(short, long)]
         url: Option<String>,
+        /// Set dns servers
+        #[arg(long)]
+        dns: Option<Vec<String>>,
     },
 
     /// Dispay list of possible configs
@@ -83,9 +87,12 @@ enum Commands {
 impl Cli {
     pub fn run(&mut self, manager: &mut App) {
         match &self.command {
-            Commands::Add { url } => {
+            Commands::Add { url, dns } => {
                 if let Some(value) = url {
                     manager.handler_mut().default().set_outbound_from_url(value);
+                    if let Some(value) = dns {
+                        manager.handler_mut().set_dns_servers(value.clone());
+                    }
                     manager.add_config();
                 }
             }
@@ -122,7 +129,7 @@ impl Cli {
                 }
 
                 manager.stop_app();
-            },
+            }
             Commands::Tui => {
                 let _ = tui::run();
             }

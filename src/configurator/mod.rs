@@ -1,17 +1,21 @@
 pub mod dns;
 pub mod inbound;
+pub mod log;
 pub mod outbound;
 pub mod route;
 pub mod shared;
-pub mod log;
 
 use dns::*;
 use inbound::*;
 use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::configurator::dns::dnsserver::DnsServer;
+use crate::configurator::dns::dnsserver::DnsServerLocal;
+use crate::configurator::dns::dnsserver::DnsServerTcp;
+use crate::configurator::dns::dnsserver::DnsServerUdp;
 use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
 
@@ -94,10 +98,32 @@ impl Configurator {
         self.dns.get_list()
     }
 
-    pub fn set_dns_servers(&mut self, dns: Vec<DnsServer>) -> &mut Self {
+    pub fn set_dns_servers(&mut self, dns: Vec<String>) -> &mut Self {
         let _ = self.dns.clean();
         for i in dns {
-            self.dns.add_server(i);
+            let dh;
+            if let Ok(df) = Url::parse(&i) {
+                match df.scheme() {
+                    "" => {
+                        dh = DnsServer::Udp(DnsServerUdp::with_server(
+                            df.host_str().unwrap().to_string(),
+                            df.port(),
+                        ))
+                    }
+                    "tcp" => {
+                        dh = DnsServer::Tcp(DnsServerTcp::with_server(
+                            df.host_str().unwrap().to_string(),
+                            df.port(),
+                        ))
+                    }
+                    _ => panic!("[ERROR] Cant parse that type of dns yet"),
+                }
+            } else if i == "localhost" {
+                dh = DnsServer::Local(DnsServerLocal::new());
+            } else {
+                panic!("[ERROR] Invalid dns input")
+            }
+            self.dns.add_server(dh);
         }
         self
     }

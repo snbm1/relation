@@ -133,7 +133,6 @@ impl DnsServerHosts {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTcp {
     pub tag: Option<String>,
-    #[serde(rename = "type")]
     pub address: String,
     #[serde(flatten)]
     pub dial: Option<DialFields>,
@@ -230,7 +229,6 @@ impl DnsServerUdp {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTls {
     pub tag: Option<String>,
-    #[serde(rename = "type")]
     pub address: String,
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
@@ -275,7 +273,6 @@ impl DnsServerTls {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerQuic {
     pub tag: Option<String>,
-    #[serde(rename = "type")]
     pub address: String,
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
@@ -320,7 +317,6 @@ impl DnsServerQuic {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttps {
     pub tag: Option<String>,
-    #[serde(rename = "type")]
     pub address: String,
     pub path: Option<String>,
     pub headers: Option<HashMap<String, String>>,
@@ -367,7 +363,6 @@ impl DnsServerHttps {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttp3 {
     pub tag: Option<String>,
-    #[serde(rename = "type")]
     pub address: String,
     pub path: Option<String>,
     pub headers: Option<HashMap<String, String>>,
@@ -414,7 +409,6 @@ impl DnsServerHttp3 {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerDhcp {
     pub tag: Option<String>,
-    #[serde(rename = "type")]
     pub address: String,
     pub interface: Option<String>,
     #[serde(flatten)]
@@ -487,7 +481,6 @@ impl DnsServerFakeIp {
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTailscale {
     pub tag: Option<String>,
-    #[serde(rename = "type")]
     pub address: String,
     pub endpoint: Option<String>,
     pub accept_default_resolvers: Option<bool>,
