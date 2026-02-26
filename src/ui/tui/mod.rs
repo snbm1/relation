@@ -3,6 +3,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::App;
+
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -12,8 +14,13 @@ use crossterm::{
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    widgets::{BarChart, Block, Borders, Paragraph, BorderType},
+    style::{Color, Modifier, Style},
     text::Line,
+    widgets::{
+        BarChart, Block, Borders, BorderType,
+        List, ListItem, ListState,
+        Paragraph,
+    },
     Terminal,
 };
 
@@ -40,8 +47,8 @@ fn read_iface(iface: &str) -> io::Result<Counters> {
     Ok(Counters { rx: 0, tx: 0 })
 }
 
-pub fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let iface = "wlp2s0"; // interface
+pub fn run(app: &App) -> Result<(), Box<dyn std::error::Error>> {
+    let iface = "wlp2s0";
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -55,16 +62,33 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut rx_rate: u64 = 0;
     let mut tx_rate: u64 = 0;
 
+    let mut selected_index: usize = 0;
+
     loop {
-        // INPUT
+        // -------- INPUT --------
         if event::poll(Duration::from_millis(50))? {
             if let Event::Key(key) = event::read()? {
-                if key.code == KeyCode::Char('q') {
-                    break;
+                match key.code {
+                    KeyCode::Char('q') => break,
+
+                    KeyCode::Down => {
+                        if selected_index + 1 < app.get_list().len() {
+                            selected_index += 1;
+                        }
+                    }
+
+                    KeyCode::Up => {
+                        if selected_index > 0 {
+                            selected_index -= 1;
+                        }
+                    }
+
+                    _ => {}
                 }
             }
         }
 
+        // -------- UPDATE TRAFFIC --------
         if prev_time.elapsed() >= Duration::from_millis(500) {
             let now = Instant::now();
             let dt = (now - prev_time).as_secs_f64().max(0.001);
@@ -77,29 +101,63 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             rx_rate = (drx / dt) as u64;
             tx_rate = (dtx / dt) as u64;
 
-
             prev = current;
             prev_time = now;
+            
         }
 
-        // DRAW
+        // -------- DRAW --------
         terminal.draw(|f| {
             let size = f.area();
 
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
+            // Горизонтальное деление
+            let horizontal = Layout::default()
+                .direction(Direction::Horizontal)
                 .constraints([
-                    Constraint::Length(30), 
-                    Constraint::Min(0),   
-                    Constraint::Length(7)  
+                    Constraint::Min(0),
+                    Constraint::Length(120),
                 ])
                 .split(size);
 
-            let menu = Block::default().title("Configs").borders(Borders::ALL).border_type(BorderType::Rounded);
+            // Вертикальное деление слева
+            let vertical = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(20),
+                    Constraint::Min(0),
+                    Constraint::Length(1),
+                ])
+                .split(horizontal[0]);
 
+            // ===== CONFIG LIST =====
+            let configs = app.get_list();
 
-            f.render_widget(menu, chunks[0]);
+            let items: Vec<ListItem> = configs
+                .iter()
+                .map(|name| ListItem::new(name.clone()))
+                .collect();
 
+            let mut state = ListState::default();
+            state.select(Some(selected_index));
+
+            let list = List::new(items)
+                .block(
+                    Block::default()
+                        .title("Configs")
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded),
+                )
+                .highlight_style(
+                    Style::default()
+                        .bg(Color::LightCyan)
+                        .fg(Color::Black)
+                        .add_modifier(Modifier::BOLD),
+                )
+                .highlight_symbol(">> ");
+
+            f.render_stateful_widget(list, vertical[0], &mut state);
+
+            // ===== TRAFFIC =====
             let chart = BarChart::default()
                 .block(
                     Block::default()
@@ -111,17 +169,23 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     ("RX", rx_rate / 1024),
                     ("TX", tx_rate / 1024),
                 ])
-                .bar_width(10)
+                .bar_width(8)
                 .bar_gap(4)
-                .max(1000); 
+                .max(1000);
 
-            f.render_widget(chart, chunks[1]);
+            f.render_widget(chart, vertical[1]);
 
-            let helper = Paragraph::new(vec![
-                Line::from("Help: q - exit s - exit"),
-            ]).block(Block::default().borders(Borders::NONE));
+            // ===== HELP =====
+            let helper = Paragraph::new(Line::from("↑/↓ navigate   q exit"));
+            f.render_widget(helper, vertical[2]);
 
-            f.render_widget(helper, chunks[2]);
+            // ===== RIGHT PANEL =====
+            let right_panel = Block::default()
+                .title("Output")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded);
+
+            f.render_widget(right_panel, horizontal[1]);
         })?;
     }
 

@@ -138,7 +138,7 @@ impl Cli {
                 manager.stop_app();
             }
             Commands::Tui => {
-                let _ = tui::run();
+                let _ = tui::run(manager);
             }
         }
     }
