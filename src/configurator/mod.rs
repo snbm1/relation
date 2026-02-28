@@ -146,32 +146,34 @@ impl Configurator {
         let _ = self.dns.clean();
         for i in dns {
             let dh;
-            if let Ok(df) = Url::parse(&i) {
-                match df.scheme() {
-                    "" => {
-                        dh = DnsServer::Udp(DnsServerUdp::with_server(
-                            df.host_str().unwrap().to_string(),
-                            df.port(),
-                        ))
-                    }
-                    "tcp" => {
-                        dh = DnsServer::Tcp(DnsServerTcp::with_server(
-                            df.host_str().unwrap().to_string(),
-                            df.port(),
-                        ))
-                    }
-                    "udp" => {
-                        dh = DnsServer::Udp(DnsServerUdp::with_server(
-                            df.host_str().unwrap().to_string(),
-                            df.port(),
-                        ))
-                    }
-                    _ => panic!("[ERROR] Cant parse that type of dns yet"),
+            let df: Vec<&str> = i.split(":").collect();
+            let df_port;
+            let df_type;
+            let df_addr;
+
+            if df.len() < 3 {
+                df_port = None;
+                if df.len() < 2 {
+                    df_type = "udp";
+                    df_addr = df[0];
+                } else {
+                    df_type = df[0];
+                    df_addr = df[1];
                 }
-            } else if i == "local" {
-                dh = DnsServer::Local(DnsServerLocal::new());
             } else {
-                panic!("[ERROR] Invalid dns input")
+                df_type = df[0];
+                df_port = Some(df[2].parse::<u16>().unwrap());
+                df_addr = df[1];
+            }
+
+            match df_type {
+                "tcp" => {
+                    dh = DnsServer::Tcp(DnsServerTcp::with_server(df_addr.to_string(), df_port))
+                }
+                "udp" => {
+                    dh = DnsServer::Udp(DnsServerUdp::with_server(df_addr.to_string(), df_port))
+                }
+                _ => panic!("[ERROR] Cant parse that type of dns yet"),
             }
             self.dns.add_server(dh);
         }
