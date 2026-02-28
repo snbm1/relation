@@ -5,45 +5,8 @@ use std::fs::{self, File};
 use std::path::PathBuf;
 use toml;
 
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct DnsSettings {
-    remote_server_type: Option<String>,
-    remote_server_addr: Option<String>,
-    direct_server_type: Option<String>,
-    direct_server_addr: Option<String>,
-}
-
-impl DnsSettings {
-    pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
-    }
-
-    pub fn set_remote_server_type(mut self, server_type: String) -> Self {
-        self.remote_server_type = Some(server_type);
-        self
-    }
-
-    pub fn set_remote_server_addr(mut self, server_addr: String) -> Self {
-        self.remote_server_type = Some(server_addr);
-        self
-    }
-
-    pub fn set_direct_server_type(mut self, server_type: String) -> Self {
-        self.direct_server_type = Some(server_type);
-        self
-    }
-
-    pub fn set_direct_server_addr(mut self, server_addr: String) -> Self {
-        self.direct_server_type = Some(server_addr);
-        self
-    }
-}
-
 use crate::bridge;
 use crate::configurator::Configurator;
-use crate::configurator::dns::dnsserver::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Settings {
