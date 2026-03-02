@@ -1,3 +1,5 @@
+mod ifaces;
+use ifaces::*;
 use std::{
     io,
     time::{Duration, Instant},
@@ -24,31 +26,9 @@ use ratatui::{
     Terminal,
 };
 
-#[derive(Clone, Copy)]
-struct Counters {
-    rx: u64,
-    tx: u64,
-}
 
-fn read_iface(iface: &str) -> io::Result<Counters> {
-    let text = std::fs::read_to_string("/proc/net/dev")?;
-
-    for line in text.lines().skip(2) {
-        if let Some((name, rest)) = line.split_once(':') {
-            if name.trim() == iface {
-                let cols: Vec<&str> = rest.split_whitespace().collect();
-                let rx = cols.get(0).unwrap_or(&"0").parse().unwrap_or(0);
-                let tx = cols.get(8).unwrap_or(&"0").parse().unwrap_or(0);
-                return Ok(Counters { rx, tx });
-            }
-        }
-    }
-
-    Ok(Counters { rx: 0, tx: 0 })
-}
-
-pub fn run(app: &App) -> Result<(), Box<dyn std::error::Error>> {
-    let iface = "wlp2s0";
+pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+    let iface = iface_detect();
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -56,44 +36,74 @@ pub fn run(app: &App) -> Result<(), Box<dyn std::error::Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut prev = read_iface(iface)?;
+    let mut prev = read_iface(&iface)?;
     let mut prev_time = Instant::now();
 
     let mut rx_rate: u64 = 0;
     let mut tx_rate: u64 = 0;
 
     let mut selected_index: usize = 0;
+    let mut len = app.get_len();
+
+    let mut input_mode = false; 
+    let mut input_buffer = String::new(); 
 
     loop {
         // -------- INPUT --------
         if event::poll(Duration::from_millis(50))? {
             if let Event::Key(key) = event::read()? {
-                match key.code {
+                if input_mode {
+                    match key.code {
+                        KeyCode::Esc => {
+                            input_mode = false; 
+                            input_buffer.clear(); 
+                        }
+                        KeyCode::Enter => {
+                            if !input_buffer.is_empty() {
+                                app.handler_mut().default().set_outbound_from_url(&input_buffer.clone()); 
+                                app.add_config(); 
+                                input_buffer.clear(); 
+                                input_mode = false; 
+                                selected_index = 0; 
+                            }
+                        }
+                        KeyCode::Backspace => {
+                            input_buffer.pop(); 
+                        }
+                        KeyCode::Char(c) => {
+                            input_buffer.push(c); 
+                        }
+                        _ => {}
+                    
+                }} else {
+                    match key.code {    
+
                     KeyCode::Char('q') => break,
+                    KeyCode::Char('a') => {
+                        input_mode = true; 
+                    }
 
                     KeyCode::Down => {
-                        if selected_index + 1 < app.get_list().len() {
-                            selected_index += 1;
-                        }
+                        selected_index = (selected_index + 1) % len; 
                     }
 
                     KeyCode::Up => {
-                        if selected_index > 0 {
-                            selected_index -= 1;
-                        }
+                        selected_index = (selected_index + len - 1) % len; 
                     }
 
                     _ => {}
                 }
+                
             }
         }
+        }
+    
 
-        // -------- UPDATE TRAFFIC --------
         if prev_time.elapsed() >= Duration::from_millis(500) {
             let now = Instant::now();
             let dt = (now - prev_time).as_secs_f64().max(0.001);
 
-            let current = read_iface(iface)?;
+            let current = read_iface(&iface)?;
 
             let drx = current.rx.saturating_sub(prev.rx) as f64;
             let dtx = current.tx.saturating_sub(prev.tx) as f64;
@@ -106,30 +116,32 @@ pub fn run(app: &App) -> Result<(), Box<dyn std::error::Error>> {
             
         }
 
-        // -------- DRAW --------
         terminal.draw(|f| {
             let size = f.area();
 
-            // Горизонтальное деление
-            let horizontal = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([
-                    Constraint::Min(0),
-                    Constraint::Length(120),
-                ])
-                .split(size);
-
-            // Вертикальное деление слева
-            let vertical = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([
-                    Constraint::Length(20),
+            let root = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
                     Constraint::Min(0),
                     Constraint::Length(1),
                 ])
+            .split(size); 
+            let horizontal = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Length(50),
+                    Constraint::Min(0),
+                ])
+                .split(root[0]);
+
+            let vertical = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(22),
+                    Constraint::Min(0),
+                ])
                 .split(horizontal[0]);
 
-            // ===== CONFIG LIST =====
             let configs = app.get_list();
 
             let items: Vec<ListItem> = configs
@@ -157,6 +169,21 @@ pub fn run(app: &App) -> Result<(), Box<dyn std::error::Error>> {
 
             f.render_stateful_widget(list, vertical[0], &mut state);
 
+            if input_mode {
+                let input = Paragraph::new(input_buffer.as_str())
+                .block(
+                    Block::default().title("Add new config url").borders(Borders::ALL).border_type(BorderType::Rounded), 
+                ).style(Style::default().fg(Color::Yellow)); 
+                
+                let input_area = ratatui::layout::Rect {
+                    x: vertical[0].x, 
+                    y: vertical[0].y + vertical[0].height - 3,
+                    width: vertical[0].width, 
+                    height: 3, 
+                };
+                f.render_widget(input, input_area); 
+            }
+
             // ===== TRAFFIC =====
             let chart = BarChart::default()
                 .block(
@@ -176,20 +203,19 @@ pub fn run(app: &App) -> Result<(), Box<dyn std::error::Error>> {
             f.render_widget(chart, vertical[1]);
 
             // ===== HELP =====
-            let helper = Paragraph::new(Line::from("↑/↓ navigate   q exit"));
-            f.render_widget(helper, vertical[2]);
+            let helper = Paragraph::new(Line::from("↑/↓ navigate   q exit   a adding config ")).alignment(ratatui::layout::Alignment::Center);
+            f.render_widget(helper, root[1]);
 
             // ===== RIGHT PANEL =====
             let right_panel = Block::default()
-                .title("Output")
+                .title("Settings")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded);
 
             f.render_widget(right_panel, horizontal[1]);
         })?;
     }
-
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    Ok(())
+        disable_raw_mode()?;
+        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+        Ok(())
 }

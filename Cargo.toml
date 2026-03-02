@@ -19,6 +19,7 @@ toml = "*"
 signal-hook = "0.4"
 ratatui = "*"
 crossterm = "*"
+default-net = "*"
 
 [build-dependencies]
 bindgen = "0.72"
