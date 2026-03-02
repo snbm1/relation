@@ -232,6 +232,10 @@ impl App {
         self.configs.clone()
     }
 
+    pub fn get_len(&self) -> usize {
+        self.configs.len()
+    }
+
     pub fn get_current_config(&self) -> Option<String> {
         self.stg_handler.current.clone()
     }

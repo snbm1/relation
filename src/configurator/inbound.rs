@@ -1,5 +1,6 @@
 pub mod direct;
 pub mod mixed;
+pub mod tun;
 
 use serde::{Deserialize, Serialize};
 
@@ -69,6 +70,7 @@ impl InboundConfig {
 pub enum Inbound {
     Direct(direct::DirectConfig),
     Mixed(mixed::MixedConfig),
+    Tun(tun::TunConfig),
 }
 
 impl Inbound {
@@ -76,6 +78,7 @@ impl Inbound {
         match self {
             Inbound::Direct(cfg) => cfg.get_tag(),
             Inbound::Mixed(cfg) => cfg.get_tag(),
+            Inbound::Tun(cfg) => cfg.get_tag()
         }
     }
 
@@ -83,6 +86,7 @@ impl Inbound {
         match self {
             Inbound::Direct(cfg) => cfg.get_type(),
             Inbound::Mixed(cfg) => cfg.get_type(),
+            Inbound::Tun(cfg) => cfg.get_type(),
         }
     }
     pub fn get_system_proxy_status(&self) -> Option<(String, u16, bool)> {
@@ -103,7 +107,8 @@ impl Inbound {
                 } else {
                     None
                 }
-            }
+            },
+            Inbound::Tun(cfg) => None
         }
     }
 }
