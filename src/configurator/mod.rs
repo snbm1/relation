@@ -180,6 +180,14 @@ impl Configurator {
         self
     }
 
+    pub fn set_log(&mut self, level: String, output: Option<PathBuf>) -> &mut Self {
+        self.log.set_level(level);
+        if let Some(value) = output {
+            self.log.set_output(value);
+        }
+        self
+    }
+
     pub fn as_ref(&self) -> &Self {
         self
     }

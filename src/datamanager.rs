@@ -140,6 +140,7 @@ impl App {
     }
 
     pub fn add_config(&mut self) -> &mut Self {
+        self.set_log_file();
         self.configs.push(
             self.cfg_handler
                 .save_to_file(self.get_configs_path())
@@ -194,6 +195,7 @@ impl App {
         }
         bridge::stop_safe();
         let _ = self.stg_handler.save(self.get_settings_path());
+        self.remove_log_file();
         println!("[INFO] Shutdown Relation");
     }
 
@@ -205,6 +207,19 @@ impl App {
 
     pub fn save_config(&mut self) -> &mut Self {
         let _ = self.cfg_handler.save_to_file(self.get_configs_path());
+        self
+    }
+
+    pub fn set_log_file(&mut self) -> &mut Self {
+        self.cfg_handler.set_log(
+            "info".to_string(),
+            Some(self.get_data_path().join("box.log")),
+        );
+        self
+    }
+
+    pub fn remove_log_file(&mut self) -> &mut Self {
+        fs::remove_file(self.get_data_path().join("box.log")).expect("[ERROR] Failed to remove config file");
         self
     }
 
