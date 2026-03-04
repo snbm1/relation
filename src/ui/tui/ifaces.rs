@@ -37,19 +37,21 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
 }
 
 pub fn read_logs(app: &mut App) -> Vec<String> {
-    let path = app.get_data_path(); 
+    let path = app.get_data_path().join("box.log"); 
 
-    if let Ok(content) = std::fs::read_to_string(path) {
-        let mut lines: Vec<String> = content.lines().map(|l| l.to_string()).collect();
+    match std::fs::read_to_string(path) {
+        Ok(content) => {
+            if content.trim().is_empty() {
+                return vec!["No logs".to_string()];
+            }
+            let mut lines: Vec<String> = content.lines().map(|l| l.to_string()).collect();
+            let max = 20; 
 
-        let max = 20; 
-        
-        if lines.len() > max {
-            lines = lines.split_off(lines.len() - max); 
+            if lines.len() > max {
+                lines = lines.split_off(lines.len() - max); 
+            }
+            lines
         }
-        lines 
-    }
-    else {
-        vec!["No logs".to_string()]
+        Err(_) => vec!["No logs".to_string()]
     }
 }

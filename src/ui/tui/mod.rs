@@ -4,6 +4,9 @@ use std::{
     io,
     time::{Duration, Instant},
 };
+use std::fs::OpenOptions;
+use std::os::fd::AsRawFd;
+use std::os::fd::FromRawFd;
 
 use crate::App;
 
@@ -28,13 +31,35 @@ use ratatui::{
 
 
 pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+
     let iface = iface_detect();
 
     enable_raw_mode()?;
+
+// 1) Входим в alternate screen через обычный stdout (fd=1)
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(stdout);
+
+// 2) Дублируем fd=1 (TTY) — это будет “канал” для UI
+    let ui_fd = unsafe { libc::dup(stdout.as_raw_fd()) };
+    if ui_fd < 0 {
+        return Err("dup(stdout) failed".into());
+    }
+
+// 3) Глушим fd=1 и fd=2, чтобы Go/bridge больше не мог печатать в терминал
+    let null = OpenOptions::new().write(true).open("/dev/null")?;
+    unsafe {
+    libc::dup2(null.as_raw_fd(), libc::STDOUT_FILENO);
+    libc::dup2(null.as_raw_fd(), libc::STDERR_FILENO);
+    }
+
+// 4) Создаём writer из сохранённого fd для ratatui
+    let ui_out = unsafe { std::fs::File::from_raw_fd(ui_fd) };
+    let backend = CrosstermBackend::new(ui_out);
     let mut terminal = Terminal::new(backend)?;
+
+    let old_log = app.get_data_path().join("box.log");
+    let _ = std::fs::write(&old_log, "");
 
     let mut prev = read_iface(&iface)?;
     let mut prev_time = Instant::now();
@@ -78,7 +103,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 }} else {
                     match key.code {    
 
-                    KeyCode::Char('q') => break,
+                    KeyCode::Char('q') => {
+                        app.stop_app();
+                        break;
+                    }
                     KeyCode::Char('a') => {
                         input_mode = true; 
                     }
@@ -203,7 +231,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 f.render_widget(input, input_area); 
             }
 
-            // ===== TRAFFIC =====
+            //TRAFFIC BAR
             let chart = BarChart::default()
                 .block(
                     Block::default()
@@ -221,17 +249,18 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             f.render_widget(chart, vertical[1]);
 
-            // ===== HELP =====
+            // HELP PANEL
             let helper = Paragraph::new(Line::from("↑/↓ navigate   q exit   a adding config   d delete config")).alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
 
-            // ===== RIGHT PANEL =====
-            let right_panel = Block::default()
-                .title("Settings")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded);
+            // RIGHT PANEL
+            let logs = read_logs(app); 
+            let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
+            let log_list = List::new(log_items).block(
+                Block::default().title(Line::from("Logs").centered()).borders(Borders::ALL).border_type(BorderType::Rounded),
+            );
 
-            f.render_widget(right_panel, horizontal[1]);
+            f.render_widget(log_list, horizontal[1]);
         })?;
     }
         disable_raw_mode()?;
