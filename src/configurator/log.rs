@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use rellib::auto_skip_none;
 use serde::{Deserialize, Serialize};
 
@@ -5,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Default)]
 pub struct LogConfig {
     disable: Option<bool>,
-    level: Option<String>,
+    level: String,
     output: Option<String>,
     timestamp: Option<bool>,
 }
@@ -13,8 +15,18 @@ pub struct LogConfig {
 impl LogConfig {
     pub fn new() -> Self {
         Self {
-            level: Some("info".to_string()),
+            level: "info".to_string(),
             ..Default::default()
         }
+    }
+
+    pub fn set_output(&mut self, file: PathBuf) -> &mut Self {
+        self.output = Some(file.to_str().unwrap().to_string());
+        self
+    }
+
+    pub fn set_level(&mut self, level: String) -> &mut Self {
+        self.level = level;
+        self
     }
 }
