@@ -82,6 +82,25 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     KeyCode::Char('a') => {
                         input_mode = true; 
                     }
+                    KeyCode::Char('d') => {
+                        if len > 0 {
+                            app.remove_config_by_number(selected_index);
+                            len = app.get_len(); 
+
+                            if selected_index >= len && len > 0 {
+                                selected_index = len - 1; 
+                            }
+
+                        }
+                    }
+                    KeyCode::Enter => {
+                        let len = app.get_len(); 
+                        if len > 0 {
+                            let number = selected_index as u16 + 1; 
+                            app.set_log_file(); 
+                            app.run_app(None, Some(number), false);
+                        }
+                    }
 
                     KeyCode::Down => {
                         selected_index = (selected_index + 1) % len; 
@@ -203,7 +222,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             f.render_widget(chart, vertical[1]);
 
             // ===== HELP =====
-            let helper = Paragraph::new(Line::from("↑/↓ navigate   q exit   a adding config ")).alignment(ratatui::layout::Alignment::Center);
+            let helper = Paragraph::new(Line::from("↑/↓ navigate   q exit   a adding config   d delete config")).alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
 
             // ===== RIGHT PANEL =====

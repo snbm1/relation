@@ -1,5 +1,8 @@
 use default_net::{self, get_default_interface}; 
 use std::{io}; 
+use std::fs; 
+
+use crate::App; 
 
 #[derive(Clone, Copy)]
 pub struct Counters {
@@ -31,4 +34,22 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
     }
 
     Ok(Counters { rx: 0, tx: 0 })
+}
+
+pub fn read_logs(app: &mut App) -> Vec<String> {
+    let path = app.get_data_path(); 
+
+    if let Ok(content) = std::fs::read_to_string(path) {
+        let mut lines: Vec<String> = content.lines().map(|l| l.to_string()).collect();
+
+        let max = 20; 
+        
+        if lines.len() > max {
+            lines = lines.split_off(lines.len() - max); 
+        }
+        lines 
+    }
+    else {
+        vec!["No logs".to_string()]
+    }
 }
