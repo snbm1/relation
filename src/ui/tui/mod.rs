@@ -17,16 +17,9 @@ use crossterm::{
 };
 
 use ratatui::{
-    backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::Line,
-    widgets::{
-        BarChart, Block, Borders, BorderType,
-        List, ListItem, ListState,
-        Paragraph,
-    },
-    Terminal,
+    Terminal, backend::CrosstermBackend, layout::{Constraint, Direction, Layout}, style::{Color, Modifier, Style}, text::Line, try_init, widgets::{
+        BarChart, Block, BorderType, Borders, List, ListItem, ListState, Paragraph
+    }
 };
 
 
@@ -70,6 +63,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut selected_index: usize = 0;
     let mut len = app.get_len();
 
+    let mut enter_mode: bool = false; 
     let mut input_mode = false; 
     let mut input_buffer = String::new(); 
 
@@ -104,7 +98,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     match key.code {    
 
                     KeyCode::Char('q') => {
+                        if enter_mode {
                         app.stop_app();
+                        }
+                        
                         break;
                     }
                     KeyCode::Char('a') => {
@@ -123,10 +120,15 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     KeyCode::Enter => {
                         let len = app.get_len(); 
-                        if len > 0 {
+                        if len > 0 && !enter_mode {
                             let number = selected_index as u16 + 1; 
                             app.set_log_file(); 
                             app.run_app(None, Some(number), false);
+                            enter_mode = true; 
+                        }
+                        else if enter_mode {
+                            app.stop_app();
+                            enter_mode = false; 
                         }
                     }
 
