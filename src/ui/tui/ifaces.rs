@@ -45,7 +45,7 @@ pub fn read_logs(app: &mut App) -> Vec<String> {
                 return vec!["No logs".to_string()];
             }
             let mut lines: Vec<String> = content.lines().map(|l| l.to_string()).collect();
-            let max = 20; 
+            let max = 30; 
 
             if lines.len() > max {
                 lines = lines.split_off(lines.len() - max); 
