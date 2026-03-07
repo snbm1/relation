@@ -9,8 +9,6 @@ use configurator::Configurator;
 use datamanager::App;
 
 fn main() {
-    let mut configurator = Configurator::new();
-
     let mut datamanager = App::new("relation");
 
     let mut cli = Cli::parse();

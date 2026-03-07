@@ -96,13 +96,22 @@ impl Configurator {
         self.dns.get_list()
     }
 
+
+    /// Set route rules in format: <TYPE>:<VALUE>:<ACTION>
+    /// TYPES:                 VALUE type:
+    /// "ib" -> inbound type   `str`
+    /// "pt" -> port           `u16`
+    ///
+    /// ACTIONS:
+    /// "r"      -> Reject
+    /// "<NAME>" -> Route outbound with NAME type (for example "vless")
     pub fn set_route_rules(&mut self, rules: Vec<String>) -> &mut Self {
         let _ = self.route.clean();
         for i in rules {
             let mut rh;
             let ri: Vec<&str> = i.split(":").collect();
 
-            if ri.len() < 2 {
+            if ri.len() < 3 {
                 panic!("[ERROR] Invalid route rules input. Not enough input or incorrect")
             }
             match ri[0] {
