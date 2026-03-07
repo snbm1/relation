@@ -1,52 +1,54 @@
 mod ifaces;
 use ifaces::*;
+use std::fs::OpenOptions;
+use std::os::fd::AsRawFd;
+use std::os::fd::FromRawFd;
 use std::{
     io,
     time::{Duration, Instant},
 };
-use std::fs::OpenOptions;
-use std::os::fd::AsRawFd;
-use std::os::fd::FromRawFd;
 
 use crate::App;
 
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 
 use ratatui::{
-    Terminal, backend::CrosstermBackend, layout::{Constraint, Direction, Layout}, style::{Color, Modifier, Style}, text::Line, try_init, widgets::{
-        BarChart, Block, BorderType, Borders, List, ListItem, ListState, Paragraph
-    }
+    Terminal,
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::Line,
+    try_init,
+    widgets::{BarChart, Block, BorderType, Borders, List, ListItem, ListState, Paragraph},
 };
 
-
 pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
-
     let iface = iface_detect();
 
     enable_raw_mode()?;
 
-// 1) Входим в alternate screen через обычный stdout (fd=1)
+    // 1) Входим в alternate screen через обычный stdout (fd=1)
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
 
-// 2) Дублируем fd=1 (TTY) — это будет “канал” для UI
+    // 2) Дублируем fd=1 (TTY) — это будет “канал” для UI
     let ui_fd = unsafe { libc::dup(stdout.as_raw_fd()) };
     if ui_fd < 0 {
         return Err("dup(stdout) failed".into());
     }
 
-// 3) Глушим fd=1 и fd=2, чтобы Go/bridge больше не мог печатать в терминал
+    // 3) Глушим fd=1 и fd=2, чтобы Go/bridge больше не мог печатать в терминал
     let null = OpenOptions::new().write(true).open("/dev/null")?;
     unsafe {
-    libc::dup2(null.as_raw_fd(), libc::STDOUT_FILENO);
-    libc::dup2(null.as_raw_fd(), libc::STDERR_FILENO);
+        libc::dup2(null.as_raw_fd(), libc::STDOUT_FILENO);
+        libc::dup2(null.as_raw_fd(), libc::STDERR_FILENO);
     }
 
-// 4) Создаём writer из сохранённого fd для ratatui
+    // 4) Создаём writer из сохранённого fd для ratatui
     let ui_out = unsafe { std::fs::File::from_raw_fd(ui_fd) };
     let backend = CrosstermBackend::new(ui_out);
     let mut terminal = Terminal::new(backend)?;
@@ -63,9 +65,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut selected_index: usize = 0;
     let mut len = app.get_len();
 
-    let mut enter_mode: bool = false; 
-    let mut input_mode = false; 
-    let mut input_buffer = String::new(); 
+    let mut enter_mode: bool = false;
+    let mut input_mode = false;
+    let mut input_buffer = String::new();
 
     loop {
         // -------- INPUT --------
@@ -74,79 +76,76 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 if input_mode {
                     match key.code {
                         KeyCode::Esc => {
-                            input_mode = false; 
-                            input_buffer.clear(); 
+                            input_mode = false;
+                            input_buffer.clear();
                         }
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                app.handler_mut().default().set_outbound_from_url(&input_buffer.clone()); 
-                                app.add_config(); 
-                                input_buffer.clear(); 
-                                input_mode = false; 
-                                selected_index = 0; 
+                                app.handler_mut()
+                                    .default()
+                                    .set_outbound_from_url(&input_buffer.clone());
+                                app.add_config(None);
+                                input_buffer.clear();
+                                input_mode = false;
+                                selected_index = 0;
                             }
                         }
                         KeyCode::Backspace => {
-                            input_buffer.pop(); 
+                            input_buffer.pop();
                         }
                         KeyCode::Char(c) => {
-                            input_buffer.push(c); 
+                            input_buffer.push(c);
                         }
                         _ => {}
-                    
-                }} else {
-                    match key.code {    
-
-                    KeyCode::Char('q') => {
-                        if enter_mode {
-                        app.stop_app();
-                        }
-                        
-                        break;
                     }
-                    KeyCode::Char('a') => {
-                        input_mode = true; 
-                    }
-                    KeyCode::Char('d') => {
-                        if len > 0 {
-                            app.remove_config_by_number(selected_index);
-                            len = app.get_len(); 
-
-                            if selected_index >= len && len > 0 {
-                                selected_index = len - 1; 
+                } else {
+                    match key.code {
+                        KeyCode::Char('q') => {
+                            if enter_mode {
+                                app.stop_app();
                             }
 
+                            break;
                         }
-                    }
-                    KeyCode::Enter => {
-                        let len = app.get_len(); 
-                        if len > 0 && !enter_mode {
-                            let number = selected_index as u16 + 1; 
-                            app.set_log_file(); 
-                            app.run_app(None, Some(number), false);
-                            enter_mode = true; 
+                        KeyCode::Char('a') => {
+                            input_mode = true;
                         }
-                        else if enter_mode {
-                            app.stop_app();
-                            enter_mode = false; 
+                        KeyCode::Char('d') => {
+                            if len > 0 {
+                                app.remove_config_by_number(selected_index);
+                                len = app.get_len();
+
+                                if selected_index >= len && len > 0 {
+                                    selected_index = len - 1;
+                                }
+                            }
                         }
-                    }
+                        KeyCode::Enter => {
+                            let len = app.get_len();
+                            if len > 0 && !enter_mode {
+                                let number = selected_index as u16 + 1;
+                                app.set_log_file();
+                                app.run_app(None, Some(number), false);
+                                enter_mode = true;
+                            } else if enter_mode {
+                                app.stop_app();
+                                enter_mode = false;
+                            }
+                        }
 
-                    KeyCode::Down => {
-                        selected_index = (selected_index + 1) % len; 
-                    }
+                        KeyCode::Down => {
+                            selected_index = (selected_index + 1) % len;
+                        }
 
-                    KeyCode::Up => {
-                        selected_index = (selected_index + len - 1) % len; 
-                    }
+                        KeyCode::Up => {
+                            selected_index = (selected_index + len - 1) % len;
+                        }
 
-                    _ => {}
+                        _ => {}
+                    }
                 }
-                
             }
         }
-        }
-    
 
         if prev_time.elapsed() >= Duration::from_millis(500) {
             let now = Instant::now();
@@ -162,33 +161,23 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             prev = current;
             prev_time = now;
-            
         }
 
         terminal.draw(|f| {
             let size = f.area();
 
             let root = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                    Constraint::Min(0),
-                    Constraint::Length(1),
-                ])
-            .split(size); 
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(0), Constraint::Length(1)])
+                .split(size);
             let horizontal = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([
-                    Constraint::Length(50),
-                    Constraint::Min(0),
-                ])
+                .constraints([Constraint::Length(50), Constraint::Min(0)])
                 .split(root[0]);
 
             let vertical = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([
-                    Constraint::Length(22),
-                    Constraint::Min(0),
-                ])
+                .constraints([Constraint::Length(22), Constraint::Min(0)])
                 .split(horizontal[0]);
 
             let configs = app.get_list();
@@ -220,17 +209,21 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             if input_mode {
                 let input = Paragraph::new(input_buffer.as_str())
-                .block(
-                    Block::default().title("Add new config url").borders(Borders::ALL).border_type(BorderType::Rounded), 
-                ).style(Style::default().fg(Color::Yellow)); 
-                
+                    .block(
+                        Block::default()
+                            .title("Add new config url")
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded),
+                    )
+                    .style(Style::default().fg(Color::Yellow));
+
                 let input_area = ratatui::layout::Rect {
-                    x: vertical[0].x, 
+                    x: vertical[0].x,
                     y: vertical[0].y + vertical[0].height - 3,
-                    width: vertical[0].width, 
-                    height: 3, 
+                    width: vertical[0].width,
+                    height: 3,
                 };
-                f.render_widget(input, input_area); 
+                f.render_widget(input, input_area);
             }
 
             //TRAFFIC BAR
@@ -241,10 +234,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         .borders(Borders::ALL)
                         .border_type(BorderType::Rounded),
                 )
-                .data(&[
-                    ("RX", rx_rate / 1024),
-                    ("TX", tx_rate / 1024),
-                ])
+                .data(&[("RX", rx_rate / 1024), ("TX", tx_rate / 1024)])
                 .bar_width(8)
                 .bar_gap(4)
                 .max(1000);
@@ -252,20 +242,26 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             f.render_widget(chart, vertical[1]);
 
             // HELP PANEL
-            let helper = Paragraph::new(Line::from("↑/↓ navigate   q exit   a adding config   d delete config")).alignment(ratatui::layout::Alignment::Center);
+            let helper = Paragraph::new(Line::from(
+                "↑/↓ navigate   q exit   a adding config   d delete config",
+            ))
+            .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
 
             // RIGHT PANEL
-            let logs = read_logs(app); 
+            let logs = read_logs(app);
             let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
             let log_list = List::new(log_items).block(
-                Block::default().title(Line::from("Logs").centered()).borders(Borders::ALL).border_type(BorderType::Rounded),
+                Block::default()
+                    .title(Line::from("Logs").centered())
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
             );
 
             f.render_widget(log_list, horizontal[1]);
         })?;
     }
-        disable_raw_mode()?;
-        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-        Ok(())
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    Ok(())
 }

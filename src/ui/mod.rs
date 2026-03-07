@@ -44,6 +44,14 @@ enum Commands {
         /// Set Route rules [<type>:<value>:<action>]
         #[arg(long)]
         route: Option<Vec<String>>,
+
+        /// Set as tunnel (also name as VPN)
+        #[arg(short, long)]
+        tun: bool,
+
+        /// Set a custom name of config
+        #[arg(long)]
+        name: Option<String>,
     },
 
     /// Dispay list of possible configs
@@ -91,7 +99,13 @@ enum Commands {
 impl Cli {
     pub fn run(&mut self, manager: &mut App) {
         match &self.command {
-            Commands::Add { url, dns, route } => {
+            Commands::Add {
+                url,
+                dns,
+                route,
+                tun,
+                name,
+            } => {
                 if let Some(value) = url {
                     manager.handler_mut().default().set_outbound_from_url(value);
                     if let Some(value) = dns {
@@ -100,7 +114,11 @@ impl Cli {
                     if let Some(value) = route {
                         manager.handler_mut().set_route_rules(value.clone());
                     }
-                    manager.add_config();
+                    if *tun {
+                        manager.handler_mut().set_tun();
+                    }
+
+                    manager.add_config(name.clone());
                 }
             }
             Commands::List => {

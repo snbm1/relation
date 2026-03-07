@@ -139,13 +139,21 @@ impl App {
         self.configs.remove(number);
     }
 
-    pub fn add_config(&mut self) -> &mut Self {
+    pub fn add_config(&mut self, name: Option<String>) -> &mut Self {
         self.set_log_file();
-        self.configs.push(
-            self.cfg_handler
-                .save_to_file(self.get_configs_path())
-                .unwrap(),
-        );
+        if let Some(value) = name {
+            self.configs.push(
+                self.cfg_handler
+                    .save_to_file(self.get_configs_path(), value)
+                    .unwrap(),
+            );
+        } else {
+            self.configs.push(
+                self.cfg_handler
+                    .save_to_file(self.get_configs_path(), self.cfg_handler.get_outbound_tag())
+                    .unwrap(),
+            );
+        }
         self.configs.sort();
         self
     }
@@ -205,8 +213,16 @@ impl App {
             .load_from_file(self.get_configs_path().join(format!("{}.json", name)));
     }
 
-    pub fn save_config(&mut self) -> &mut Self {
-        let _ = self.cfg_handler.save_to_file(self.get_configs_path());
+    pub fn save_config(&mut self, name: Option<String>) -> &mut Self {
+        if let Some(value) = name {
+            let _ = self
+                .cfg_handler
+                .save_to_file(self.get_configs_path(), value);
+        } else {
+            let _ = self
+                .cfg_handler
+                .save_to_file(self.get_configs_path(), self.cfg_handler.get_outbound_tag());
+        }
         self
     }
 
@@ -219,7 +235,8 @@ impl App {
     }
 
     pub fn remove_log_file(&mut self) -> &mut Self {
-        fs::remove_file(self.get_data_path().join("box.log")).expect("[ERROR] Failed to remove config file");
+        fs::remove_file(self.get_data_path().join("box.log"))
+            .expect("[ERROR] Failed to remove config file");
         self
     }
 

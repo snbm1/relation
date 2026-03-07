@@ -188,6 +188,16 @@ impl Configurator {
         self
     }
 
+    pub fn set_tun(&mut self) -> &mut Self {
+        self.inbounds.clean().add_direct(None).add_tun(
+            vec!["172.18.0.1/30".to_string()],
+            true,
+            true,
+            1600,
+        );
+        self
+    }
+
     pub fn as_ref(&self) -> &Self {
         self
     }
@@ -196,10 +206,12 @@ impl Configurator {
         self
     }
 
-    pub fn save_to_file(&self, dir: PathBuf) -> Result<String, Box<dyn std::error::Error>> {
-        let tag = &self.outbounds.get_tags_except_direct()[0];
+    pub fn get_outbound_tag(&self) -> String {
+        self.outbounds.get_tags_except_direct()[0].clone()
+    }
 
-        let file_path = dir.join(format!("{tag}.json"));
+    pub fn save_to_file(&self, dir: PathBuf, file_name: String) -> Result<String, Box<dyn std::error::Error>> {
+        let file_path = dir.join(format!("{file_name}.json"));
 
         let file = File::create(&file_path)?;
         let writer = BufWriter::new(file);

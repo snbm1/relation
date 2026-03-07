@@ -11,7 +11,7 @@ pub struct Http_proxy {
     server: Option<String>,
     server_port: Option<u16>,
     bypass_domain: Option<Vec<String>>,
-    match_domain: Option<Vec<String>>
+    match_domain: Option<Vec<String>>,
 }
 
 impl Http_proxy {
@@ -29,7 +29,7 @@ pub struct TunConfig {
     pub config_type: Option<String>,
     pub tag: Option<String>,
     pub interface_name: Option<String>,
-    pub address: Option<Vec<String>>,
+    pub address: Vec<String>,
     pub mtu: Option<u16>,
     pub auto_route: Option<bool>,
     pub iprote2_table_index: Option<u16>,
@@ -69,8 +69,36 @@ impl TunConfig {
         Self {
             config_type: Some("tun".to_string()),
             tag: Some("inbound-tun".to_string()),
+            address: vec![],
             ..Default::default()
         }
+    }
+
+    pub fn add_ip(mut self, address: String) -> Self {
+        self.address.push(address);
+        self
+    }
+
+    pub fn add_ip_list(mut self, address: Vec<String>) -> Self {
+        for i in address {
+            self.address.push(i);
+        }
+        self
+    }
+
+    pub fn set_mtu(mut self, mtu: u16) -> Self {
+        self.mtu = Some(mtu);
+        self
+    }
+
+    pub fn set_auto_route(mut self, route: bool) -> Self {
+        self.auto_route = Some(route);
+        self
+    }
+
+    pub fn set_strict_route(mut self, route: bool) -> Self {
+        self.strict_route = Some(route);
+        self
     }
 
     pub fn get_type(&self) -> String {
