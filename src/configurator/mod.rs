@@ -104,6 +104,7 @@ impl Configurator {
     ///
     /// ACTIONS:
     /// "r"      -> Reject
+    /// "h"      -> hijack-dns
     /// "<NAME>" -> Route outbound with NAME type (for example "vless")
     pub fn set_route_rules(&mut self, rules: Vec<String>) -> &mut Self {
         let _ = self.route.clean();
@@ -241,5 +242,14 @@ impl Configurator {
 
         *self = configurator;
         Ok(self)
+    }
+
+    pub fn clean(&mut self) -> &mut Self {
+        self.log.clean();
+        self.dns.clean();
+        self.inbounds.clean();
+        self.outbounds.clean();
+        self.route.clean();
+        self
     }
 }

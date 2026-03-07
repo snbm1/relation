@@ -468,6 +468,23 @@ impl DnsServerFakeIp {
         }
     }
 
+    pub fn add_ip4(mut self, address: String) -> Self {
+        self.inet4_range = Some(address);
+        self
+    }
+
+    pub fn add_ip6(mut self, address: String) -> Self {
+        self.inet6_range = Some(address);
+        self
+    }
+
+    /// (String, String) -> (ipv4, ipv6)
+    pub fn add_ips(mut self, addresses: (String, String)) -> Self {
+        self.inet4_range = Some(addresses.0);
+        self.inet6_range = Some(addresses.1);
+        self
+    }
+
     pub fn get_type(&self) -> String {
         "fakeip".to_string()
     }
