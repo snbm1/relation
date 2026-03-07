@@ -101,6 +101,17 @@ impl TunConfig {
         self
     }
 
+    pub fn set_auto_redirect(mut self, redirect: bool) -> Self {
+        self.auto_redirect = Some(redirect);
+        self
+    }
+
+    /// stack: "system" | "mixed"
+    pub fn set_stack(mut self, stack: String) -> Self {
+        self.stack = Some(stack);
+        self
+    }
+
     pub fn get_type(&self) -> String {
         self.config_type.clone().expect("[ERROR] No type")
     }
