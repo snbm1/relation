@@ -135,11 +135,16 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
 
                         KeyCode::Down | KeyCode::Char('j') => {
+                            if len > 0 {
                             selected_index = (selected_index + 1) % len;
+                            }
+
                         }
 
                         KeyCode::Up | KeyCode::Char('k') => {
+                            if len > 0 {
                             selected_index = (selected_index + len - 1) % len;
+                            }
                         }
 
                         _ => {}
