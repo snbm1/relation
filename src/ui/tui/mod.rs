@@ -82,6 +82,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
                                 app.handler_mut()
+                                    .clean()
                                     .default()
                                     .set_outbound_from_url(&input_buffer.clone());
                                 app.add_config(None);

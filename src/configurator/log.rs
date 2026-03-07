@@ -29,4 +29,9 @@ impl LogConfig {
         self.level = level;
         self
     }
+
+    pub fn clean(&mut self) -> &mut Self {
+        *self = Self::new();
+        self
+    }
 }

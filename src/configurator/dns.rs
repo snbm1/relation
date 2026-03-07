@@ -43,6 +43,11 @@ impl DnsConfig {
         self
     }
 
+    pub fn set_reverse_mapping(&mut self, value: bool) -> &mut Self {
+        self.reverse_mapping = Some(value);
+        self
+    }
+
     pub fn add_server(&mut self, server: DnsServer) -> &mut Self {
         self.servers.push(server);
         self
@@ -106,10 +111,9 @@ impl DnsConfig {
         self
     }
 
-    pub fn clean(&mut self) -> Vec<DnsServer> {
-        let a = self.get_list();
-        self.servers = vec![];
-        a
+    pub fn clean(&mut self) -> &mut Self {
+        *self = Self::new();
+        self
     }
 
     pub fn get_list(&self) -> Vec<DnsServer> {

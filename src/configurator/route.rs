@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod routerule;
 pub mod ruleset;
+use crate::configurator::dns::DnsConfig;
 use crate::configurator::outbound::OutboundConfig;
 use crate::configurator::route::routerule::{DefaultRouteRule, LogicalRouteRule, RouteRule};
 use crate::configurator::route::ruleset::RuleSet;
@@ -18,7 +19,7 @@ pub struct RouteConfig {
     pub override_android_vpn: Option<bool>,
     pub default_interface: Option<String>,
     pub default_mark: Option<u32>,
-    pub default_domain_resolver: Option<DomainResolver>,
+    pub default_domain_resolver: Option<String>,
     pub default_network_strategy: Option<String>,
     pub default_network_type: Option<Vec<String>>,
     pub default_fallback_network_type: Option<Vec<String>>,
@@ -53,7 +54,12 @@ impl RouteConfig {
         outbound: &OutboundConfig,
         outbound_type: &str,
     ) -> &mut Self {
-        self.default = Some(outbound.get_tag_by_type(outbound_type).unwrap());
+        self.default = outbound.get_tag_by_type(outbound_type);
+        self
+    }
+
+    pub fn set_default_domain_resolver(&mut self, dns: &DnsConfig, dns_type: &str) -> &mut Self {
+        self.default_domain_resolver = dns.get_tag_by_type(dns_type);
         self
     }
 
@@ -61,34 +67,8 @@ impl RouteConfig {
         self.rules.clone()
     }
 
-    pub fn clean(&mut self) -> Vec<RouteRule> {
-        let a = self.get_list();
-        self.rules = vec![];
-        a
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum DomainResolver {
-    Tag(String),
-    Options(ResolveOptionsNoAction),
-}
-
-#[auto_skip_none]
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
-pub struct ResolveOptionsNoAction {
-    pub server: Option<String>,
-    pub strategy: Option<String>,
-    pub disable_cache: Option<bool>,
-    pub rewrite_ttl: Option<u32>,
-    pub client_subnet: Option<String>,
-}
-
-impl ResolveOptionsNoAction {
-    pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+    pub fn clean(&mut self) -> &mut Self {
+        *self = Self::new();
+        self
     }
 }
