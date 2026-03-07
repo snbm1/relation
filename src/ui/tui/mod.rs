@@ -71,7 +71,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         // -------- INPUT --------
-        if event::poll(Duration::from_millis(50))? {
+        if event::poll(Duration::from_millis(500))? {
             if let Event::Key(key) = event::read()? {
                 if input_mode {
                     match key.code {
@@ -86,6 +86,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                     .set_outbound_from_url(&input_buffer.clone());
                                 app.add_config(None);
                                 input_buffer.clear();
+                                len = app.get_len();
                                 input_mode = false;
                                 selected_index = 0;
                             }
@@ -133,11 +134,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
 
-                        KeyCode::Down => {
+                        KeyCode::Down | KeyCode::Char('j') => {
                             selected_index = (selected_index + 1) % len;
                         }
 
-                        KeyCode::Up => {
+                        KeyCode::Up | KeyCode::Char('k') => {
                             selected_index = (selected_index + len - 1) % len;
                         }
 

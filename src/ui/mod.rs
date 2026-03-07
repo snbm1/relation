@@ -150,7 +150,7 @@ impl Cli {
                 manager.run_app(tag.clone(), *number, *unable_system_proxy);
 
                 while RUNNING.load(Ordering::SeqCst) {
-                    std::thread::sleep(std::time::Duration::from_millis(200));
+                    std::thread::sleep(std::time::Duration::from_millis(500));
                 }
 
                 manager.stop_app();
