@@ -69,6 +69,11 @@ impl OutboundConfig {
             .map(|x| x.get_type())
             .collect()
     }
+
+    pub fn clean(&mut self) -> &mut Self {
+        *self = Self::new();
+        self
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

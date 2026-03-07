@@ -82,7 +82,7 @@ impl InboundConfig {
     }
 
     pub fn clean(&mut self) -> &mut Self {
-        self.servers.clear();
+        *self = Self::new();
         self
     }
 }
