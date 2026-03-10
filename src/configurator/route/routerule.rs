@@ -87,6 +87,20 @@ impl DefaultRouteRule {
         }
     }
 
+    pub fn sniff_action(timeout: String) -> Self {
+        Self {
+            action: RuleAction::Sniff(SniffAction::new().set_timeout(timeout)),
+            ..Default::default()
+        }
+    }
+
+    pub fn hijack_dns_action() -> Self {
+        Self {
+            action: RuleAction::HijackDns(HijackDnsAction::new()),
+            ..Default::default()
+        }
+    }
+
     pub fn add_inbound(mut self, inbound: Vec<String>) -> Self {
         if let Some(value) = self.inbound.as_mut() {
             let _ = inbound.iter().map(|x| value.push(x.clone()));
@@ -180,6 +194,7 @@ impl RouteAction {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct RejectAction {
+    pub action: String,
     pub method: String,
     pub no_drop: Option<bool>,
 }
@@ -187,16 +202,15 @@ pub struct RejectAction {
 impl RejectAction {
     pub fn new() -> Self {
         Self {
+            action: "reject".to_string(),
             method: "default".to_string(),
             ..Default::default()
         }
     }
 
-    pub fn with_method(method: String) -> Self {
-        Self {
-            method,
-            ..Default::default()
-        }
+    pub fn set_method(mut self, method: String) -> Self {
+        self.method = method;
+        self
     }
 
     pub fn set_no_drop(mut self, no_drop: bool) -> Self {
@@ -207,27 +221,36 @@ impl RejectAction {
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
-pub struct HijackDnsAction {}
+pub struct HijackDnsAction {
+    pub action: String,
+}
 
 impl HijackDnsAction {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            action: "hijack-dns".to_string()
+        }
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct SniffAction {
-    pub sniffer: Vec<String>,
+    pub action: String,
+    pub sniffer: Option<Vec<String>>,
     pub timeout: Option<String>,
 }
 
 impl SniffAction {
     pub fn new() -> Self {
         Self {
-            sniffer: vec![],
+            action: "sniff".to_string(),
             ..Default::default()
         }
+    }
+    pub fn set_timeout(mut self, timeout: String) -> Self {
+        self.timeout = Some(timeout);
+        self
     }
 }
 

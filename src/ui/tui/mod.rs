@@ -21,7 +21,7 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::Line,
+    text::{Line, Span},
     try_init,
     widgets::{BarChart, Block, BorderType, Borders, List, ListItem, ListState, Paragraph},
 };
@@ -67,6 +67,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut enter_mode: bool = false;
     let mut input_mode = false;
+    let mut running: Option<String> = None; 
     let mut input_buffer = String::new();
 
     loop {
@@ -114,7 +115,15 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Char('d') => {
                             if len > 0 {
+                                let name = app.get_list()[selected_index].clone(); 
                                 app.remove_config_by_number(selected_index);
+
+                                if running.as_deref() == Some(name.as_str()) {
+                                    app.stop_app();
+                                    running = None;
+                                    enter_mode = false;  
+                                }
+
                                 len = app.get_len();
 
                                 if selected_index >= len && len > 0 {
@@ -126,12 +135,26 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             let len = app.get_len();
                             if len > 0 && !enter_mode {
                                 let number = selected_index as u16 + 1;
+                                running = Some(app.get_list()[selected_index].clone()); 
                                 app.set_log_file();
                                 app.run_app(None, Some(number), false);
                                 enter_mode = true;
                             } else if enter_mode {
-                                app.stop_app();
-                                enter_mode = false;
+                                let name = app.get_list()[selected_index].clone(); 
+                                if running.as_deref() == Some(name.as_str()) {
+                                    running = None; 
+                                    app.stop_app();
+                                    enter_mode = false;
+                                }
+                                else {
+                                    app.stop_app();
+                                    std::thread::sleep(Duration::from_millis(100)); 
+                                    let number = selected_index as u16 + 1;
+                                    running = Some(name.clone()); 
+                                    app.set_log_file();
+                                    app.run_app(None, Some(number), false);
+                                }
+                                
                             }
                         }
 
@@ -191,7 +214,18 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             let items: Vec<ListItem> = configs
                 .iter()
-                .map(|name| ListItem::new(name.clone()))
+                .map(|name| {
+                    let is_running = running.as_deref() == Some(name.as_str()); 
+                    if is_running {
+                        ListItem::new(Line::from(vec![
+                            Span::styled("● ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)), 
+                            Span::styled(name.clone(), Style::default().add_modifier(Modifier::BOLD)),
+                        ]))
+                    }
+                    else {
+                        ListItem::new(name.clone())
+                    }
+                })
                 .collect();
 
             let mut state = ListState::default();
