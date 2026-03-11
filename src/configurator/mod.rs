@@ -96,54 +96,55 @@ impl Configurator {
         self.dns.get_list()
     }
 
-
-    /// Set route rules in format: <TYPE>:<VALUE>:<ACTION>
+    /// Set route rules in format: <ACTION>:<TYPE>:<VALUE>
     /// TYPES:                 VALUE type:
     /// "ib" -> inbound type   `str`
     /// "pt" -> port           `u16`
     ///
     /// ACTIONS:
     /// "r"      -> Reject
-    /// "h"      -> hijack-dns
+    /// "h"      -> Hijack-dns (for hijack just write "h::")
+    /// "s"      -> Shiff (for shiff just write "s::")
     /// "<NAME>" -> Route outbound with NAME type (for example "vless")
     pub fn set_route_rules(&mut self, rules: Vec<String>) -> &mut Self {
         let _ = self.route.clean();
         for i in rules {
             let mut rh;
             let ri: Vec<&str> = i.split(":").collect();
+            let mut value_flag = false;
 
             if ri.len() < 3 {
                 panic!("[ERROR] Invalid route rules input. Not enough input or incorrect")
             }
+
             match ri[0] {
-                "ib" => {
-                    match ri[2] {
-                        "r" => rh = Some(DefaultRouteRule::reject_action()),
-                        x => {
-                            rh = Some(DefaultRouteRule::route_action_by_type(
-                                &self.outbounds,
-                                x.to_string(),
-                            ))
-                        }
-                    }
-                    rh = Some(
-                        rh.unwrap()
-                            .add_inbound_by_type(&self.inbounds, ri[1].to_string()),
-                    );
+                "r" => {
+                    rh = Some(DefaultRouteRule::reject_action());
+                    value_flag = true;
                 }
-                "pt" => {
-                    match ri[2] {
-                        "r" => rh = Some(DefaultRouteRule::reject_action()),
-                        x => {
-                            rh = Some(DefaultRouteRule::route_action_by_type(
-                                &self.outbounds,
-                                x.to_string(),
-                            ))
-                        }
-                    }
-                    rh = Some(rh.unwrap().add_port(vec![ri[1].parse().unwrap()]));
+                "h" => rh = Some(DefaultRouteRule::hijack_dns_action()),
+                "s" => rh = Some(DefaultRouteRule::sniff_action("1s".to_string())),
+                x => {
+                    rh = Some(DefaultRouteRule::route_action_by_type(
+                        &self.outbounds,
+                        x.to_string(),
+                    ));
+                    value_flag = true;
                 }
-                _ => rh = None,
+            }
+            if value_flag {
+                match ri[1] {
+                    "ib" => {
+                        rh = Some(
+                            rh.unwrap()
+                                .add_inbound_by_type(&self.inbounds, ri[2].to_string()),
+                        );
+                    }
+                    "pt" => {
+                        rh = Some(rh.unwrap().add_port(vec![ri[2].parse().unwrap()]));
+                    }
+                    _ => rh = None,
+                }
             }
             if let Some(value) = rh {
                 self.route.add_default_rule(value);
@@ -220,7 +221,11 @@ impl Configurator {
         self.outbounds.get_tags_except_direct()[0].clone()
     }
 
-    pub fn save_to_file(&self, dir: PathBuf, file_name: String) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn save_to_file(
+        &self,
+        dir: PathBuf,
+        file_name: String,
+    ) -> Result<String, Box<dyn std::error::Error>> {
         let file_path = dir.join(format!("{file_name}.json"));
 
         let file = File::create(&file_path)?;
