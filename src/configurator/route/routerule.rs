@@ -228,7 +228,7 @@ pub struct HijackDnsAction {
 impl HijackDnsAction {
     pub fn new() -> Self {
         Self {
-            action: "hijack-dns".to_string()
+            action: "hijack-dns".to_string(),
         }
     }
 }
