@@ -43,13 +43,12 @@ pub struct DefaultRouteRule {
     pub rule_set_ip_cidr_match_source: Option<Vec<String>>,
     pub invert: Option<bool>,
     #[serde(flatten)]
-    pub action: RuleAction,
+    pub action: Option<RuleAction>,
 }
 
 impl DefaultRouteRule {
     pub fn new() -> Self {
         Self {
-            action: RuleAction::Route(RouteAction::new("".to_string())),
             ..Default::default()
         }
     }
@@ -64,55 +63,66 @@ impl DefaultRouteRule {
 
     pub fn route_action(outbound: String) -> Self {
         Self {
-            action: RuleAction::Route(RouteAction::new(outbound)),
+            action: Some(RuleAction::Route(RouteAction::new(outbound))),
             ..Default::default()
         }
     }
 
-    pub fn route_action_by_type(outbound: &OutboundConfig, outbound_type: String) -> Self {
+    pub fn route_action_by_type(outbound: &OutboundConfig, outbound_type: &str) -> Self {
         Self {
-            action: RuleAction::Route(RouteAction::new(
+            action: Some(RuleAction::Route(RouteAction::new(
                 outbound
                     .get_tag_by_type(&outbound_type)
                     .expect("[ERROR] cannot find that type"),
-            )),
+            ))),
             ..Default::default()
         }
     }
 
     pub fn reject_action() -> Self {
         Self {
-            action: RuleAction::Reject(RejectAction::new()),
+            action: Some(RuleAction::Reject(RejectAction::new())),
             ..Default::default()
         }
     }
 
-    pub fn sniff_action(timeout: String) -> Self {
+    pub fn sniff_action(timeout: &str) -> Self {
         Self {
-            action: RuleAction::Sniff(SniffAction::new().set_timeout(timeout)),
+            action: Some(RuleAction::Sniff(
+                SniffAction::new().set_timeout(timeout.to_string()),
+            )),
             ..Default::default()
         }
     }
 
     pub fn hijack_dns_action() -> Self {
         Self {
-            action: RuleAction::HijackDns(HijackDnsAction::new()),
+            action: Some(RuleAction::HijackDns(HijackDnsAction::new())),
             ..Default::default()
         }
     }
 
-    pub fn add_inbound(mut self, inbound: Vec<String>) -> Self {
+    pub fn add_inbound(mut self, inbound: Vec<&str>) -> Self {
         if let Some(value) = self.inbound.as_mut() {
-            let _ = inbound.iter().map(|x| value.push(x.clone()));
+            let _ = inbound.iter().map(|x| value.push(x.to_string()));
         } else {
-            self.inbound = Some(inbound);
+            self.inbound = Some(inbound.iter().map(|x| x.to_string()).collect());
         }
         self
     }
 
-    pub fn add_inbound_by_type(mut self, inbound: &InboundConfig, inbound_type: String) -> Self {
+    pub fn add_ip_cidr(mut self, ip: &str) -> Self {
+        if let Some(value) = self.ip_cidr.as_mut() {
+            value.push(ip.to_string());
+        } else {
+            self.ip_cidr = Some(vec![ip.to_string()]);
+        }
+        self
+    }
+
+    pub fn add_inbound_by_type(mut self, inbound: &InboundConfig, inbound_type: &str) -> Self {
         let tag = inbound
-            .get_tag_by_type(&inbound_type)
+            .get_tag_by_type(inbound_type)
             .expect("[ERROR] cannot find that inbound type");
 
         self.inbound.get_or_insert_with(Vec::new).push(tag);
@@ -120,11 +130,29 @@ impl DefaultRouteRule {
         self
     }
 
-    pub fn add_port(mut self, port: Vec<u16>) -> Self {
+    pub fn add_ports(mut self, ports: Vec<u16>) -> Self {
         if let Some(value) = self.port.as_mut() {
-            let _ = port.iter().map(|x| value.push(*x));
+            let _ = ports.iter().map(|x| value.push(*x));
         } else {
-            self.port = Some(port);
+            self.port = Some(ports);
+        }
+        self
+    }
+
+    pub fn add_port(mut self, port: u16) -> Self {
+        if let Some(value) = self.port.as_mut() {
+            value.push(port);
+        } else {
+            self.port = Some(vec![port]);
+        }
+        self
+    }
+
+    pub fn add_protocol(mut self, protocol: &str) -> Self {
+        if let Some(value) = self.protocol.as_mut() {
+            value.push(protocol.to_string());
+        } else {
+            self.protocol = Some(vec![protocol.to_string()]);
         }
         self
     }
@@ -141,18 +169,50 @@ pub struct LogicalRouteRule {
     #[serde(rename = "type")]
     pub rule_type: Option<String>,
     pub mode: Option<String>,
-    pub rules: Option<Vec<RouteRule>>,
+    pub rules: Vec<RouteRule>,
     pub invert: Option<bool>,
-    #[serde(rename = "action")]
     #[serde(flatten)]
-    pub action: Option<RuleAction>,
+    pub action: RuleAction,
 }
 
 impl LogicalRouteRule {
     pub fn new() -> Self {
         Self {
+            rule_type: Some("logical".to_string()),
+            action: RuleAction::Reject(RejectAction::new()),
+            rules: vec![],
             ..Default::default()
         }
+    }
+
+    pub fn or() -> Self {
+        Self {
+            rule_type: Some("logical".to_string()),
+            action: RuleAction::Reject(RejectAction::new()),
+            rules: vec![],
+            mode: Some("or".to_string()),
+            ..Default::default()
+        }
+    }
+
+    pub fn set_mode(mut self, mode: String) -> Self {
+        self.mode = Some(mode);
+        self
+    }
+
+    pub fn add_rule(mut self, rule: DefaultRouteRule) -> Self {
+        self.rules.push(RouteRule::Default(rule));
+        self
+    }
+
+    pub fn set_sniff_action(mut self, timeout: String) -> Self {
+        self.action = RuleAction::Sniff(SniffAction::new().set_timeout(timeout));
+        self
+    }
+
+    pub fn set_hijack_dns_action(mut self) -> Self {
+        self.action = RuleAction::HijackDns(HijackDnsAction::new());
+        self
     }
 }
 

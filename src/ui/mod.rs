@@ -115,7 +115,11 @@ impl Cli {
                         manager.handler_mut().set_route_rules(value.clone());
                     }
                     if *tun {
-                        manager.handler_mut().set_tun();
+                        manager
+                            .handler_mut()
+                            .clean()
+                            .default_tun()
+                            .set_outbound_from_url(value);
                     }
 
                     manager.add_config(name.clone());

@@ -13,8 +13,10 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::configurator::dns::dnsserver::*;
+use crate::configurator::inbound::tun::TunConfig;
 use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
+use crate::configurator::route::routerule::LogicalRouteRule;
 
 use core::panic;
 use std::fs::File;
@@ -59,26 +61,67 @@ impl Configurator {
         self.route
             .auto_detect_interface(true)
             .add_default_rule(
-                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct".to_string())
-                    .add_inbound(vec!["dns-direct".to_string()]),
+                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
+                    .add_inbound(vec!["dns-direct"]),
             )
             .add_default_rule(
-                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct".to_string())
-                    .add_port(vec![53]),
+                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct").add_port(53),
             )
             .add_default_rule(
-                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct".to_string())
+                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
                     .add_ip_is_private(true),
             );
         self
     }
 
+    pub fn default_tun(&mut self) -> &mut Self {
+        self.dns
+            .add_udp("8.8.8.8".to_string(), None, None)
+            .add_local(None);
+
+        self.inbounds
+            .add_server(Inbound::Tun(
+                TunConfig::new()
+                    .set_auto_route(true)
+                    .set_auto_redirect(true)
+                    .set_strict_route(true)
+                    .set_stack("system".to_string())
+                    .add_ip("198.18.0.1/30".to_string()),
+            ))
+            .add_direct(None);
+
+        self.outbounds.add_direct();
+
+        self.route
+            .auto_detect_interface(true)
+            .add_default_rule(DefaultRouteRule::sniff_action("1s"))
+            .add_logical_rule(
+                LogicalRouteRule::or()
+                    .set_hijack_dns_action()
+                    .add_rule(DefaultRouteRule::new().add_port(53))
+                    .add_rule(DefaultRouteRule::new().add_protocol("dns")),
+            )
+            .add_default_rule(
+                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
+                    .add_ip_is_private(true),
+            )
+            .set_default_domain_resolver(&self.dns, "local");
+        self
+    }
+
     pub fn set_outbound_from_url(&mut self, url: &str) -> &mut Self {
         self.outbounds.add_server_from_url(url);
-        self.route.set_final_by_type(
-            &self.outbounds,
-            &self.outbounds.get_types_except_direct()[0],
-        );
+        if self.get_inbounds_types().contains(&"mixed".to_string()) {
+            self.route.set_final_by_type(
+                &self.outbounds,
+                &self.outbounds.get_types_except_direct()[0],
+            );
+        } else if self.get_inbounds_types().contains(&"tun".to_string()) {
+            self.route.add_default_rule(
+                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
+                    .add_ip_cidr(&self.outbounds.get_server_addr_by_type("vless")),
+            );
+        }
         self
     }
 
@@ -88,6 +131,14 @@ impl Configurator {
             if i.get_system_proxy_status().is_some() {
                 res.push(i.get_system_proxy_status().unwrap());
             }
+        }
+        res
+    }
+
+    pub fn get_inbounds_types(&self) -> Vec<String> {
+        let mut res = vec![];
+        for i in self.inbounds.get_vec_ref() {
+            res.push(i.get_type());
         }
         res
     }
@@ -123,25 +174,19 @@ impl Configurator {
                     value_flag = true;
                 }
                 "h" => rh = Some(DefaultRouteRule::hijack_dns_action()),
-                "s" => rh = Some(DefaultRouteRule::sniff_action("1s".to_string())),
+                "s" => rh = Some(DefaultRouteRule::sniff_action("1s")),
                 x => {
-                    rh = Some(DefaultRouteRule::route_action_by_type(
-                        &self.outbounds,
-                        x.to_string(),
-                    ));
+                    rh = Some(DefaultRouteRule::route_action_by_type(&self.outbounds, x));
                     value_flag = true;
                 }
             }
             if value_flag {
                 match ri[1] {
                     "ib" => {
-                        rh = Some(
-                            rh.unwrap()
-                                .add_inbound_by_type(&self.inbounds, ri[2].to_string()),
-                        );
+                        rh = Some(rh.unwrap().add_inbound_by_type(&self.inbounds, ri[2]));
                     }
                     "pt" => {
-                        rh = Some(rh.unwrap().add_port(vec![ri[2].parse().unwrap()]));
+                        rh = Some(rh.unwrap().add_port(ri[2].parse().unwrap()));
                     }
                     _ => rh = None,
                 }
