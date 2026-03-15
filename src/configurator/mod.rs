@@ -86,6 +86,7 @@ impl Configurator {
                     .set_auto_redirect(true)
                     .set_strict_route(true)
                     .set_stack("system".to_string())
+                    .set_mtu(1500)
                     .add_ip("198.18.0.1/30".to_string()),
             ))
             .add_direct(None);
@@ -120,6 +121,10 @@ impl Configurator {
             self.route.add_default_rule(
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
                     .add_ip_cidr(&self.outbounds.get_server_addr_by_type("vless")),
+            );
+            self.route.set_final_by_type(
+                &self.outbounds,
+                &self.outbounds.get_types_except_direct()[0],
             );
         }
         self
