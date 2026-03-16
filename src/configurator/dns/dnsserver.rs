@@ -63,42 +63,42 @@ impl DnsServer {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerLocal {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
     pub prefer_go: Option<bool>,
 }
 
 impl DnsServerLocal {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-local".to_string()),
-            address: "local".to_string(),
+            r#type: "local".to_string(),
+            tag: "dns-local".to_string(),
             prefer_go: None,
         }
     }
 
     pub fn with_tag(name: String) -> Self {
         Self {
-            tag: Some(name),
-            address: "local".to_string(),
+            r#type: "local".to_string(),
+            tag: name,
             prefer_go: None,
         }
     }
 
     pub fn get_type(&self) -> String {
-        "local".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHosts {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
     pub path: Option<ListableString>,
     pub predefined: Option<HashMap<String, ListableString>>,
 }
@@ -106,16 +106,16 @@ pub struct DnsServerHosts {
 impl DnsServerHosts {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-hosts".to_string()),
-            address: "8.8.8.8".to_string(),
+            r#type: "hosts".to_string(),
+            tag: "dns-hosts".to_string(),
             ..Default::default()
         }
     }
 
     pub fn with_tag(name: String) -> Self {
         Self {
-            tag: Some(name),
-            address: "8.8.8.8".to_string(),
+            r#type: "hosts".to_string(),
+            tag: name,
             ..Default::default()
         }
     }
@@ -125,15 +125,17 @@ impl DnsServerHosts {
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTcp {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
+    pub server: String,
+    pub server_port: Option<u16>,
     #[serde(flatten)]
     pub dial: Option<DialFields>,
 }
@@ -141,47 +143,44 @@ pub struct DnsServerTcp {
 impl DnsServerTcp {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-tcp".to_string()),
-            address: "tcp://8.8.8.8".to_string(),
+            r#type: "udp".to_string(),
+            tag: "dns-udp".to_string(),
+            server: "8.8.8.8".to_string(),
             ..Default::default()
         }
     }
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
-        if let Some(y) = server_port {
-            Self {
-                tag: Some("dns-tcp".to_string()),
-                address: format!("tcp://{}:{}",server,y),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                tag: Some("dns-tcp".to_string()),
-                address: format!("tcp://{}",server),
-                ..Default::default()
-            }
+        Self {
+            r#type: "udp".to_string(),
+            tag: "dns-udp".to_string(),
+            server,
+            server_port,
+            ..Default::default()
         }
     }
 
     pub fn change_tag(mut self, name: String) -> Self {
-        self.tag = Some(name);
+        self.tag = name;
         self
     }
 
     pub fn get_type(&self) -> String {
-        "tcp".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerUdp {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
+    pub server: String,
+    pub server_port: Option<u16>,
     #[serde(flatten)]
     pub dial: Option<DialFields>,
 }
@@ -189,47 +188,44 @@ pub struct DnsServerUdp {
 impl DnsServerUdp {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-udp".to_string()),
-            address: "8.8.8.8".to_string(),
+            r#type: "udp".to_string(),
+            tag: "dns-udp".to_string(),
+            server: "8.8.8.8".to_string(),
             ..Default::default()
         }
     }
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
-        if let Some(y) = server_port {
-            Self {
-                tag: Some("dns-udp".to_string()),
-                address: format!("{}:{}",server,y),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                tag: Some("dns-udp".to_string()),
-                address: format!("{}",server),
-                ..Default::default()
-            }
+        Self {
+            r#type: "udp".to_string(),
+            tag: "dns-udp".to_string(),
+            server,
+            server_port,
+            ..Default::default()
         }
     }
 
     pub fn change_tag(mut self, name: String) -> Self {
-        self.tag = Some(name);
+        self.tag = name;
         self
     }
 
     pub fn get_type(&self) -> String {
-        "udp".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTls {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
+    pub server: String,
+    pub server_port: Option<u16>,
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
     pub dial: Option<DialFields>,
@@ -238,42 +234,39 @@ pub struct DnsServerTls {
 impl DnsServerTls {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-tls".to_string()),
-            address: "tls://8.8.8.8".to_string(),
+            r#type: "tls".to_string(),
+            tag: "dns-tls".to_string(),
+            server: "8.8.8.8".to_string(),
             ..Default::default()
         }
     }
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
-        if let Some(y) = server_port {
-            Self {
-                tag: Some("dns-tls".to_string()),
-                address: format!("tls://{}:{}",server,y),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                tag: Some("dns-tls".to_string()),
-                address: format!("tls://{}",server),
-                ..Default::default()
-            }
+        Self {
+            r#type: "tls".to_string(),
+            tag: "dns-tls".to_string(),
+            server,
+            server_port,
+            ..Default::default()
         }
     }
 
     pub fn get_type(&self) -> String {
-        "tls".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerQuic {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
+    pub server: String,
+    pub server_port: Option<u16>,
     pub tls: Option<TlsConfig>,
     #[serde(flatten)]
     pub dial: Option<DialFields>,
@@ -282,42 +275,39 @@ pub struct DnsServerQuic {
 impl DnsServerQuic {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-quic".to_string()),
-            address: "quic://8.8.8.8".to_string(),
+            r#type: "quic".to_string(),
+            tag: "dns-quic".to_string(),
+            server: "8.8.8.8".to_string(),
             ..Default::default()
         }
     }
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
-        if let Some(y) = server_port {
-            Self {
-                tag: Some("dns-quic".to_string()),
-                address: format!("quic://{}:{}",server,y),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                tag: Some("dns-quic".to_string()),
-                address: format!("quic://{}",server),
-                ..Default::default()
-            }
+        Self {
+            r#type: "quic".to_string(),
+            tag: "dns-quic".to_string(),
+            server,
+            server_port,
+            ..Default::default()
         }
     }
 
     pub fn get_type(&self) -> String {
-        "quic".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttps {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
+    pub server: String,
+    pub server_port: Option<u16>,
     pub path: Option<String>,
     pub headers: Option<HashMap<String, String>>,
     pub tls: Option<TlsConfig>,
@@ -328,42 +318,39 @@ pub struct DnsServerHttps {
 impl DnsServerHttps {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-https".to_string()),
-            address: "https://8.8.8.8".to_string(),
+            r#type: "https".to_string(),
+            tag: "dns-https".to_string(),
+            server: "8.8.8.8".to_string(),
             ..Default::default()
         }
     }
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
-        if let Some(y) = server_port {
-            Self {
-                tag: Some("dns-https".to_string()),
-                address: format!("https://{}:{}",server,y),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                tag: Some("dns-https".to_string()),
-                address: format!("https://{}",server),
-                ..Default::default()
-            }
+        Self {
+            r#type: "https".to_string(),
+            tag: "dns-https".to_string(),
+            server,
+            server_port,
+            ..Default::default()
         }
     }
 
     pub fn get_type(&self) -> String {
-        "https".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttp3 {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
+    pub server: String,
+    pub server_port: Option<u16>,
     pub path: Option<String>,
     pub headers: Option<HashMap<String, String>>,
     pub tls: Option<TlsConfig>,
@@ -374,42 +361,37 @@ pub struct DnsServerHttp3 {
 impl DnsServerHttp3 {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-h3".to_string()),
-            address: "h3://8.8.8.8".to_string(),
+            r#type: "h3".to_string(),
+            tag: "dns-h3".to_string(),
+            server: "8.8.8.8".to_string(),
             ..Default::default()
         }
     }
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
-        if let Some(y) = server_port {
-            Self {
-                tag: Some("dns-h3".to_string()),
-                address: format!("h3://{}:{}",server,y),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                tag: Some("dns-h3".to_string()),
-                address: format!("h3://{}",server),
-                ..Default::default()
-            }
+        Self {
+            r#type: "h3".to_string(),
+            tag: "dns-h3".to_string(),
+            server,
+            server_port,
+            ..Default::default()
         }
     }
 
     pub fn get_type(&self) -> String {
-        "h3".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerDhcp {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
     pub interface: Option<String>,
     #[serde(flatten)]
     pub dial: Option<DialFields>,
@@ -418,52 +400,46 @@ pub struct DnsServerDhcp {
 impl DnsServerDhcp {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-dhcp".to_string()),
-            address: "dhcp://8.8.8.8".to_string(),
+            r#type: "dhcp".to_string(),
+            tag: "dns-dhcp".to_string(),
             ..Default::default()
         }
     }
 
-    pub fn with_server(server: String, server_port: Option<u16>) -> Self {
-        if let Some(y) = server_port {
-            Self {
-                tag: Some("dns-dhcp".to_string()),
-                address: format!("dhcp://{}:{}",server,y),
-                ..Default::default()
-            }
-        } else {
-            Self {
-                tag: Some("dns-dhcp".to_string()),
-                address: format!("dhcp://{}",server),
-                ..Default::default()
-            }
+    pub fn with_interface(interface: &str) -> Self {
+        Self {
+            r#type: "dhcp".to_string(),
+            tag: "dns-dhcp".to_string(),
+            interface: Some(interface.to_string()),
+            ..Default::default()
         }
     }
 
     pub fn get_type(&self) -> String {
-        "dhcp".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerFakeIp {
-    pub tag: Option<String>,
+    pub r#type: String,
+    pub tag: String,
     pub address: String,
     pub inet4_range: Option<String>,
     pub inet6_range: Option<String>,
 }
 
+// TODO find out how to set up
 impl DnsServerFakeIp {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-fakeip".to_string()),
-            // TODO find out how to set up
-            address: "fakeip".to_string(),
+            r#type: "fakeip".to_string(),
+            tag: "dns-fakeip".to_string(),
             ..Default::default()
         }
     }
@@ -490,14 +466,15 @@ impl DnsServerFakeIp {
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTailscale {
-    pub tag: Option<String>,
+    pub r#type: String,
+    pub tag: String,
     pub address: String,
     pub endpoint: Option<String>,
     pub accept_default_resolvers: Option<bool>,
@@ -506,8 +483,8 @@ pub struct DnsServerTailscale {
 impl DnsServerTailscale {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-tailscale".to_string()),
-            address: "tailscale".to_string(),
+            r#type: "tailscale".to_string(),
+            tag: "dns-tailscale".to_string(),
             ..Default::default()
         }
     }
@@ -517,15 +494,15 @@ impl DnsServerTailscale {
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }
 
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerResolved {
-    pub tag: Option<String>,
-    pub address: String,
+    pub r#type: String,
+    pub tag: String,
     pub service: Option<String>,
     pub accept_default_resolvers: Option<bool>,
 }
@@ -533,17 +510,17 @@ pub struct DnsServerResolved {
 impl DnsServerResolved {
     pub fn new() -> Self {
         Self {
-            tag: Some("dns-resolved".to_string()),
-            address: "resolved".to_string(),
+            r#type: "resolved".to_string(),
+            tag: "dns-resolved".to_string(),
             ..Default::default()
         }
     }
 
     pub fn get_type(&self) -> String {
-        "resolved".to_string()
+        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
-        self.tag.clone().expect("[ERROR] No tag")
+        self.tag.clone()
     }
 }

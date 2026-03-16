@@ -54,6 +54,20 @@ impl OutboundConfig {
             .map(|x| x.get_tag())
     }
 
+    pub fn get_ref_by_type(&self, outbound_type: &str) -> Option<&Outbound> {
+        match self.get_tag_by_type(outbound_type) {
+            Some(x) => self.get_ref_by_tag(&x),
+            None => None,
+        }
+    }
+
+    pub fn get_mut_by_type(&mut self, outbound_type: &str) -> Option<&mut Outbound> {
+        match self.get_tag_by_type(outbound_type) {
+            Some(x) => self.get_mut_by_tag(&x),
+            None => None,
+        }
+    }
+
     pub fn get_tags_except_direct(&self) -> Vec<String> {
         self.servers
             .iter()
@@ -68,6 +82,17 @@ impl OutboundConfig {
             .filter(|x| x.get_type() != "direct")
             .map(|x| x.get_type())
             .collect()
+    }
+
+    pub fn get_server_addr_by_type(&self, outbound_type: &str) -> String {
+        let mut servers_types = vec![];
+        for i in self.servers.iter() {
+            servers_types.push(i.get_type());
+        }
+        if servers_types.contains(&outbound_type.to_string()) {
+            return self.get_ref_by_type(outbound_type).unwrap().get_addr();
+        }
+        "0.0.0.0".to_string()
     }
 
     pub fn clean(&mut self) -> &mut Self {
@@ -95,6 +120,13 @@ impl Outbound {
         match self {
             Outbound::Direct(cfg) => cfg.get_type(),
             Outbound::Vless(cfg) => cfg.get_type(),
+        }
+    }
+
+    pub fn get_addr(&self) -> String {
+        match self {
+            Outbound::Direct(cfg) => "127.0.0.1".to_string(),
+            Outbound::Vless(cfg) => cfg.get_server_ip(),
         }
     }
 }

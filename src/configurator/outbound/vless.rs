@@ -129,6 +129,10 @@ impl VlessConfig {
         self.tag.clone()
     }
 
+    pub fn get_server_ip(&self) -> String {
+        self.server.clone()
+    }
+
     fn parser(input: &str) -> Vec<(PossibleKeys, PossibleValues)> {
         let parsed_input = Url::parse(input).unwrap();
         let mut values: Vec<(PossibleKeys, PossibleValues)> = vec![

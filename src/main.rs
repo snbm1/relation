@@ -1,12 +1,12 @@
-mod configurator;
-mod ui;
-mod datamanager;
 mod bridge;
+mod configurator;
+mod datamanager;
+mod ui;
 
 use clap::Parser;
-use ui::Cli;
 use configurator::Configurator;
 use datamanager::App;
+use ui::Cli;
 
 fn main() {
     let mut datamanager = App::new("relation");
