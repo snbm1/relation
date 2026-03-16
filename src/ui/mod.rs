@@ -107,17 +107,18 @@ impl Cli {
                 name,
             } => {
                 if let Some(value) = url {
-                    manager.handler_mut().default().set_outbound_from_url(value);
+                    if !tun {
+                        manager.handler_mut().default();
+                    } else {
+                        manager.handler_mut().default_tun();
+                    }
+                    manager.handler_mut().set_outbound_from_url(value);
                     if let Some(value) = dns {
                         manager.handler_mut().set_dns_servers(value.clone());
                     }
                     if let Some(value) = route {
                         manager.handler_mut().set_route_rules(value.clone());
                     }
-                    if *tun {
-                        manager.handler_mut().set_tun();
-                    }
-
                     manager.add_config(name.clone());
                 }
             }
