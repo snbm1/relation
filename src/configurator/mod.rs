@@ -1,4 +1,5 @@
 pub mod dns;
+pub mod experimental;
 pub mod inbound;
 pub mod log;
 pub mod outbound;
@@ -13,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::configurator::dns::dnsserver::*;
+use crate::configurator::experimental::ExperimentalConfig;
 use crate::configurator::inbound::tun::TunConfig;
 use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
@@ -31,6 +33,7 @@ pub struct Configurator {
     inbounds: InboundConfig,
     outbounds: OutboundConfig,
     route: RouteConfig,
+    experimental: ExperimentalConfig,
 }
 
 impl Configurator {
@@ -41,6 +44,7 @@ impl Configurator {
             inbounds: InboundConfig::new(),
             outbounds: OutboundConfig::new(),
             route: RouteConfig::new(),
+            experimental: ExperimentalConfig::new(),
         }
     }
 
