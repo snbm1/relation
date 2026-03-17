@@ -20,6 +20,7 @@ use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
 use crate::configurator::route::routerule::LogicalRouteRule;
 
+use anyhow::{Context, Result, anyhow};
 use core::panic;
 use std::fs::File;
 use std::io::BufReader;
@@ -166,7 +167,7 @@ impl Configurator {
     /// "h"      -> Hijack-dns (for hijack just write "h::")
     /// "s"      -> Shiff (for shiff just write "s::")
     /// "<NAME>" -> Route outbound with NAME type (for example "vless")
-    pub fn set_route_rules(&mut self, rules: Vec<String>) -> &mut Self {
+    pub fn set_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
         let _ = self.route.clean();
         for i in rules {
             let mut rh;
@@ -174,7 +175,9 @@ impl Configurator {
             let mut value_flag = false;
 
             if ri.len() < 3 {
-                panic!("[ERROR] Invalid route rules input. Not enough input or incorrect")
+                return Err(anyhow!(
+                    "Invalid route rules input. Not enough input or incorrect"
+                ));
             }
 
             match ri[0] {
@@ -204,10 +207,10 @@ impl Configurator {
                 self.route.add_default_rule(value);
             }
         }
-        self
+        Ok(self)
     }
 
-    pub fn set_dns_servers(&mut self, dns: Vec<String>) -> &mut Self {
+    pub fn set_dns_servers(&mut self, dns: Vec<String>) -> Result<&mut Self> {
         let _ = self.dns.clean();
         for i in dns {
             let dh;
@@ -238,11 +241,11 @@ impl Configurator {
                 "udp" => {
                     dh = DnsServer::Udp(DnsServerUdp::with_server(df_addr.to_string(), df_port))
                 }
-                _ => panic!("[ERROR] Cant parse that type of dns yet"),
+                _ => return Err(anyhow!("Cant parse that type of dns yet")),
             }
             self.dns.add_server(dh);
         }
-        self
+        Ok(self)
     }
 
     pub fn set_log(&mut self, level: String, output: Option<PathBuf>) -> &mut Self {
@@ -271,15 +274,16 @@ impl Configurator {
         self
     }
 
-    pub fn get_outbound_tag(&self) -> String {
-        self.outbounds.get_tags_except_direct()[0].clone()
+    pub fn get_outbound_tag(&self) -> Result<String> {
+        Ok(self
+            .outbounds
+            .get_tags_except_direct()
+            .first()
+            .context("No outbounds")?
+            .clone())
     }
 
-    pub fn save_to_file(
-        &self,
-        dir: PathBuf,
-        file_name: String,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn save_to_file(&self, dir: PathBuf, file_name: String) -> Result<String> {
         let file_path = dir.join(format!("{file_name}.json"));
 
         let file = File::create(&file_path)?;
@@ -290,10 +294,7 @@ impl Configurator {
         Ok(self.outbounds.get_tags_except_direct()[0].clone())
     }
 
-    pub fn load_from_file(
-        &mut self,
-        path: PathBuf,
-    ) -> Result<&mut Self, Box<dyn std::error::Error>> {
+    pub fn load_from_file(&mut self, path: PathBuf) -> Result<&mut Self> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
 

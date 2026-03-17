@@ -11,6 +11,7 @@ use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::multiplex::*;
 use crate::configurator::shared::tls::*;
 use crate::configurator::shared::transport::*;
+use anyhow::{Context, Result, anyhow};
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 enum Flow {
@@ -218,7 +219,7 @@ impl VlessConfig {
         values
     }
 
-    pub fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_url(url: &str) -> Result<Self> {
         let value = VlessConfig::parser(url);
 
         let mut cfg = VlessConfig::new();
@@ -244,7 +245,7 @@ impl VlessConfig {
                             }
                             _ => {}
                         },
-                        _ => return Err("Invalid type type".into()),
+                        _ => return Err(anyhow!("Invalid type type")),
                     };
                 }
 
@@ -254,28 +255,28 @@ impl VlessConfig {
                             "xtls-rprx-vision" => cfg.flow = Some(Flow::XtlsRprxVision),
                             _ => cfg.flow = Some(Flow::None),
                         },
-                        _ => return Err("Invalid flow type".into()),
+                        _ => return Err(anyhow!("Invalid flow type")),
                     };
                 }
 
                 PossibleKeys::Server => {
                     match val {
                         PossibleValues::String(x) => cfg.server = x,
-                        _ => return Err("Invalid server type".into()),
+                        _ => return Err(anyhow!("Invalid server type")),
                     };
                 }
 
                 PossibleKeys::ServerPort => {
                     match val {
                         PossibleValues::U16(x) => cfg.server_port = x,
-                        _ => return Err("Invalid port type".into()),
+                        _ => return Err(anyhow!("Invalid port type")),
                     };
                 }
 
                 PossibleKeys::Uuid => {
                     match val {
                         PossibleValues::String(x) => cfg.uuid = x,
-                        _ => return Err("Invalid uuid type".into()),
+                        _ => return Err(anyhow!("Invalid uuid type")),
                     };
                 }
 
@@ -284,7 +285,7 @@ impl VlessConfig {
                         tls.enabled = Some(true);
                         tls.server_name = Some(x);
                     }
-                    _ => return Err("Invalid tls server name".into()),
+                    _ => return Err(anyhow!("Invalid tls server name")),
                 },
 
                 PossibleKeys::Fp => match val {
@@ -293,7 +294,7 @@ impl VlessConfig {
                         utls.enabled = Some(true);
                         utls.fingerprint = Some(x);
                     }
-                    _ => return Err("Invalid fingerprint name".into()),
+                    _ => return Err(anyhow!("Invalid fingerprint name")),
                 },
 
                 PossibleKeys::Security => match val {
@@ -302,7 +303,7 @@ impl VlessConfig {
                         "tls" => tls.enabled = Some(true),
                         _ => eprintln!("{} not supported", x),
                     },
-                    _ => return Err("Invalid Security type".into()),
+                    _ => return Err(anyhow!("Invalid Security type")),
                 },
 
                 PossibleKeys::Pbk => match val {
@@ -311,7 +312,7 @@ impl VlessConfig {
                         rlt.enabled = Some(true);
                         rlt.public_key = Some(x);
                     }
-                    _ => return Err("Invalid public key".into()),
+                    _ => return Err(anyhow!("Invalid public key")),
                 },
 
                 PossibleKeys::Sid => match val {
@@ -320,7 +321,7 @@ impl VlessConfig {
                         rlt.enabled = Some(true);
                         rlt.short_id = Some(x);
                     }
-                    _ => return Err("Invalid short id".into()),
+                    _ => return Err(anyhow!("Invalid short id")),
                 },
 
                 PossibleKeys::Mux => match val {
@@ -329,9 +330,8 @@ impl VlessConfig {
                         mtx.protocol = Some("h2mux".to_string());
                         mtx.max_streams = Some(x);
                     }
-                    _ => return Err("Invalid multiplex type".into()),
+                    _ => return Err(anyhow!("Invalid multiplex type")),
                 },
-                // urlencoding::decode(encoded).unwrap();
                 PossibleKeys::Path => match val {
                     PossibleValues::String(x) => match tfg {
                         TransportConfig::None => eprintln!("[Warning] Path before transport"),
@@ -340,7 +340,7 @@ impl VlessConfig {
                         TransportConfig::HttpUpdate(ref mut z) => z.path = Some(x),
                         _ => {}
                     },
-                    _ => return Err("Invalid Path type".into()),
+                    _ => return Err(anyhow!("Invalid Path type")),
                 },
 
                 PossibleKeys::Host => match val {
@@ -367,27 +367,27 @@ impl VlessConfig {
                         TransportConfig::Tcp => {}
                         _ => {}
                     },
-                    _ => return Err("Invalid Host type".into()),
+                    _ => return Err(anyhow!("Invalid Host type")),
                 },
 
                 PossibleKeys::ServiceName => match val {
                     PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => return Err("Host before type".into()),
+                        TransportConfig::None => return Err(anyhow!("Host before type")),
                         TransportConfig::Grpc(ref mut z) => z.service_name = Some(x),
                         _ => {}
                     },
-                    _ => return Err("Invalid ServiceName type".into()),
+                    _ => return Err(anyhow!("Invalid ServiceName type")),
                 },
 
                 PossibleKeys::Tag => match val {
                     PossibleValues::String(x) => cfg.tag = x.clone(),
-                    _ => return Err("Invalid ServiceName type".into()),
+                    _ => return Err(anyhow!("Invalid ServiceName type")),
                 },
             }
         }
 
         match cfg.check() {
-            false => Err("Not configurated required fields".into()),
+            false => Err(anyhow!("Not configurated required fields")),
             true => {
                 if mtx.check() {
                     cfg.multiplex = Some(mtx);
@@ -402,7 +402,9 @@ impl VlessConfig {
                             if x && rlt.check() {
                                 tls.reality = Some(rlt)
                             } else if x && !rlt.check() {
-                                return Err("Security = reality, but it doesnt configurated".into());
+                                return Err(anyhow!(
+                                    "Security = reality, but it doesnt configurated"
+                                ));
                             }
                         }
                         cfg.tls = Some(tls);
