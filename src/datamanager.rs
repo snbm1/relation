@@ -180,9 +180,12 @@ impl App {
             file_path = self.get_configs_path().join(format!("{}.json", n));
             self.stg_handler.current = Some(n);
         } else if let Some(n) = number {
-            file_path = self
-                .get_configs_path()
-                .join(format!("{}.json", self.get_list()[n as usize - 1]));
+            file_path = self.get_configs_path().join(format!(
+                "{}.json",
+                self.get_list()
+                    .get(n as usize - 1)
+                    .context("No exists config with that number")?
+            ));
             self.stg_handler.current = Some(self.get_list()[n as usize - 1].clone());
         } else if let Some(n) = self.stg_handler.current.clone() {
             file_path = self.get_configs_path().join(format!("{}.json", n));
