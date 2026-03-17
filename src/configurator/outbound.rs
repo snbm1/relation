@@ -1,6 +1,7 @@
 pub mod direct;
 pub mod vless;
 
+use anyhow::{Context, Result, anyhow};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -22,16 +23,16 @@ impl OutboundConfig {
         self
     }
 
-    pub fn add_server_from_url(&mut self, url: &str) -> &mut Self {
+    pub fn add_server_from_url(&mut self, url: &str) -> Result<&mut Self> {
         match Url::parse(url).unwrap().scheme() {
             "vless" => {
                 self.add_server(Outbound::Vless(
-                    VlessConfig::from_url(url).expect("[ERROR] Cant parse Vless config from url."),
+                    VlessConfig::from_url(url).context("Cant parse Vless config from url.")?,
                 ));
             }
             _ => {}
         }
-        self
+        Ok(self)
     }
 
     pub fn add_direct(&mut self) -> &mut Self {
