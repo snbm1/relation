@@ -69,6 +69,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut enter_mode: bool = false;
     let mut input_mode = false;
     let mut tun_mode: bool = false; 
+    let mut error_input = false; 
     let mut running: Option<String> = None; 
 
     let mut input_buffer = String::new();
