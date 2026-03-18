@@ -174,7 +174,7 @@ impl Cli {
 
                 while RUNNING.load(Ordering::SeqCst) {
                     manager.read_logs();
-                    for line in manager.take_new_logs() {
+                    for line in manager.get_new_logs() {
                         println!("{}", line);
                     }
                     std::thread::sleep(std::time::Duration::from_millis(500));
