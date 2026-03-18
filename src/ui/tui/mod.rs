@@ -67,7 +67,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut enter_mode: bool = false;
     let mut input_mode = false;
-    let mut running: Option<String> = None; 
+    let mut running: Option<String> = None;
     let mut input_buffer = String::new();
 
     loop {
@@ -115,13 +115,13 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Char('d') => {
                             if len > 0 {
-                                let name = app.get_list()[selected_index].clone(); 
+                                let name = app.get_list()[selected_index].clone();
                                 app.remove_config_by_number(selected_index);
 
                                 if running.as_deref() == Some(name.as_str()) {
                                     app.stop_app();
                                     running = None;
-                                    enter_mode = false;  
+                                    enter_mode = false;
                                 }
 
                                 len = app.get_len();
@@ -135,26 +135,24 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             let len = app.get_len();
                             if len > 0 && !enter_mode {
                                 let number = selected_index as u16 + 1;
-                                running = Some(app.get_list()[selected_index].clone()); 
+                                running = Some(app.get_list()[selected_index].clone());
                                 app.set_log_file();
                                 app.run_app(None, Some(number), false);
                                 enter_mode = true;
                             } else if enter_mode {
-                                let name = app.get_list()[selected_index].clone(); 
+                                let name = app.get_list()[selected_index].clone();
                                 if running.as_deref() == Some(name.as_str()) {
-                                    running = None; 
+                                    running = None;
                                     app.stop_app();
                                     enter_mode = false;
-                                }
-                                else {
+                                } else {
                                     app.stop_app();
-                                    std::thread::sleep(Duration::from_millis(100)); 
+                                    std::thread::sleep(Duration::from_millis(100));
                                     let number = selected_index as u16 + 1;
-                                    running = Some(name.clone()); 
+                                    running = Some(name.clone());
                                     app.set_log_file();
                                     app.run_app(None, Some(number), false);
                                 }
-                                
                             }
                         }
 
@@ -197,12 +195,12 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 .split(size);
             let horizontal = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Length(50), Constraint::Min(0)])
+                .constraints([Constraint::Fill(2), Constraint::Fill(5)])
                 .split(root[0]);
 
             let vertical = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Length(22), Constraint::Min(0)])
+                .constraints([Constraint::Fill(1), Constraint::Fill(1)])
                 .split(horizontal[0]);
 
             let configs = app.get_list();
@@ -210,14 +208,21 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             let items: Vec<ListItem> = configs
                 .iter()
                 .map(|name| {
-                    let is_running = running.as_deref() == Some(name.as_str()); 
+                    let is_running = running.as_deref() == Some(name.as_str());
                     if is_running {
                         ListItem::new(Line::from(vec![
-                            Span::styled("● ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)), 
-                            Span::styled(name.clone(), Style::default().add_modifier(Modifier::BOLD)),
+                            Span::styled(
+                                "● ",
+                                Style::default()
+                                    .fg(Color::Green)
+                                    .add_modifier(Modifier::BOLD),
+                            ),
+                            Span::styled(
+                                name.clone(),
+                                Style::default().add_modifier(Modifier::BOLD),
+                            ),
                         ]))
-                    }
-                    else {
+                    } else {
                         ListItem::new(name.clone())
                     }
                 })
