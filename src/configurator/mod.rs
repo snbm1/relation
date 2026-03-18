@@ -11,7 +11,6 @@ use inbound::*;
 use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
-use url::Url;
 
 use crate::configurator::dns::dnsserver::*;
 use crate::configurator::experimental::ExperimentalConfig;
@@ -21,7 +20,6 @@ use crate::configurator::route::routerule::DefaultRouteRule;
 use crate::configurator::route::routerule::LogicalRouteRule;
 
 use anyhow::{Context, Result, anyhow};
-use core::panic;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufWriter;
@@ -111,7 +109,7 @@ impl Configurator {
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
                     .add_ip_is_private(true),
             )
-            .set_default_domain_resolver(&self.dns, "local");
+            .set_default_domain_resolver_by_type(&self.dns, "local");
         self
     }
 
@@ -153,28 +151,26 @@ impl Configurator {
     }
 
     /// Set route rules in format: <ACTION>:<TYPE>:<VALUE>
+    /// ACTIONS:
+    /// "r"      -> Reject
+    /// "h"      -> Hijack-dns
+    /// "s"      -> Shiff
+    /// "<NAME>" -> Route outbound with NAME type (for example "vless")
+    ///
     /// TYPES:                 VALUE type:
     /// "ib" -> inbound type   `str`
     /// "pt" -> port           `u16`
     ///
-    /// ACTIONS:
-    /// "r"      -> Reject
-    /// "h"      -> Hijack-dns (for hijack just write "h::")
-    /// "s"      -> Shiff (for shiff just write "s::")
-    /// "<NAME>" -> Route outbound with NAME type (for example "vless")
-    pub fn set_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
+    /// SPECIFIC:
+    /// "s":<VALUE>            `str`
+    /// for example "1s" NOT just "1"
+    pub fn add_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
         for i in rules {
             let mut rh;
             let ri: Vec<&str> = i.split(":").collect();
             let mut value_flag = false;
 
-            if ri.len() < 3 {
-                return Err(anyhow!(
-                    "Invalid route rules input. Not enough input or incorrect"
-                ));
-            }
-
-            match ri[0] {
+            match *ri.first().context("Incorrect route rules manage input")? {
                 "r" => {
                     rh = Some(DefaultRouteRule::reject_action());
                     value_flag = true;
@@ -187,7 +183,7 @@ impl Configurator {
                 }
             }
             if value_flag {
-                match ri[1] {
+                match *ri.get(1).context("Incorrect route rules manage input")? {
                     "ib" => {
                         rh = Some(rh.unwrap().add_inbound_by_type(&self.inbounds, ri[2]));
                     }
@@ -196,11 +192,49 @@ impl Configurator {
                     }
                     _ => rh = None,
                 }
+            } else if ri[0] == "s" && ri.len() == 2 {
+                rh = Some(DefaultRouteRule::sniff_action(ri[1]))
             }
             if let Some(value) = rh {
                 self.route.add_default_rule(value);
             }
         }
+        Ok(self)
+    }
+
+    /// Set route rules in format: <ACTION>:<VALUE1>:<VALUE2>
+    ///
+    ///If action contains one value you need only:
+    ///     <ACTION>:<VALUE>
+    ///
+    /// ACTION:             VALUES:
+    /// "r"    -> Remove    `usize`         -> remove by index <VALUE1>
+    /// "m"    -> Move      `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
+    pub fn manage_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
+        for i in rules {
+            let ri: Vec<&str> = i.split(":").collect();
+            match *ri.first().context("Incorrect route rules manage input")? {
+                "r" => {
+                    let _ = self.route.remove_rule(
+                        ri.get(1)
+                            .context("Incorrect route rules manage input")?
+                            .parse()?,
+                    );
+                }
+                "m" => {
+                    self.route.move_rule(
+                        ri.get(1)
+                            .context("Incorrect route rules manage input")?
+                            .parse()?,
+                        ri.get(2)
+                            .context("Incorrect route rules manage input")?
+                            .parse()?,
+                    );
+                }
+                _ => {}
+            }
+        }
+
         Ok(self)
     }
 

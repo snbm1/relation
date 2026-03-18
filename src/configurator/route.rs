@@ -58,9 +58,22 @@ impl RouteConfig {
         self
     }
 
-    pub fn set_default_domain_resolver(&mut self, dns: &DnsConfig, dns_type: &str) -> &mut Self {
+    pub fn set_default_domain_resolver_by_type(
+        &mut self,
+        dns: &DnsConfig,
+        dns_type: &str,
+    ) -> &mut Self {
         self.default_domain_resolver = dns.get_tag_by_type(dns_type);
         self
+    }
+
+    pub fn remove_rule(&mut self, index: usize) -> RouteRule {
+        self.rules.remove(index)
+    }
+
+    pub fn move_rule(&mut self, from: usize, to: usize) {
+        let value = self.remove_rule(from);
+        self.rules.insert(to, value);
     }
 
     pub fn get_list(&self) -> Vec<RouteRule> {
