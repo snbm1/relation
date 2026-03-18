@@ -1,3 +1,4 @@
+use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -15,7 +16,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn new(setting_file: PathBuf) -> Result<Self, Box<dyn Error>> {
+    pub fn new(setting_file: PathBuf) -> Result<Self> {
         match fs::read_to_string(&setting_file) {
             Ok(content) => Ok(toml::from_str(&content)?),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -27,11 +28,11 @@ impl Settings {
                 settings.save(setting_file)?;
                 Ok(settings)
             }
-            Err(e) => Err(Box::new(e)),
+            Err(e) => Err(anyhow!(e)),
         }
     }
 
-    pub fn save(&self, setting_file: PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn save(&self, setting_file: PathBuf) -> Result<()> {
         if let Some(parent) = setting_file.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -45,14 +46,14 @@ impl Settings {
         Ok(())
     }
 
-    pub fn read(&mut self, setting_file: PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn read(&mut self, setting_file: PathBuf) -> Result<()> {
         match fs::read_to_string(&setting_file) {
             Ok(content) => {
                 *self = toml::from_str(&content)?;
                 Ok(())
             }
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            Err(e) => Err(Box::new(e)),
+            Err(e) => Err(anyhow!(e)),
         }
     }
 }
@@ -65,15 +66,15 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(app_name: &str) -> Self {
-        let proj_dirs = ProjectDirs::from("", "", app_name)
-            .expect("[ERROR] Unable to determine project directories");
+    pub fn new(app_name: &str) -> Result<Self> {
+        let proj_dirs =
+            ProjectDirs::from("", "", app_name).expect("Unable to determine project directories");
 
         let data_dir = proj_dirs.data_dir().to_path_buf();
         let config_dir = data_dir.join("config");
         let settings_file = data_dir.join("settings.toml");
 
-        fs::create_dir_all(&config_dir).expect("[ERROR] Failed to create config directory");
+        fs::create_dir_all(&config_dir).expect("Failed to create config directory");
 
         let mut mng = Self {
             data_dir,
@@ -82,18 +83,18 @@ impl App {
             stg_handler: Settings::new(settings_file).unwrap(),
         };
 
-        mng.configs = mng.read_configs();
-        mng
+        mng.configs = mng.read_configs()?;
+        Ok(mng)
     }
 
-    pub fn read_configs(&mut self) -> Vec<String> {
+    pub fn read_configs(&mut self) -> Result<Vec<String>> {
         let mut result = Vec::new();
 
         let entries = std::fs::read_dir(self.get_configs_path())
-            .expect("[ERROR] Failed to read config directory");
+            .context("Failed to read config directory")?;
 
         for entry in entries {
-            let entry = entry.expect("[ERROR] Failed to read directory entry");
+            let entry = entry.context("Failed to read directory entry")?;
             let path = entry.path();
 
             if path.is_file() && path.extension().unwrap_or_default() == "json" {
@@ -104,42 +105,45 @@ impl App {
         }
 
         result.sort();
-        result
+        Ok(result)
     }
 
-    pub fn remove_config(&mut self, name: &str) {
+    pub fn remove_config(&mut self, name: &str) -> Result<()> {
         let file_path = self.get_configs_path().join(format!("{name}.json"));
 
         if !file_path.exists() {
-            panic!(
-                "[ERROR] Config file '{}' does not exist",
+            return Err(anyhow!(
+                "Config file '{}' does not exist",
                 file_path.display()
-            );
+            ));
         }
 
-        fs::remove_file(&file_path).expect("[ERROR] Failed to remove config file");
+        fs::remove_file(&file_path).context("Failed to remove config file")?;
 
         self.configs.retain(|x| x != name);
+
+        Ok(())
     }
 
-    pub fn remove_config_by_number(&mut self, number: usize) {
+    pub fn remove_config_by_number(&mut self, number: usize) -> Result<()> {
         let file_path = self
             .get_configs_path()
             .join(format!("{}.json", self.configs[number]));
 
         if !file_path.exists() {
-            panic!(
-                "[ERROR] Config file '{}' does not exist",
+            return Err(anyhow!(
+                "Config file '{}' does not exist",
                 file_path.display()
-            );
+            ));
         }
 
-        fs::remove_file(&file_path).expect("[ERROR] Failed to remove config file");
+        fs::remove_file(&file_path).context("Failed to remove config file")?;
 
         self.configs.remove(number);
+        Ok(())
     }
 
-    pub fn add_config(&mut self, name: Option<String>) -> &mut Self {
+    pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
         if let Some(value) = name {
             self.configs.push(
@@ -150,15 +154,25 @@ impl App {
         } else {
             self.configs.push(
                 self.cfg_handler
-                    .save_to_file(self.get_configs_path(), self.cfg_handler.get_outbound_tag())
+                    .save_to_file(
+                        self.get_configs_path(),
+                        self.cfg_handler
+                            .get_outbound_tag()
+                            .context("No defined name and outbound tag")?,
+                    )
                     .unwrap(),
             );
         }
         self.configs.sort();
-        self
+        Ok(self)
     }
 
-    pub fn run_app(&mut self, tag: Option<String>, number: Option<u16>, unable_system_proxy: bool) {
+    pub fn run_app(
+        &mut self,
+        tag: Option<String>,
+        number: Option<u16>,
+        unable_system_proxy: bool,
+    ) -> Result<()> {
         let _ = self.stg_handler.read(self.get_settings_path());
 
         let file_path;
@@ -166,9 +180,12 @@ impl App {
             file_path = self.get_configs_path().join(format!("{}.json", n));
             self.stg_handler.current = Some(n);
         } else if let Some(n) = number {
-            file_path = self
-                .get_configs_path()
-                .join(format!("{}.json", self.get_list()[n as usize - 1]));
+            file_path = self.get_configs_path().join(format!(
+                "{}.json",
+                self.get_list()
+                    .get(n as usize - 1)
+                    .context("No exists config with that number")?
+            ));
             self.stg_handler.current = Some(self.get_list()[n as usize - 1].clone());
         } else if let Some(n) = self.stg_handler.current.clone() {
             file_path = self.get_configs_path().join(format!("{}.json", n));
@@ -186,7 +203,7 @@ impl App {
 
         if !unable_system_proxy {
             if self.handler_ref().get_list_of_system_proxies().len() > 1 {
-                panic!("[ERROR] A more than 1 system proxy");
+                return Err(anyhow!("More than 1 system proxy"));
             } else if let Some((host, port, support_socks)) =
                 self.handler_ref().get_list_of_system_proxies().first()
             {
@@ -194,17 +211,18 @@ impl App {
             }
         }
         let _ = self.stg_handler.save(self.get_settings_path());
-        println!("[INFO] Run Relation");
+        Ok(())
     }
 
-    pub fn stop_app(&mut self) {
+    pub fn stop_app(&mut self) -> Result<()> {
         if !self.stg_handler.unable_system_proxy.unwrap_or(true) {
             bridge::disable_system_proxy_safe();
         }
         bridge::stop_safe();
         let _ = self.stg_handler.save(self.get_settings_path());
         self.remove_log_file();
-        println!("[INFO] Shutdown Relation");
+
+        Ok(())
     }
 
     pub fn set_handler_config_by_name(&mut self, name: String) {
@@ -213,17 +231,20 @@ impl App {
             .load_from_file(self.get_configs_path().join(format!("{}.json", name)));
     }
 
-    pub fn save_config(&mut self, name: Option<String>) -> &mut Self {
+    pub fn save_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         if let Some(value) = name {
             let _ = self
                 .cfg_handler
                 .save_to_file(self.get_configs_path(), value);
         } else {
-            let _ = self
-                .cfg_handler
-                .save_to_file(self.get_configs_path(), self.cfg_handler.get_outbound_tag());
+            let _ = self.cfg_handler.save_to_file(
+                self.get_configs_path(),
+                self.cfg_handler
+                    .get_outbound_tag()
+                    .context("Not defined name or outbound tag")?,
+            );
         }
-        self
+        Ok(self)
     }
 
     pub fn set_log_file(&mut self) -> &mut Self {
@@ -234,10 +255,10 @@ impl App {
         self
     }
 
-    pub fn remove_log_file(&mut self) -> &mut Self {
+    pub fn remove_log_file(&mut self) -> Result<&mut Self> {
         fs::remove_file(self.get_data_path().join("box.log"))
-            .expect("[ERROR] Failed to remove config file");
-        self
+            .context("Failed to remove config file")?;
+        Ok(self)
     }
 
     pub fn handler_ref(&self) -> &Configurator {
