@@ -74,8 +74,8 @@ impl TunConfig {
         }
     }
 
-    pub fn add_ip(mut self, address: String) -> Self {
-        self.address.push(address);
+    pub fn add_ip(mut self, address: &str) -> Self {
+        self.address.push(address.to_string());
         self
     }
 

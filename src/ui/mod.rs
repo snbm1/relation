@@ -67,18 +67,8 @@ enum Commands {
 
     /// Remove config
     Remove {
-        /// Name of config
-        #[arg(long, short, conflicts_with = "number")]
-        tag: Option<String>,
-
-        /// Number of config
-        #[arg(
-            long,
-            short,
-            conflicts_with = "tag",
-            value_parser = clap::value_parser!(u16).range(1..)
-        )]
-        number: Option<u16>,
+        /// Config endentifier
+        value: Option<ConfigEn>,
     },
 
     /// Run application with selected config
@@ -144,15 +134,23 @@ impl Cli {
                     }
                 }
             }
-            Commands::Remove { tag, number } => {
-                if let Some(n) = tag {
-                    manager.remove_config(n);
-                } else if let Some(n) = number {
-                    manager.remove_config_by_number(*n as usize - 1);
-                } else {
-                    for i in manager.get_list() {
-                        manager.remove_config(&i);
+            Commands::Remove { value } => {
+                let rr = match value {
+                    Some(x) => match x {
+                        ConfigEn::Text(t) => manager.remove_config(t),
+                        ConfigEn::Number(n) => manager.remove_config_by_number(*n as usize),
+                    },
+                    None => {
+                        for i in manager.get_list() {
+                            manager.remove_config(&i);
+                        }
+                        Ok(())
                     }
+                };
+
+                if let Err(x) = rr {
+                    println!("{}", x);
+                    return;
                 }
             }
             Commands::Run {
