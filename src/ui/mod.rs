@@ -161,7 +161,7 @@ impl Cli {
             } => {
                 setup_signal_handler();
 
-                match value {
+                let rr = match value {
                     Some(x) => match x {
                         ConfigEn::Text(t) => manager.run_app(Some(&t), None, *unable_system_proxy),
                         ConfigEn::Number(n) => {
@@ -169,8 +169,12 @@ impl Cli {
                         }
                     },
                     None => manager.run_app(None, None, *unable_system_proxy),
+                };
+
+                if let Err(x) = rr {
+                    println!("{x}");
+                    return;
                 }
-                .unwrap();
 
                 while RUNNING.load(Ordering::SeqCst) {
                     manager.read_logs();
