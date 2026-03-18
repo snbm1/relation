@@ -92,7 +92,7 @@ impl Configurator {
                     .set_strict_route(true)
                     .set_stack("system".to_string())
                     .set_mtu(1500)
-                    .add_ip("198.18.0.1/30".to_string()),
+                    .add_ip("198.18.0.1/30"),
             ))
             .add_direct(None);
 
@@ -163,7 +163,6 @@ impl Configurator {
     /// "s"      -> Shiff (for shiff just write "s::")
     /// "<NAME>" -> Route outbound with NAME type (for example "vless")
     pub fn set_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
-        let _ = self.route.clean();
         for i in rules {
             let mut rh;
             let ri: Vec<&str> = i.split(":").collect();
@@ -206,7 +205,6 @@ impl Configurator {
     }
 
     pub fn set_dns_servers(&mut self, dns: Vec<String>) -> Result<&mut Self> {
-        let _ = self.dns.clean();
         for i in dns {
             let dh;
             let df: Vec<&str> = i.split(":").collect();
@@ -225,7 +223,7 @@ impl Configurator {
                 }
             } else {
                 df_type = df[0];
-                df_port = Some(df[2].parse::<u16>().unwrap());
+                df_port = Some(df[2].parse::<u16>()?);
                 df_addr = df[1];
             }
 
@@ -252,12 +250,18 @@ impl Configurator {
     }
 
     pub fn set_tun(&mut self) -> &mut Self {
-        self.inbounds.clean().add_direct(None).add_tun(
-            vec!["172.18.0.1/30".to_string()],
-            true,
-            true,
-            1600,
-        );
+        self.inbounds
+            .clean()
+            .add_server(Inbound::Tun(
+                TunConfig::new()
+                    .set_auto_route(true)
+                    .set_auto_redirect(true)
+                    .set_strict_route(true)
+                    .set_stack("system".to_string())
+                    .set_mtu(1500)
+                    .add_ip("198.18.0.1/30"),
+            ))
+            .add_direct(None);
         self
     }
 

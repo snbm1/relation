@@ -100,7 +100,6 @@ impl Logger {
             self.logs.pop_front();
         }
         self.logs.push_back(line);
-
         self
     }
 
@@ -110,6 +109,12 @@ impl Logger {
 
     pub fn get_logs(&self) -> Vec<String> {
         self.logs.iter().cloned().collect()
+    }
+
+    pub fn clean(&mut self) -> Vec<String> {
+        self.new_logs.clear();
+        self.last_pos = 0;
+        std::mem::take(&mut self.logs).into_iter().collect()
     }
 }
 
@@ -263,6 +268,7 @@ impl App {
         }
         bridge::stop_safe();
         let _ = self.stg_handler.save(self.get_settings_path());
+        self.log_handler.clean();
         self.remove_log_file()?;
 
         Ok(())
