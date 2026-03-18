@@ -1,8 +1,8 @@
-use default_net::{self, get_default_interface}; 
-use std::{io}; 
-use std::fs; 
+use default_net::{self, get_default_interface};
+use std::fs;
+use std::io;
 
-use crate::App; 
+use crate::App;
 
 #[derive(Clone, Copy)]
 pub struct Counters {
@@ -15,7 +15,7 @@ pub fn iface_detect() -> String {
         Ok(interface) => {
             return interface.name;
         }
-        Err(e) => panic!("Error in getting interface")
+        Err(e) => panic!("Error in getting interface"),
     }
 }
 
@@ -37,7 +37,7 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
 }
 
 pub fn read_logs(app: &mut App) -> Vec<String> {
-    let path = app.get_data_path().join("box.log"); 
+    let path = app.get_data_path().join("box.log");
 
     match std::fs::read_to_string(path) {
         Ok(content) => {
@@ -45,13 +45,14 @@ pub fn read_logs(app: &mut App) -> Vec<String> {
                 return vec!["No logs".to_string()];
             }
             let mut lines: Vec<String> = content.lines().map(|l| l.to_string()).collect();
-            let max = 30; 
+            let max = 128;
 
             if lines.len() > max {
-                lines = lines.split_off(lines.len() - max); 
+                lines = lines.split_off(lines.len() - max);
             }
             lines
         }
-        Err(_) => vec!["No logs".to_string()]
+        Err(_) => vec!["No logs".to_string()],
     }
 }
+
