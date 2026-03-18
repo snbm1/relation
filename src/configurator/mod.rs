@@ -176,7 +176,7 @@ impl Configurator {
                     value_flag = true;
                 }
                 "h" => rh = Some(DefaultRouteRule::hijack_dns_action()),
-                "s" => rh = Some(DefaultRouteRule::sniff_action("1s")),
+                "s" => rh = Some(DefaultRouteRule::sniff_action(*ri.get(1).unwrap_or(&"1s"))),
                 x => {
                     rh = Some(DefaultRouteRule::route_action_by_type(&self.outbounds, x));
                     value_flag = true;
@@ -192,8 +192,6 @@ impl Configurator {
                     }
                     _ => rh = None,
                 }
-            } else if ri[0] == "s" && ri.len() == 2 {
-                rh = Some(DefaultRouteRule::sniff_action(ri[1]))
             }
             if let Some(value) = rh {
                 self.route.add_default_rule(value);
@@ -208,7 +206,7 @@ impl Configurator {
     ///     <ACTION>:<VALUE>
     ///
     /// ACTION:             VALUES:
-    /// "r"    -> Remove    `usize`         -> remove by index <VALUE1>
+    /// "r"    -> Remove    `usize`         -> remove by index <VALUE>
     /// "m"    -> Move      `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
     pub fn manage_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
         for i in rules {
