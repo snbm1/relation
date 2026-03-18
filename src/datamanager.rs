@@ -207,7 +207,8 @@ impl App {
 
     pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
-        self.save_config(name)?;
+        let saved_name = self.save_config(name)?;
+        self.configs.push(saved_name); 
         self.configs.sort();
         Ok(self)
     }
