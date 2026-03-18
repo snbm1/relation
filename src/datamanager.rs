@@ -58,14 +58,67 @@ impl Settings {
     }
 }
 
+pub struct Logger {
+    logs: VecDeque<String>,
+    new_logs: Vec<String>,
+    last_pos: usize,
+}
+
+impl Logger {
+    pub fn new() -> Self {
+        Self {
+            logs: VecDeque::with_capacity(128),
+            new_logs: Vec::with_capacity(64),
+            last_pos: 0,
+        }
+    }
+
+    pub fn read(&mut self, path: PathBuf) {
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+
+        if self.last_pos > content.len() {
+            self.last_pos = 0;
+        }
+
+        let new_content = &content[self.last_pos..];
+        self.last_pos = content.len();
+
+        self.new_logs.clear();
+
+        for line in new_content.lines() {
+            let line = line.to_string();
+            self.push_log(line.clone());
+            self.new_logs.push(line);
+        }
+    }
+
+    fn push_log(&mut self, line: String) -> &mut Self {
+        if self.logs.len() == 128 {
+            self.logs.pop_front();
+        }
+        self.logs.push_back(line);
+
+        self
+    }
+
+    pub fn get_new_logs(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.new_logs)
+    }
+
+    pub fn get_logs(&self) -> Vec<String> {
+        self.logs.iter().cloned().collect()
+    }
+}
+
 pub struct App {
     data_dir: PathBuf,
     configs: Vec<String>,
     cfg_handler: Configurator,
     stg_handler: Settings,
-    logs: VecDeque<String>,
-    new_logs: Vec<String>,
-    last_pos: usize,
+    log_handler: Logger,
 }
 
 impl App {
@@ -84,9 +137,7 @@ impl App {
             configs: vec![],
             cfg_handler: Configurator::new(),
             stg_handler: Settings::new(settings_file)?,
-            logs: VecDeque::with_capacity(128),
-            new_logs: Vec::new(),
-            last_pos: 0,
+            log_handler: Logger::new(),
         };
 
         mng.configs = mng.read_configs()?;
@@ -252,45 +303,20 @@ impl App {
         Ok(self)
     }
 
-    pub fn read_logs(&mut self) {
+    pub fn read_logs(&mut self) -> &mut Self {
         let path = self.get_data_path().join("box.log");
 
-        let content = match std::fs::read_to_string(path) {
-            Ok(c) => c,
-            Err(_) => return,
-        };
-
-        if self.last_pos > content.len() {
-            self.last_pos = 0;
-        }
-
-        let new_content = &content[self.last_pos..];
-        self.last_pos = content.len();
-
-        self.new_logs.clear();
-
-        for line in new_content.lines() {
-            let line = line.to_string();
-            self.push_log(line.clone());
-            self.new_logs.push(line);
-        }
-    }
-
-    fn push_log(&mut self, line: String) -> &mut Self {
-        if self.logs.len() == 128 {
-            self.logs.pop_front();
-        }
-        self.logs.push_back(line);
+        self.log_handler.read(path);
 
         self
     }
 
-    pub fn take_new_logs(&mut self) -> Vec<String> {
-        std::mem::take(&mut self.new_logs)
+    pub fn get_new_logs(&mut self) -> Vec<String> {
+        self.log_handler.get_new_logs()
     }
 
     pub fn get_logs(&self) -> Vec<String> {
-        self.logs.iter().cloned().collect()
+        self.log_handler.get_logs()
     }
 
     pub fn handler_ref(&self) -> &Configurator {
