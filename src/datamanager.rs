@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
+use std::collections::VecDeque;
 use std::fs::{self, File};
 use std::path::PathBuf;
 use toml;
@@ -63,6 +63,9 @@ pub struct App {
     configs: Vec<String>,
     cfg_handler: Configurator,
     stg_handler: Settings,
+    logs: VecDeque<String>,
+    new_logs: Vec<String>,
+    last_pos: usize,
 }
 
 impl App {
@@ -80,7 +83,10 @@ impl App {
             data_dir,
             configs: vec![],
             cfg_handler: Configurator::new(),
-            stg_handler: Settings::new(settings_file).unwrap(),
+            stg_handler: Settings::new(settings_file)?,
+            logs: VecDeque::with_capacity(128),
+            new_logs: Vec::new(),
+            last_pos: 0,
         };
 
         mng.configs = mng.read_configs()?;
@@ -148,19 +154,16 @@ impl App {
         if let Some(value) = name {
             self.configs.push(
                 self.cfg_handler
-                    .save_to_file(self.get_configs_path(), value)
-                    .unwrap(),
+                    .save_to_file(self.get_configs_path(), value)?,
             );
         } else {
             self.configs.push(
-                self.cfg_handler
-                    .save_to_file(
-                        self.get_configs_path(),
-                        self.cfg_handler
-                            .get_outbound_tag()
-                            .context("No defined name and outbound tag")?,
-                    )
-                    .unwrap(),
+                self.cfg_handler.save_to_file(
+                    self.get_configs_path(),
+                    self.cfg_handler
+                        .get_outbound_tag()
+                        .context("No defined name and outbound tag")?,
+                )?,
             );
         }
         self.configs.sort();
@@ -169,7 +172,7 @@ impl App {
 
     pub fn run_app(
         &mut self,
-        tag: Option<String>,
+        tag: Option<&str>,
         number: Option<u16>,
         unable_system_proxy: bool,
     ) -> Result<()> {
@@ -178,7 +181,7 @@ impl App {
         let file_path;
         if let Some(n) = tag {
             file_path = self.get_configs_path().join(format!("{}.json", n));
-            self.stg_handler.current = Some(n);
+            self.stg_handler.current = Some(n.to_string().clone());
         } else if let Some(n) = number {
             file_path = self.get_configs_path().join(format!(
                 "{}.json",
@@ -196,7 +199,10 @@ impl App {
             self.stg_handler.current = Some(self.get_list()[0].clone());
         }
 
-        bridge::start_safe(file_path.to_str().unwrap(), 0);
+        println!(
+            "{}",
+            bridge::start_safe(file_path.to_str().unwrap(), 0).unwrap()
+        );
         if unable_system_proxy {
             self.stg_handler.unable_system_proxy = Some(unable_system_proxy);
         }
@@ -220,7 +226,7 @@ impl App {
         }
         bridge::stop_safe();
         let _ = self.stg_handler.save(self.get_settings_path());
-        self.remove_log_file();
+        self.remove_log_file()?;
 
         Ok(())
     }
@@ -259,6 +265,47 @@ impl App {
         fs::remove_file(self.get_data_path().join("box.log"))
             .context("Failed to remove config file")?;
         Ok(self)
+    }
+
+    pub fn read_logs(&mut self) {
+        let path = self.get_data_path().join("box.log");
+
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+
+        if self.last_pos > content.len() {
+            self.last_pos = 0;
+        }
+
+        let new_content = &content[self.last_pos..];
+        self.last_pos = content.len();
+
+        self.new_logs.clear();
+
+        for line in new_content.lines() {
+            let line = line.to_string();
+            self.push_log(line.clone());
+            self.new_logs.push(line);
+        }
+    }
+
+    fn push_log(&mut self, line: String) -> &mut Self {
+        if self.logs.len() == 128 {
+            self.logs.pop_front();
+        }
+        self.logs.push_back(line);
+
+        self
+    }
+
+    pub fn take_new_logs(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.new_logs)
+    }
+
+    pub fn get_logs(&self) -> Vec<String> {
+        self.logs.iter().cloned().collect()
     }
 
     pub fn handler_ref(&self) -> &Configurator {

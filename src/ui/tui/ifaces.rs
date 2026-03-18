@@ -35,24 +35,3 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
 
     Ok(Counters { rx: 0, tx: 0 })
 }
-
-pub fn read_logs(app: &mut App) -> Vec<String> {
-    let path = app.get_data_path().join("box.log");
-
-    match std::fs::read_to_string(path) {
-        Ok(content) => {
-            if content.trim().is_empty() {
-                return vec!["No logs".to_string()];
-            }
-            let mut lines: Vec<String> = content.lines().map(|l| l.to_string()).collect();
-            let max = 128;
-
-            if lines.len() > max {
-                lines = lines.split_off(lines.len() - max);
-            }
-            lines
-        }
-        Err(_) => vec!["No logs".to_string()],
-    }
-}
-
