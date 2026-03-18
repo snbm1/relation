@@ -120,7 +120,7 @@ impl Cli {
                         manager.handler_mut().set_dns_servers(value.clone());
                     }
                     if let Some(value) = route {
-                        manager.handler_mut().set_route_rules(value.clone());
+                        manager.handler_mut().add_route_rules(value.clone());
                     }
                     manager.add_config(name.clone());
                 }
