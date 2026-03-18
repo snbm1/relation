@@ -19,6 +19,7 @@ toml = "*"
 signal-hook = "0.4"
 ratatui = "*"
 crossterm = "*"
+anyhow = "1.0"
 default-net = "*"
 
 [build-dependencies]

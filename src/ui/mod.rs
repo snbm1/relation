@@ -148,13 +148,17 @@ impl Cli {
                 unable_system_proxy,
             } => {
                 setup_signal_handler();
-                manager.run_app(tag.clone(), *number, *unable_system_proxy);
+                if let Err(x) = manager.run_app(tag.clone(), *number, *unable_system_proxy) {
+                    println!("{x}");
+                }
 
                 while RUNNING.load(Ordering::SeqCst) {
                     std::thread::sleep(std::time::Duration::from_millis(500));
                 }
 
-                manager.stop_app();
+                if let Err(x) = manager.stop_app() {
+                    println!("{x}");
+                }
             }
             Commands::Tui => {
                 let _ = tui::run(manager);
