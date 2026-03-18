@@ -110,6 +110,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     match key.code {
                         KeyCode::Esc => {
                             tun_mode = false; 
+                            input_mode = false; 
                             input_buffer.clear(); 
                         }
 
@@ -313,7 +314,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             }
 
             //ADDING TUN CONFIG LINE
-            if tun_mode && tun_mode {
+            if input_mode && tun_mode {
                  let input = Paragraph::new(input_buffer.as_str())
                     .block(
                         Block::default()
