@@ -1,4 +1,5 @@
 mod ifaces;
+use crossterm::event::KeyModifiers;
 use ifaces::*;
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
@@ -67,6 +68,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut enter_mode: bool = false;
     let mut input_mode = false;
+    let mut tun_mode: bool = false; 
     let mut running: Option<String> = None; 
     let mut input_buffer = String::new();
 
@@ -74,7 +76,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
         // -------- INPUT --------
         if event::poll(Duration::from_millis(500))? {
             if let Event::Key(key) = event::read()? {
-                if input_mode {
+                if input_mode && !tun_mode {
                     match key.code {
                         KeyCode::Esc => {
                             input_mode = false;
@@ -101,6 +103,37 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         _ => {}
                     }
+                }
+                else if input_mode && tun_mode {
+                    match key.code {
+                        KeyCode::Esc => {
+                            tun_mode = false; 
+                            input_buffer.clear(); 
+                        }
+
+                        KeyCode::Enter => {
+                            if !input_buffer.is_empty() {
+                                 app.handler_mut()
+                                    .clean()
+                                    .default_tun()
+                                    .set_outbound_from_url(&input_buffer.clone());
+                                app.add_config(None);
+                                input_buffer.clear();
+                                len = app.get_len();
+                                input_mode = false;
+                                tun_mode = false;
+                                selected_index = 0;
+                            }
+                        }
+
+                        KeyCode::Backspace => {
+                            input_buffer.pop();
+                        }
+                        KeyCode::Char(c) => {
+                            input_buffer.push(c); 
+                        }
+                        _ => {}
+                    }
                 } else {
                     match key.code {
                         KeyCode::Char('q') => {
@@ -112,6 +145,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Char('a') => {
                             input_mode = true;
+                        }
+                        KeyCode::Char('A') => {
+                            input_mode = true; 
+                            tun_mode = true; 
                         }
                         KeyCode::Char('d') => {
                             if len > 0 {
@@ -247,8 +284,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 .highlight_symbol(">> ");
 
             f.render_stateful_widget(list, vertical[0], &mut state);
-
-            if input_mode {
+            
+            //ADDING CONFIG LINE
+            if input_mode && !tun_mode {
                 let input = Paragraph::new(input_buffer.as_str())
                     .block(
                         Block::default()
@@ -257,6 +295,26 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             .border_type(BorderType::Rounded),
                     )
                     .style(Style::default().fg(Color::Yellow));
+
+                let input_area = ratatui::layout::Rect {
+                    x: vertical[0].x,
+                    y: vertical[0].y + vertical[0].height - 3,
+                    width: vertical[0].width,
+                    height: 3,
+                };
+                f.render_widget(input, input_area);
+            }
+
+            //ADDING TUN CONFIG LINE
+            if tun_mode && tun_mode {
+                 let input = Paragraph::new(input_buffer.as_str())
+                    .block(
+                        Block::default()
+                            .title("Add new config url with tun arg")
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded),
+                    )
+                    .style(Style::default().fg(Color::Blue));
 
                 let input_area = ratatui::layout::Rect {
                     x: vertical[0].x,
