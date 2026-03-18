@@ -115,24 +115,19 @@ impl Configurator {
         self
     }
 
-    pub fn set_outbound_from_url(&mut self, url: &str) -> &mut Self {
-        self.outbounds.add_server_from_url(url);
-        if self.get_inbounds_types().contains(&"mixed".to_string()) {
-            self.route.set_final_by_type(
-                &self.outbounds,
-                &self.outbounds.get_types_except_direct()[0],
-            );
-        } else if self.get_inbounds_types().contains(&"tun".to_string()) {
+    pub fn set_outbound_from_url(&mut self, url: &str) -> Result<&mut Self> {
+        self.outbounds.add_server_from_url(url)?;
+        if self.get_inbounds_types().contains(&"tun".to_string()) {
             self.route.add_default_rule(
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
                     .add_ip_cidr(&self.outbounds.get_server_addr_by_type("vless")),
             );
-            self.route.set_final_by_type(
-                &self.outbounds,
-                &self.outbounds.get_types_except_direct()[0],
-            );
         }
-        self
+        self.route.set_final_by_type(
+            &self.outbounds,
+            &self.outbounds.get_types_except_direct().first().unwrap(),
+        );
+        Ok(self)
     }
 
     pub fn get_list_of_system_proxies(&self) -> Vec<(String, u16, bool)> {

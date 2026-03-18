@@ -1,6 +1,10 @@
 #![warn(clippy::never_loop)]
+
+#[cfg(feature = "tui")]
 mod tui;
+
 use clap::{Parser, Subcommand};
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::datamanager::App;
@@ -58,6 +62,7 @@ enum Commands {
     List,
 
     /// Run terminal user interface
+    #[cfg(feature = "tui")]
     Tui,
 
     /// Remove config
@@ -78,22 +83,30 @@ enum Commands {
 
     /// Run application with selected config
     Run {
-        /// Name of config
-        #[arg(long, short, conflicts_with = "number")]
-        tag: Option<String>,
-
-        /// Number of config
-        #[arg(
-            long,
-            short,
-            conflicts_with = "tag",
-            value_parser = clap::value_parser!(u16).range(1..)
-        )]
-        number: Option<u16>,
+        /// Config endentifier
+        value: Option<ConfigEn>,
 
         #[arg(long, short)]
         unable_system_proxy: bool,
     },
+}
+
+#[derive(Debug, Clone)]
+enum ConfigEn {
+    Number(u16),
+    Text(String),
+}
+
+impl FromStr for ConfigEn {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(n) = s.parse::<u16>() {
+            Ok(ConfigEn::Number(n))
+        } else {
+            Ok(ConfigEn::Text(s.to_string()))
+        }
+    }
 }
 
 impl Cli {
@@ -143,16 +156,27 @@ impl Cli {
                 }
             }
             Commands::Run {
-                tag,
-                number,
+                value,
                 unable_system_proxy,
             } => {
                 setup_signal_handler();
-                if let Err(x) = manager.run_app(tag.clone(), *number, *unable_system_proxy) {
-                    println!("{x}");
+
+                match value {
+                    Some(x) => match x {
+                        ConfigEn::Text(t) => manager.run_app(Some(&t), None, *unable_system_proxy),
+                        ConfigEn::Number(n) => {
+                            manager.run_app(None, Some(*n), *unable_system_proxy)
+                        }
+                    },
+                    None => manager.run_app(None, None, *unable_system_proxy),
                 }
+                .unwrap();
 
                 while RUNNING.load(Ordering::SeqCst) {
+                    manager.read_logs();
+                    for line in manager.take_new_logs() {
+                        println!("{}", line);
+                    }
                     std::thread::sleep(std::time::Duration::from_millis(500));
                 }
 
@@ -160,6 +184,8 @@ impl Cli {
                     println!("{x}");
                 }
             }
+
+            #[cfg(feature = "tui")]
             Commands::Tui => {
                 let _ = tui::run(manager);
             }

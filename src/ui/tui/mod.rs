@@ -354,7 +354,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             f.render_widget(helper, root[1]);
 
             // RIGHT PANEL
-            let logs = read_logs(app);
+            let logs = app.get_logs();
             let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
             let log_list = List::new(log_items).block(
                 Block::default()
@@ -365,6 +365,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             f.render_widget(log_list, horizontal[1]);
         })?;
+        app.read_logs();
     }
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
