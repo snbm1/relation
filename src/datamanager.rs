@@ -151,21 +151,7 @@ impl App {
 
     pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
-        if let Some(value) = name {
-            self.configs.push(
-                self.cfg_handler
-                    .save_to_file(self.get_configs_path(), value)?,
-            );
-        } else {
-            self.configs.push(
-                self.cfg_handler.save_to_file(
-                    self.get_configs_path(),
-                    self.cfg_handler
-                        .get_outbound_tag()
-                        .context("No defined name and outbound tag")?,
-                )?,
-            );
-        }
+        self.save_config(name)?;
         self.configs.sort();
         Ok(self)
     }
@@ -237,20 +223,19 @@ impl App {
             .load_from_file(self.get_configs_path().join(format!("{}.json", name)));
     }
 
-    pub fn save_config(&mut self, name: Option<String>) -> Result<&mut Self> {
+    pub fn save_config(&mut self, name: Option<String>) -> Result<String> {
         if let Some(value) = name {
-            let _ = self
+            return self
                 .cfg_handler
                 .save_to_file(self.get_configs_path(), value);
         } else {
-            let _ = self.cfg_handler.save_to_file(
+            return self.cfg_handler.save_to_file(
                 self.get_configs_path(),
                 self.cfg_handler
                     .get_outbound_tag()
                     .context("Not defined name or outbound tag")?,
             );
         }
-        Ok(self)
     }
 
     pub fn set_log_file(&mut self) -> &mut Self {
