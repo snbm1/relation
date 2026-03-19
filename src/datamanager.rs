@@ -208,7 +208,7 @@ impl App {
     pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
         let saved_name = self.save_config(name)?;
-        self.configs.push(saved_name); 
+        self.configs.push(saved_name);
         self.configs.sort();
         Ok(self)
     }
@@ -282,18 +282,36 @@ impl App {
     }
 
     pub fn save_config(&mut self, name: Option<String>) -> Result<String> {
-        if let Some(value) = name {
-            return self
-                .cfg_handler
-                .save_to_file(self.get_configs_path(), value);
-        } else {
-            return self.cfg_handler.save_to_file(
-                self.get_configs_path(),
-                self.cfg_handler
-                    .get_outbound_tag()
-                    .context("Not defined name or outbound tag")?,
-            );
-        }
+        let free_name = match name {
+            Some(value) => {
+                if self.exist_config(&value) > 0 {
+                    format!("[{}] {}", self.exist_config(&value), value)
+                } else {
+                    value
+                }
+            }
+            None => {
+                if self.exist_config(
+                    &self
+                        .cfg_handler
+                        .get_outbound_tag()
+                        .context("Not defined outbound tag")?,
+                ) > 0
+                {
+                    format!(
+                        "[{}] {}",
+                        self.exist_config(&self.cfg_handler.get_outbound_tag().unwrap()),
+                        self.cfg_handler.get_outbound_tag().unwrap()
+                    )
+                } else {
+                    self.cfg_handler.get_outbound_tag().unwrap()
+                }
+            }
+        };
+
+        self.cfg_handler
+            .save_to_file(self.get_configs_path(), &free_name)?;
+        Ok(free_name)
     }
 
     pub fn set_log_file(&mut self) -> &mut Self {
@@ -356,5 +374,20 @@ impl App {
 
     pub fn get_current_config(&self) -> Option<String> {
         self.stg_handler.current.clone()
+    }
+
+    pub fn exist_config(&self, name: &String) -> u8 {
+        let mut counter = 0;
+        if self.configs.contains(name) {
+            loop {
+                counter += 1;
+                if self.configs.contains(&format!("[{}] {}", counter, name)) {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
+        counter
     }
 }
