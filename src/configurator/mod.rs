@@ -47,6 +47,18 @@ impl Configurator {
         }
     }
 
+    /// DNS:
+    /// udp `8.8.8.8`
+    /// local
+    /// INBOUND:
+    /// Mixed:
+    /// addr             `127.0.0.1`
+    /// port             `12334`
+    /// system_proxy     `true`
+    /// ROUTE:
+    /// route inbound    `direct`
+    /// route port       `direct`
+    /// route private ip `direct`
     pub fn default(&mut self) -> &mut Self {
         self.dns
             .add_udp("8.8.8.8".to_string(), None, None)
@@ -77,6 +89,23 @@ impl Configurator {
         self
     }
 
+    /// DNS:
+    /// udp `8.8.8.8`
+    /// local
+    /// INBOUND:
+    /// Tun:
+    /// auto_route       `true`
+    /// auto_redirect    `true`
+    /// strict_route     `true`
+    /// stack            `system`
+    /// mtu              `1500`
+    /// ip               `198.18.0.1/30`
+    /// ROUTE:
+    /// sniff            `1s`
+    /// hijack port      `53`
+    /// hijack protocol  `dns`
+    /// route private ip `direct`
+    /// route cidr ip    `direct`
     pub fn default_tun(&mut self) -> &mut Self {
         self.dns
             .add_udp("8.8.8.8".to_string(), None, None)
