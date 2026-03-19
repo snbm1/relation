@@ -164,7 +164,7 @@ impl Configurator {
     /// SPECIFIC:
     /// "s":<VALUE>            `str`
     /// for example "1s" NOT just "1"
-    pub fn add_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
+    pub fn add_route_rules(&mut self, rules: &Vec<String>) -> Result<&mut Self> {
         for i in rules {
             let mut rh;
             let ri: Vec<&str> = i.split(":").collect();
@@ -208,7 +208,7 @@ impl Configurator {
     /// ACTION:             VALUES:
     /// "r"    -> Remove    `usize`         -> remove by index <VALUE>
     /// "m"    -> Move      `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
-    pub fn manage_route_rules(&mut self, rules: Vec<String>) -> Result<&mut Self> {
+    pub fn manage_route_rules(&mut self, rules: &Vec<String>) -> Result<&mut Self> {
         for i in rules {
             let ri: Vec<&str> = i.split(":").collect();
             match *ri.first().context("Incorrect route rules manage input")? {
@@ -236,7 +236,7 @@ impl Configurator {
         Ok(self)
     }
 
-    pub fn set_dns_servers(&mut self, dns: Vec<String>) -> Result<&mut Self> {
+    pub fn add_dns_servers(&mut self, dns: &Vec<String>) -> Result<&mut Self> {
         for i in dns {
             let dh;
             let df: Vec<&str> = i.split(":").collect();

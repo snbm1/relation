@@ -3,6 +3,7 @@
 #[cfg(feature = "tui")]
 mod tui;
 
+use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -53,6 +54,10 @@ enum Commands {
         #[arg(short, long)]
         tun: bool,
 
+        /// Replace file if exist
+        #[arg(short, long)]
+        rewrite: bool,
+
         /// Set a custom name of config
         #[arg(long)]
         name: Option<String>,
@@ -100,13 +105,14 @@ impl FromStr for ConfigEn {
 }
 
 impl Cli {
-    pub fn run(&mut self, manager: &mut App) {
+    pub fn run(&mut self, manager: &mut App) -> Result<()> {
         match &self.command {
             Commands::Add {
                 url,
                 dns,
                 route,
                 tun,
+                rewrite,
                 name,
             } => {
                 if let Some(value) = url {
@@ -115,14 +121,24 @@ impl Cli {
                     } else {
                         manager.handler_mut().default_tun();
                     }
-                    manager.handler_mut().set_outbound_from_url(value);
+                    manager.handler_mut().set_outbound_from_url(value)?;
                     if let Some(value) = dns {
-                        manager.handler_mut().set_dns_servers(value.clone());
+                        manager.handler_mut().add_dns_servers(value)?;
                     }
                     if let Some(value) = route {
-                        manager.handler_mut().add_route_rules(value.clone());
+                        manager.handler_mut().add_route_rules(value)?;
                     }
-                    manager.add_config(name.clone());
+                    if *rewrite
+                        && let Some(value) = name
+                        && manager.exist_config(value) > 0
+                    {
+                        manager.remove_config(&value)?;
+                    } else if *rewrite
+                        && manager.exist_config(&manager.handler_ref().get_outbound_tag()?) > 0
+                    {
+                        manager.remove_config(&manager.handler_ref().get_outbound_tag()?)?;
+                    }
+                    manager.add_config(name.clone())?;
                 }
             }
             Commands::List => {
@@ -142,15 +158,14 @@ impl Cli {
                     },
                     None => {
                         for i in manager.get_list() {
-                            manager.remove_config(&i);
+                            manager.remove_config(&i)?;
                         }
                         Ok(())
                     }
                 };
 
                 if let Err(x) = rr {
-                    println!("{}", x);
-                    return;
+                    return Err(anyhow!(x));
                 }
             }
             Commands::Run {
@@ -170,8 +185,7 @@ impl Cli {
                 };
 
                 if let Err(x) = rr {
-                    println!("{x}");
-                    return;
+                    return Err(anyhow!(x));
                 }
 
                 while RUNNING.load(Ordering::SeqCst) {
@@ -192,5 +206,6 @@ impl Cli {
                 let _ = tui::run(manager);
             }
         }
+        Ok(())
     }
 }

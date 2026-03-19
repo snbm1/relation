@@ -13,6 +13,6 @@ fn main() -> Result<()> {
 
     let mut cli = Cli::parse();
 
-    cli.run(&mut datamanager);
+    cli.run(&mut datamanager)?;
     Ok(())
 }
