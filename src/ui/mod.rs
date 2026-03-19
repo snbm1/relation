@@ -46,9 +46,13 @@ enum Commands {
         #[arg(long)]
         dns: Option<Vec<String>>,
 
-        /// Set Route rules [<type>:<value>:<action>]
+        /// Set route rules [<action>:<type>:<value>]
         #[arg(long)]
         route: Option<Vec<String>>,
+
+        /// Manage route rules [<action>:<value>:<value>]
+        #[arg(long)]
+        manage: Option<Vec<String>>,
 
         /// Set as tunnel (also name as VPN)
         #[arg(short, long)]
@@ -111,6 +115,7 @@ impl Cli {
                 url,
                 dns,
                 route,
+                manage,
                 tun,
                 rewrite,
                 name,
@@ -127,6 +132,9 @@ impl Cli {
                     }
                     if let Some(value) = route {
                         manager.handler_mut().add_route_rules(value)?;
+                    }
+                    if let Some(value) = manage {
+                        manager.handler_mut().manage_route_rules(value)?;
                     }
                     if *rewrite
                         && let Some(value) = name
