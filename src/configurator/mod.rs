@@ -314,7 +314,7 @@ impl Configurator {
             .clone())
     }
 
-    pub fn save_to_file(&self, dir: PathBuf, file_name: String) -> Result<String> {
+    pub fn save_to_file(&self, dir: PathBuf, file_name: &str) -> Result<String> {
         let file_path = dir.join(format!("{file_name}.json"));
 
         let file = File::create(&file_path)?;
@@ -322,7 +322,7 @@ impl Configurator {
 
         serde_json::to_writer_pretty(writer, self)?;
 
-        Ok(self.outbounds.get_tags_except_direct()[0].clone())
+        Ok(file_name.to_string())
     }
 
     pub fn load_from_file(&mut self, path: PathBuf) -> Result<&mut Self> {
