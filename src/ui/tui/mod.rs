@@ -86,15 +86,27 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                app.handler_mut()
+                                let result = app.handler_mut()
                                     .clean()
                                     .default()
                                     .set_outbound_from_url(&input_buffer.clone());
-                                app.add_config(None);
-                                input_buffer.clear();
-                                len = app.get_len();
-                                input_mode = false;
-                                selected_index = 0;
+                                match result {
+                                    Ok(_) => {
+                                        if let Err(err) = app.add_config(None) {
+                                            error_input = true; 
+                                        } else {
+                                            error_input = false; 
+                                            input_buffer.clear();
+                                            len = app.get_len();
+                                            input_mode = false;
+                                            selected_index = 0;
+                                        }
+                                    }
+                                    Err(err) => {
+                                        error_input = true; 
+                                    }
+                                }
+                                
                             }
                         }
                         KeyCode::Backspace => {
@@ -116,16 +128,29 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                 app.handler_mut()
+                                let result = app.handler_mut()
                                     .clean()
                                     .default_tun()
                                     .set_outbound_from_url(&input_buffer.clone());
-                                app.add_config(None);
-                                input_buffer.clear();
-                                len = app.get_len();
-                                input_mode = false;
-                                tun_mode = false;
-                                selected_index = 0;
+                                match result {
+                                    Ok(_) => {
+                                        if let Err(err) = app.add_config(None) {
+                                            error_input = true; 
+                                        } else {
+                                            error_input = false; 
+                                            input_buffer.clear();
+                                            len = app.get_len();
+                                            input_mode = false;
+                                            tun_mode = false;
+                                            selected_index = 0;
+                                        }
+                                    }
+                                    Err(err) => {
+                                        error_input = true; 
+                                    }
+                                }
+                                
+                                
                             }
                         }
 
@@ -295,14 +320,20 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             
             //ADDING CONFIG LINE
             if input_mode && !tun_mode {
+                let (color, message) = if error_input {
+                    (Color::Red, "Error input")
+                } else {
+                    (Color::Yellow, "Add new config url")
+                };
+                
                 let input = Paragraph::new(input_buffer.as_str())
                     .block(
                         Block::default()
-                            .title("Add new config url")
+                            .title(message)
                             .borders(Borders::ALL)
                             .border_type(BorderType::Rounded),
                     )
-                    .style(Style::default().fg(Color::Yellow));
+                    .style(Style::default().fg(color));
 
                 let input_area = ratatui::layout::Rect {
                     x: vertical[0].x,
@@ -315,14 +346,20 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             //ADDING TUN CONFIG LINE
             if input_mode && tun_mode {
+                let (color, message) = if error_input {
+                    (Color::Red, "Error input")
+                } else {
+                    (Color::Blue, "Add new config url with tun arg")
+                };
+
                  let input = Paragraph::new(input_buffer.as_str())
                     .block(
                         Block::default()
-                            .title("Add new config url with tun arg")
+                            .title(message)
                             .borders(Borders::ALL)
                             .border_type(BorderType::Rounded),
                     )
-                    .style(Style::default().fg(Color::Blue));
+                    .style(Style::default().fg(color));
 
                 let input_area = ratatui::layout::Rect {
                     x: vertical[0].x,
