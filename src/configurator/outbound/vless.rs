@@ -139,7 +139,12 @@ impl VlessConfig {
         let mut values: Vec<(PossibleKeys, PossibleValues)> = vec![
             (
                 PossibleKeys::Server,
-                PossibleValues::String(parsed_input.host_str()?.to_owned()),
+                PossibleValues::String(
+                    parsed_input
+                        .host_str()
+                        .context("No specified url host")?
+                        .to_owned(),
+                ),
             ),
             (
                 PossibleKeys::ServerPort,
@@ -217,7 +222,7 @@ impl VlessConfig {
     }
 
     pub fn from_url(url: &str) -> Result<Self> {
-        let value = VlessConfig::parser(url);
+        let value = VlessConfig::parser(url)?;
 
         let mut cfg = VlessConfig::new();
 
@@ -227,7 +232,7 @@ impl VlessConfig {
         let mut mtx = MultiplexConfig::new();
         let mut tfg = TransportConfig::None;
 
-        for (key, val) in value? {
+        for (key, val) in value {
             match key {
                 PossibleKeys::Type => {
                     match val {

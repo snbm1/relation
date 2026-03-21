@@ -68,9 +68,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut enter_mode: bool = false;
     let mut input_mode = false;
-    let mut tun_mode: bool = false; 
-    let mut error_input = false; 
-    let mut running: Option<String> = None; 
+    let mut tun_mode: bool = false;
+    let mut error_input = false;
+    let mut running: Option<String> = None;
 
     let mut input_buffer = String::new();
 
@@ -82,20 +82,22 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     match key.code {
                         KeyCode::Esc => {
                             input_mode = false;
+                            error_input = false;
                             input_buffer.clear();
                         }
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                let result = app.handler_mut()
+                                let result = app
+                                    .handler_mut()
                                     .clean()
                                     .default()
                                     .set_outbound_from_url(&input_buffer.clone());
                                 match result {
                                     Ok(_) => {
                                         if let Err(err) = app.add_config(None) {
-                                            error_input = true; 
+                                            error_input = true;
                                         } else {
-                                            error_input = false; 
+                                            error_input = false;
                                             input_buffer.clear();
                                             len = app.get_len();
                                             input_mode = false;
@@ -103,10 +105,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                         }
                                     }
                                     Err(err) => {
-                                        error_input = true; 
+                                        error_input = true;
                                     }
                                 }
-                                
                             }
                         }
                         KeyCode::Backspace => {
@@ -117,27 +118,28 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         _ => {}
                     }
-                }
-                else if input_mode && tun_mode {
+                } else if input_mode && tun_mode {
                     match key.code {
                         KeyCode::Esc => {
-                            tun_mode = false; 
-                            input_mode = false; 
-                            input_buffer.clear(); 
+                            tun_mode = false;
+                            input_mode = false;
+                            error_input = false;
+                            input_buffer.clear();
                         }
 
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                let result = app.handler_mut()
+                                let result = app
+                                    .handler_mut()
                                     .clean()
                                     .default_tun()
                                     .set_outbound_from_url(&input_buffer.clone());
                                 match result {
                                     Ok(_) => {
                                         if let Err(err) = app.add_config(None) {
-                                            error_input = true; 
+                                            error_input = true;
                                         } else {
-                                            error_input = false; 
+                                            error_input = false;
                                             input_buffer.clear();
                                             len = app.get_len();
                                             input_mode = false;
@@ -146,11 +148,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                         }
                                     }
                                     Err(err) => {
-                                        error_input = true; 
+                                        error_input = true;
                                     }
                                 }
-                                
-                                
                             }
                         }
 
@@ -158,7 +158,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             input_buffer.pop();
                         }
                         KeyCode::Char(c) => {
-                            input_buffer.push(c); 
+                            input_buffer.push(c);
                         }
                         _ => {}
                     }
@@ -175,8 +175,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             input_mode = true;
                         }
                         KeyCode::Char('A') => {
-                            input_mode = true; 
-                            tun_mode = true; 
+                            input_mode = true;
+                            tun_mode = true;
                         }
                         KeyCode::Char('d') => {
                             if len > 0 {
@@ -223,14 +223,13 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                         KeyCode::Down | KeyCode::Char('j') => {
                             if len > 0 {
-                            selected_index = (selected_index + 1) % len;
+                                selected_index = (selected_index + 1) % len;
                             }
-
                         }
 
                         KeyCode::Up | KeyCode::Char('k') => {
                             if len > 0 {
-                            selected_index = (selected_index + len - 1) % len;
+                                selected_index = (selected_index + len - 1) % len;
                             }
                         }
 
@@ -317,7 +316,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 .highlight_symbol(">> ");
 
             f.render_stateful_widget(list, vertical[0], &mut state);
-            
+
             //ADDING CONFIG LINE
             if input_mode && !tun_mode {
                 let (color, message) = if error_input {
@@ -325,7 +324,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     (Color::Yellow, "Add new config url")
                 };
-                
+
                 let input = Paragraph::new(input_buffer.as_str())
                     .block(
                         Block::default()
@@ -352,7 +351,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     (Color::Blue, "Add new config url with tun arg")
                 };
 
-                 let input = Paragraph::new(input_buffer.as_str())
+                let input = Paragraph::new(input_buffer.as_str())
                     .block(
                         Block::default()
                             .title(message)
