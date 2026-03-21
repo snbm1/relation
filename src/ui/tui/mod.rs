@@ -78,20 +78,24 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
         // -------- INPUT --------
         if event::poll(Duration::from_millis(500))? {
             if let Event::Key(key) = event::read()? {
-                if input_mode && !tun_mode {
+                if input_mode {
                     match key.code {
                         KeyCode::Esc => {
                             input_mode = false;
+                            if tun_mode {tun_mode = false;}
                             error_input = false;
                             input_buffer.clear();
                         }
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                let result = app
-                                    .handler_mut()
-                                    .clean()
-                                    .default()
-                                    .set_outbound_from_url(&input_buffer.clone());
+                                let cfg = app.handler_mut().clean(); 
+                                let result = if tun_mode {
+                                    cfg.default_tun().set_outbound_from_url(&input_buffer.clone())
+                                }
+                                else {
+                                    cfg.default().set_outbound_from_url(&input_buffer.clone())
+                                }; 
+                    
                                 match result {
                                     Ok(_) => {
                                         if let Err(err) = app.add_config(None) {
@@ -101,6 +105,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                             input_buffer.clear();
                                             len = app.get_len();
                                             input_mode = false;
+                                            if tun_mode {tun_mode = false;}
                                             selected_index = 0;
                                         }
                                     }
@@ -112,50 +117,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Backspace => {
                             input_buffer.pop();
-                        }
-                        KeyCode::Char(c) => {
-                            input_buffer.push(c);
-                        }
-                        _ => {}
-                    }
-                } else if input_mode && tun_mode {
-                    match key.code {
-                        KeyCode::Esc => {
-                            tun_mode = false;
-                            input_mode = false;
-                            error_input = false;
-                            input_buffer.clear();
-                        }
-
-                        KeyCode::Enter => {
-                            if !input_buffer.is_empty() {
-                                let result = app
-                                    .handler_mut()
-                                    .clean()
-                                    .default_tun()
-                                    .set_outbound_from_url(&input_buffer.clone());
-                                match result {
-                                    Ok(_) => {
-                                        if let Err(err) = app.add_config(None) {
-                                            error_input = true;
-                                        } else {
-                                            error_input = false;
-                                            input_buffer.clear();
-                                            len = app.get_len();
-                                            input_mode = false;
-                                            tun_mode = false;
-                                            selected_index = 0;
-                                        }
-                                    }
-                                    Err(err) => {
-                                        error_input = true;
-                                    }
-                                }
+                            if input_buffer.is_empty(){
+                                error_input = false;
                             }
-                        }
-
-                        KeyCode::Backspace => {
-                            input_buffer.pop();
                         }
                         KeyCode::Char(c) => {
                             input_buffer.push(c);
@@ -386,7 +350,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             // HELP PANEL
             let helper = Paragraph::new(Line::from(
-                "↑/↓ navigate   q exit   a adding config   d delete config",
+                "↑/↓ navigate   q exit   a adding config  A adding tun config d delete config",
             ))
             .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
