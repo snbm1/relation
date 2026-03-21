@@ -77,14 +77,14 @@ impl Configurator {
             .auto_detect_interface(true)
             .add_default_rule(
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
-                    .add_inbound(vec!["dns-direct"]),
+                    .add_inbound("dns-direct"),
             )
             .add_default_rule(
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct").add_port(53),
             )
             .add_default_rule(
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
-                    .add_ip_is_private(true),
+                    .set_ip_is_private(true),
             );
         self
     }
@@ -136,7 +136,7 @@ impl Configurator {
             )
             .add_default_rule(
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
-                    .add_ip_is_private(true),
+                    .set_ip_is_private(true),
             )
             .set_default_domain_resolver_by_type(&self.dns, "local");
         self
@@ -187,11 +187,41 @@ impl Configurator {
     /// "<NAME>" -> Route outbound with NAME type (for example "vless")
     ///
     /// TYPES:                 VALUE type:
-    /// "ib" -> inbound type   `str`
-    /// "pt" -> port           `u16`
+    /// "ib" -> inbound type    `str`
+    /// "iv" -> ip version      `u8`
+    /// "au" -> auth user       `str`
+    /// "pl" -> protocol        `str`
+    /// "cl" -> client          `str`
+    /// "dm" -> domain          `str`
+    /// "ds" -> domain suffix   `str`
+    /// "dk" -> domain keyword  `str`
+    /// "dr" -> domain regex    `str`
+    /// "gs" -> geosite         `str`
+    /// "sg" -> source geoip    `str`
+    /// "gp" -> geoip           `str`
+    /// "sc" -> source ip cidr  `str`
+    /// "si" -> ^ ip is private `bool`
+    /// "ic" -> ip cidr         `str`
+    /// "ip" -> ip is private   `bool`
+    /// "sp" -> source port     `u16`
+    /// "sr" -> ^ range         `str`
+    /// "pt" -> port            `u16`
+    /// "pr" -> ~ range         `str`
+    /// "pn" -> process name    `str`
+    /// "pp" -> process path    `str`
+    /// "pg" -> ^ regex         `str`
+    /// "kn" -> package name    `str`
+    /// "ur" -> user            `str`
+    /// "ui" -> user id         `u16`
+    /// "cm" -> clash mode      `str`
+    /// "nt" -> network type    `str`
+    /// "nk" -> network         `str`
+    /// "ne" -> ^ is expensive  `bool`
+    /// "nc" -> ^ constrained   `bool`
+    ///
     ///
     /// SPECIFIC:
-    /// "s":<VALUE>            `str`
+    /// "s":<VALUE>             `str`
     /// for example "1s" NOT just "1"
     pub fn add_route_rules(&mut self, rules: &Vec<String>) -> Result<&mut Self> {
         for i in rules {
@@ -199,32 +229,74 @@ impl Configurator {
             let ri: Vec<&str> = i.split(":").collect();
             let mut value_flag = false;
 
-            match *ri.first().context("Incorrect route rules manage input")? {
+            match *ri.first().context("Incorrect route rules input")? {
                 "r" => {
-                    rh = Some(DefaultRouteRule::reject_action());
+                    rh = DefaultRouteRule::reject_action();
                     value_flag = true;
                 }
-                "h" => rh = Some(DefaultRouteRule::hijack_dns_action()),
-                "s" => rh = Some(DefaultRouteRule::sniff_action(*ri.get(1).unwrap_or(&"1s"))),
+                "h" => rh = DefaultRouteRule::hijack_dns_action(),
+                "s" => rh = DefaultRouteRule::sniff_action(*ri.get(1).unwrap_or(&"1s")),
                 x => {
-                    rh = Some(DefaultRouteRule::route_action_by_type(&self.outbounds, x));
+                    rh = DefaultRouteRule::route_action_by_type(&self.outbounds, x);
                     value_flag = true;
                 }
             }
+
             if value_flag {
-                match *ri.get(1).context("Incorrect route rules manage input")? {
+                match *ri.get(1).context("Incorrect route rules input")? {
                     "ib" => {
-                        rh = Some(rh.unwrap().add_inbound_by_type(&self.inbounds, ri[2]));
+                        rh = rh.add_inbound_by_type(
+                            &self.inbounds,
+                            ri.get(2).context("Incorrect input")?,
+                        )
                     }
-                    "pt" => {
-                        rh = Some(rh.unwrap().add_port(ri[2].parse().unwrap()));
+                    "iv" => rh = rh.set_ip_version(ri.get(2).unwrap().parse()?),
+                    "au" => rh = rh.add_auth_user(ri.get(2).context("Incorrect input")?),
+                    "pl" => rh = rh.add_protocol(ri.get(2).context("Incorrect input")?),
+                    "cl" => rh = rh.add_client(ri.get(2).context("Incorrect input")?),
+                    "dm" => rh = rh.add_domain(ri.get(2).context("Incorrect input")?),
+                    "ds" => rh = rh.add_domain_suffix(ri.get(2).context("Incorrect input")?),
+                    "dk" => rh = rh.add_domain_keyword(ri.get(2).context("Incorrect input")?),
+                    "dr" => rh = rh.add_domain_regex(ri.get(2).context("Incorrect input")?),
+                    "gs" => rh = rh.add_geosite(ri.get(2).context("Incorrect input")?),
+                    "sg" => rh = rh.add_source_geoip(ri.get(2).context("Incorrect input")?),
+                    "gp" => rh = rh.add_geoip(ri.get(2).context("Incorrect input")?),
+                    "si" => {
+                        rh = rh.set_source_ip_is_private(
+                            ri.get(2).context("Incorrect input")?.parse()?,
+                        )
                     }
-                    _ => rh = None,
+                    "ic" => rh = rh.add_ip_cidr(ri.get(2).context("Incorrect input")?),
+                    "ip" => rh = rh.set_ip_is_private(ri.get(2).context("Incorrect")?.parse()?),
+                    "sp" => rh = rh.add_source_port(ri.get(2).context("Incorrect input")?.parse()?),
+                    "sr" => rh = rh.add_source_port_range(ri.get(2).context("Incorrect input")?),
+                    "pt" => rh = rh.add_port(ri.get(2).context("Incorrect input")?.parse()?),
+                    "pr" => rh = rh.add_port_range(ri.get(2).context("Incorrect input")?),
+                    "pn" => rh = rh.add_process_name(ri.get(2).context("Incorrect input")?),
+                    "pp" => rh = rh.add_process_path(ri.get(2).context("Incorrect input")?),
+                    "pg" => rh = rh.add_process_path_regex(ri.get(2).context("Incorrect input")?),
+                    "kn" => rh = rh.add_package_name(ri.get(2).context("Incorrect input")?),
+                    "ur" => rh = rh.add_user(ri.get(2).context("Incorrect input")?),
+                    "ui" => rh = rh.add_user_id(ri.get(2).context("Incorrect input")?.parse()?),
+                    "cm" => rh = rh.set_clash_mode(ri.get(2).context("Incorrect input")?),
+                    "nt" => rh = rh.add_network_type(ri.get(2).context("Incorrect input")?),
+                    "nk" => rh = rh.add_network(ri.get(2).context("Incorrect input")?),
+                    "ne" => {
+                        rh = rh.set_network_is_expensive(
+                            ri.get(2).context("Incorrect input")?.parse()?,
+                        )
+                    }
+
+                    "nc" => {
+                        rh = rh.set_network_is_constrained(
+                            ri.get(2).context("Incorrect input")?.parse()?,
+                        )
+                    }
+
+                    _ => return Err(anyhow!("Incorrect input")),
                 }
             }
-            if let Some(value) = rh {
-                self.route.add_default_rule(value);
-            }
+            self.route.add_default_rule(rh);
         }
         Ok(self)
     }
