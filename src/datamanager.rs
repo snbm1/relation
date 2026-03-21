@@ -275,10 +275,17 @@ impl App {
         Ok(())
     }
 
-    pub fn set_handler_config_by_name(&mut self, name: String) {
-        let _ = self
-            .cfg_handler
-            .load_from_file(self.get_configs_path().join(format!("{}.json", name)));
+    pub fn rename_config(&mut self, old_name: String, new_name: String) -> Result<()> {
+        self.set_handler_config_by_name(&old_name)?;
+        self.remove_config(&old_name)?;
+        self.add_config(Some(new_name))?;
+        Ok(())
+    }
+
+    pub fn set_handler_config_by_name(&mut self, name: &str) -> Result<()> {
+        self.cfg_handler
+            .load_from_file(self.get_configs_path().join(format!("{}.json", name)))?;
+        Ok(())
     }
 
     pub fn save_config(&mut self, name: Option<String>) -> Result<String> {
