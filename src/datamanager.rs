@@ -1,6 +1,7 @@
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
+use std::ascii::escape_default;
 use std::collections::VecDeque;
 use std::fs::{self, File};
 use std::path::PathBuf;
@@ -121,6 +122,7 @@ impl Logger {
 pub struct App {
     data_dir: PathBuf,
     configs: Vec<String>,
+    selected_config: String,
     cfg_handler: Configurator,
     stg_handler: Settings,
     log_handler: Logger,
@@ -133,15 +135,21 @@ impl App {
 
         let data_dir = proj_dirs.data_dir().to_path_buf();
         let config_dir = data_dir.join("config");
-        let settings_file = data_dir.join("settings.toml");
+        let settings = Settings::new(data_dir.join("settings.toml"))?;
+        let mut selected = String::new();
+
+        if let Some(x) = &settings.current {
+            selected = x.clone();
+        }
 
         fs::create_dir_all(&config_dir).expect("Failed to create config directory");
 
         let mut mng = Self {
             data_dir,
             configs: vec![],
+            selected_config: selected,
             cfg_handler: Configurator::new(),
-            stg_handler: Settings::new(settings_file)?,
+            stg_handler: settings,
             log_handler: Logger::new(),
         };
 
@@ -188,9 +196,10 @@ impl App {
     }
 
     pub fn remove_config_by_number(&mut self, number: usize) -> Result<()> {
-        let file_path = self
-            .get_configs_path()
-            .join(format!("{}.json", self.configs[number]));
+        let file_path = self.get_configs_path().join(format!(
+            "{}.json",
+            self.configs.get(number).context("Config doesnt exist")?
+        ));
 
         if !file_path.exists() {
             return Err(anyhow!(
@@ -208,6 +217,7 @@ impl App {
     pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
         let saved_name = self.save_config(name)?;
+        self.selected_config = saved_name.clone();
         self.configs.push(saved_name);
         self.configs.sort();
         Ok(self)
@@ -225,6 +235,7 @@ impl App {
         if let Some(n) = tag {
             file_path = self.get_configs_path().join(format!("{}.json", n));
             self.stg_handler.current = Some(n.to_string().clone());
+            self.selected_config = n.to_string();
         } else if let Some(n) = number {
             file_path = self.get_configs_path().join(format!(
                 "{}.json",
@@ -232,20 +243,30 @@ impl App {
                     .get(n as usize - 1)
                     .context("No exists config with that number")?
             ));
-            self.stg_handler.current = Some(self.get_list()[n as usize - 1].clone());
+            self.stg_handler.current = Some(
+                self.get_list()
+                    .get(n as usize - 1)
+                    .context("No exists config with that number")?
+                    .clone(),
+            );
+            self.selected_config = self
+                .get_list()
+                .get(n as usize - 1)
+                .context("No exists config with that number")?
+                .clone();
         } else if let Some(n) = self.stg_handler.current.clone() {
             file_path = self.get_configs_path().join(format!("{}.json", n));
+            self.selected_config = n.clone();
         } else {
-            file_path = self
-                .get_configs_path()
-                .join(format!("{}.json", self.get_list()[0]));
-            self.stg_handler.current = Some(self.get_list()[0].clone());
+            file_path = self.get_configs_path().join(format!(
+                "{}.json",
+                self.get_list().first().context("Configs doesnt exist")?
+            ));
+            self.stg_handler.current = Some(self.get_list().first().unwrap().clone());
+            self.selected_config = self.get_list().first().unwrap().clone();
         }
 
-        println!(
-            "{}",
-            bridge::start_safe(file_path.to_str().unwrap(), 0).unwrap()
-        );
+        bridge::start_safe(file_path.to_str().unwrap(), 0);
         if unable_system_proxy {
             self.stg_handler.unable_system_proxy = Some(unable_system_proxy);
         }
@@ -275,16 +296,30 @@ impl App {
         Ok(())
     }
 
-    pub fn rename_config(&mut self, old_name: String, new_name: String) -> Result<()> {
-        self.set_handler_config_by_name(&old_name)?;
-        self.remove_config(&old_name)?;
-        self.add_config(Some(new_name))?;
+    pub fn rename_config(&mut self, new_name: String) -> Result<()> {
+        self.remove_config(
+            &self
+                .get_selected_config()
+                .context("Config doesnt selected")?,
+        )?;
+        self.add_config(Some(new_name.clone()))?;
+        self.selected_config = new_name.to_string();
         Ok(())
     }
 
     pub fn set_handler_config_by_name(&mut self, name: &str) -> Result<()> {
         self.cfg_handler
             .load_from_file(self.get_configs_path().join(format!("{}.json", name)))?;
+        self.selected_config = name.to_string();
+        Ok(())
+    }
+
+    pub fn set_handler_config_by_number(&mut self, number: u16) -> Result<()> {
+        self.cfg_handler
+            .load_from_file(self.get_configs_path().join(format!(
+                "{}.json",
+                self.configs.get(number as usize).context("Config doesnt exist")?
+            )))?;
         Ok(())
     }
 
@@ -381,6 +416,14 @@ impl App {
 
     pub fn get_current_config(&self) -> Option<String> {
         self.stg_handler.current.clone()
+    }
+
+    pub fn get_selected_config(&self) -> Option<String> {
+        if !self.selected_config.is_empty() {
+            Some(self.selected_config.clone())
+        } else {
+            None
+        }
     }
 
     pub fn exist_config(&self, name: &String) -> u8 {

@@ -222,7 +222,8 @@ impl Configurator {
     ///
     /// SPECIFIC:
     /// "s":<VALUE>             `str`
-    /// for example "1s" NOT just "1"
+    /// write "1s" NOT just "1"
+    /// "h" dont need values at all
     pub fn add_route_rules(&mut self, rules: &Vec<String>) -> Result<&mut Self> {
         for i in rules {
             let mut rh;

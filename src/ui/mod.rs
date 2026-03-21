@@ -66,6 +66,27 @@ enum Commands {
         #[arg(long)]
         name: Option<String>,
     },
+    /// Manage settings of config
+    Manage {
+        /// Config endentifier
+        value: Option<ConfigEn>,
+
+        /// Set dns servers
+        #[arg(long, short)]
+        dns: Option<Vec<String>>,
+
+        /// Set route rules [<action>:<type>:<value>]
+        #[arg(long, short)]
+        route: Option<Vec<String>>,
+
+        /// Manage route rules [<action>:<value>:<value>]
+        #[arg(long, short)]
+        manage: Option<Vec<String>>,
+
+        /// Set a custom name of config
+        #[arg(long)]
+        name: Option<String>,
+    },
 
     /// Dispay list of possible configs
     List,
@@ -134,7 +155,7 @@ impl Cli {
                         manager.handler_mut().add_route_rules(value)?;
                     }
                     if let Some(value) = manage {
-                        manager.handler_mut().manage_route_rules(value);
+                        manager.handler_mut().manage_route_rules(value)?;
                     }
                     if *rewrite
                         && let Some(value) = name
@@ -147,6 +168,38 @@ impl Cli {
                         manager.remove_config(&manager.handler_ref().get_outbound_tag()?)?;
                     }
                     manager.add_config(name.clone())?;
+                }
+            }
+            Commands::Manage {
+                value,
+                dns,
+                route,
+                manage,
+                name,
+            } => {
+                let rr = match value {
+                    Some(x) => match x {
+                        ConfigEn::Text(t) => manager.set_handler_config_by_name(&t),
+                        ConfigEn::Number(n) => manager.set_handler_config_by_number(*n),
+                    },
+                    None => Ok(()),
+                };
+
+                if let Err(x) = rr {
+                    return Err(anyhow!(x));
+                }
+
+                if let Some(value) = dns {
+                    manager.handler_mut().add_dns_servers(value)?;
+                }
+                if let Some(value) = route {
+                    manager.handler_mut().add_route_rules(value)?;
+                }
+                if let Some(value) = manage {
+                    manager.handler_mut().manage_route_rules(value)?;
+                }
+                if let Some(value) = name {
+                    manager.rename_config(value.clone())?;
                 }
             }
             Commands::List => {
