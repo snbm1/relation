@@ -24,7 +24,7 @@ impl OutboundConfig {
     }
 
     pub fn add_server_from_url(&mut self, url: &str) -> Result<&mut Self> {
-        match Url::parse(url).unwrap().scheme() {
+        match Url::parse(url)?.scheme() {
             "vless" => {
                 self.add_server(Outbound::Vless(
                     VlessConfig::from_url(url).context("Cant parse Vless config from url.")?,
