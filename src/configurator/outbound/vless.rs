@@ -134,12 +134,12 @@ impl VlessConfig {
         self.server.clone()
     }
 
-    fn parser(input: &str) -> Vec<(PossibleKeys, PossibleValues)> {
-        let parsed_input = Url::parse(input).unwrap();
+    fn parser(input: &str) -> Result<Vec<(PossibleKeys, PossibleValues)>> {
+        let parsed_input = Url::parse(input)?;
         let mut values: Vec<(PossibleKeys, PossibleValues)> = vec![
             (
                 PossibleKeys::Server,
-                PossibleValues::String(parsed_input.host_str().unwrap().to_owned()),
+                PossibleValues::String(parsed_input.host_str()?.to_owned()),
             ),
             (
                 PossibleKeys::ServerPort,
@@ -196,10 +196,7 @@ impl VlessConfig {
                         PossibleKeys::Sid,
                         PossibleValues::String(String::from(j[1])),
                     )),
-                    "mux" => values.push((
-                        PossibleKeys::Mux,
-                        PossibleValues::U16(j[1].parse().unwrap()),
-                    )),
+                    "mux" => values.push((PossibleKeys::Mux, PossibleValues::U16(j[1].parse()?))),
                     "path" => values.push((
                         PossibleKeys::Path,
                         PossibleValues::String(String::from(j[1])),
@@ -216,7 +213,7 @@ impl VlessConfig {
                 }
             }
         }
-        values
+        Ok(values)
     }
 
     pub fn from_url(url: &str) -> Result<Self> {
@@ -230,7 +227,7 @@ impl VlessConfig {
         let mut mtx = MultiplexConfig::new();
         let mut tfg = TransportConfig::None;
 
-        for (key, val) in value {
+        for (key, val) in value? {
             match key {
                 PossibleKeys::Type => {
                     match val {
