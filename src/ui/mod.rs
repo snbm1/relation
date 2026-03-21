@@ -134,7 +134,7 @@ impl Cli {
                         manager.handler_mut().add_route_rules(value)?;
                     }
                     if let Some(value) = manage {
-                        manager.handler_mut().manage_route_rules(value)?;
+                        manager.handler_mut().manage_route_rules(value);
                     }
                     if *rewrite
                         && let Some(value) = name
