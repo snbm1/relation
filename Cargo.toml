@@ -21,6 +21,7 @@ ratatui = { version = "*", optional = true }
 crossterm = { version = "*", optional = true }
 anyhow = "1.0"
 default-net = "*"
+local-ip-address = "*" 
 
 [build-dependencies]
 bindgen = "0.72"
