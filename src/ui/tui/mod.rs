@@ -1,6 +1,8 @@
 mod ifaces;
+use clap::builder::styling::Style as ClapStyle;
 use crossterm::event::KeyModifiers;
 use ifaces::*;
+use ratatui::widgets::block::{Title, Position};
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
 use std::os::fd::FromRawFd;
@@ -17,14 +19,15 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 
+use std::collections::VecDeque;
+
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    try_init,
-    widgets::{BarChart, Block, BorderType, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph},
 };
 
 pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
@@ -62,6 +65,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut rx_rate: u64 = 0;
     let mut tx_rate: u64 = 0;
+
+    let mut rx_list: VecDeque<u64> = VecDeque::new();
+    let mut tx_list: VecDeque<u64> = VecDeque::new();
 
     let mut selected_index: usize = 0;
     let mut len = app.get_len();
@@ -215,6 +221,15 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             rx_rate = (drx / dt) as u64;
             tx_rate = (dtx / dt) as u64;
 
+            rx_list.push_back(rx_rate);
+            tx_list.push_back(tx_rate);
+            while rx_list.len() > 800 {
+                rx_list.pop_front();
+            }
+            while tx_list.len() > 800 {
+                tx_list.pop_front();
+            }
+
             prev = current;
             prev_time = now;
         }
@@ -334,19 +349,98 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             }
 
             //TRAFFIC BAR
-            let chart = BarChart::default()
-                .block(
-                    Block::default()
-                        .title("Traffic (KB/s)")
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded),
-                )
-                .data(&[("RX", rx_rate / 1024), ("TX", tx_rate / 1024)])
-                .bar_width(8)
-                .bar_gap(4)
-                .max(1000);
+           let max_rate = rx_list.iter().chain(tx_list.iter()).copied().max().unwrap_or(64 * 1024).max(64 * 1024); 
 
-            f.render_widget(chart, vertical[1]);
+           let title = if max_rate >= 1024 * 1024 {
+                format!("Traffic ({:.1}) MB/s", max_rate as f64 / 1024.0 / 1024.0)
+           } else {
+                format!("Traffic ({:.0}) KB/s", max_rate as f64 / 1024.0)
+           }; 
+
+           let traffic_block = Block::default()
+                .title(title)
+                .title(Title::from(format!("interface: {} ip: {}", iface_detect(), ip_addr())).position(Position::Bottom))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded); 
+
+            let traffic_inner = traffic_block.inner(vertical[1]); 
+            f.render_widget(traffic_block, vertical[1]);
+
+            if traffic_inner.width > 3 && traffic_inner.height > 4 {
+                let traffic_x = traffic_inner.x; 
+                let traffic_width = traffic_inner.width; 
+                let traffic_height = traffic_inner.height as usize; 
+                let rx_rows = (traffic_height / 2).max(1); 
+                let tx_rows = traffic_height.saturating_sub(rx_rows).max(1); 
+
+                let rx_points : Vec<u64> = rx_list
+                    .iter()
+                    .rev()
+                    .take(traffic_width as usize)
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .collect(); 
+
+                let tx_points : Vec<u64> = tx_list
+                    .iter()
+                    .rev()
+                    .take(traffic_width as usize)
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .collect(); 
+
+                let mut prev_rx_y: Option<u16> = None; 
+
+                for (id, value) in rx_points.iter().enumerate() {
+                    let x = traffic_x + id as u16;
+                    let level = (((*value as f64 / max_rate.max(1) as f64) * (rx_rows.saturating_sub(1)) as f64).round() as usize).min(rx_rows.saturating_sub(1)); 
+                    let y = traffic_inner.y + (rx_rows.saturating_sub(1) - level) as u16; 
+
+                    if let Some(prev_y) = prev_rx_y {
+                        let start = prev_y.min(y); 
+                        let end = prev_y.max(y);
+
+                        for yy in start..=end {
+                            let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic rx cell"); 
+                            cell.set_char('⣿'); 
+                            cell.set_style(Style::default().fg(Color::Cyan));
+                        } 
+                    }
+
+                    let cell = f.buffer_mut().cell_mut((x, y)).expect("traffic rx cell"); 
+                    cell.set_char('⣿'); 
+                    cell.set_style(Style::default().fg(Color::Cyan));
+                    prev_rx_y = Some(y); 
+                }
+                
+                let tx_y = traffic_inner.y + rx_rows as u16; 
+                let mut prev_tx_y: Option<u16> = None; 
+                for (id, value) in tx_points.iter().enumerate() {
+                    let x = traffic_x + id as u16; 
+                    let level = (((*value as f64 / max_rate.max(1) as f64) * (tx_rows.saturating_sub(1)) as f64).round() as usize).min(tx_rows.saturating_sub(1)); 
+                    let y: u16 = tx_y + level as u16; 
+
+                    if let Some(prev_y) = prev_tx_y {
+                        let start = prev_y.min(y); 
+                        let end = prev_y.max(1); 
+
+                        for yy in start..=end {
+                            let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic tx cell"); 
+                            cell.set_char('⣿'); 
+                            cell.set_style(Style::default().fg(Color::Magenta)); 
+                        }
+                    }
+
+                    let cell = f.buffer_mut().cell_mut((x, y)).expect("traffic tx cell");
+                    cell.set_char('⣿'); 
+                    cell.set_style(Style::default().fg(Color::Magenta));
+                    prev_tx_y = Some(y);
+                }
+            }
 
             // HELP PANEL
             let helper = Paragraph::new(Line::from(

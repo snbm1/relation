@@ -1,6 +1,7 @@
 use default_net::{self, get_default_interface};
 use std::fs;
 use std::io;
+use local_ip_address::local_ip; 
 
 use crate::App;
 
@@ -34,4 +35,11 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
     }
 
     Ok(Counters { rx: 0, tx: 0 })
+}
+
+pub fn ip_addr() -> String {
+    match local_ip() {
+        Ok(ip) => ip.to_string(), 
+        Err(_) => "Ip erro".to_string(),
+    }
 }
