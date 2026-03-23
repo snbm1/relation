@@ -1,7 +1,9 @@
 use default_net::{self, get_default_interface};
 use std::fs;
 use std::io;
-use local_ip_address::local_ip; 
+
+
+use ureq; 
 
 use crate::App;
 
@@ -38,8 +40,5 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
 }
 
 pub fn ip_addr() -> String {
-    match local_ip() {
-        Ok(ip) => ip.to_string(), 
-        Err(_) => "Ip erro".to_string(),
-    }
+    ureq::get("https://api.ipify.org").call().expect("Failed init ip").body_mut().read_to_string().expect("Failed init ip")
 }
