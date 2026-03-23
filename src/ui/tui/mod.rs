@@ -373,6 +373,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 let rx_rows = (traffic_height / 2).max(1); 
                 let tx_rows = traffic_height.saturating_sub(rx_rows).max(1); 
 
+                let rx_base_y = traffic_inner.y + rx_rows as u16 - 1;
+                let tx_base_y = traffic_inner.y + rx_rows as u16; 
+ 
                 let rx_points : Vec<u64> = rx_list
                     .iter()
                     .rev()
@@ -393,52 +396,51 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     .rev()
                     .collect(); 
 
-                let mut prev_rx_y: Option<u16> = None; 
+                let history_len = rx_points.len().max(tx_points.len()) as u16; 
+
+                for id in 0..history_len {
+                    let x  = traffic_x + id; 
+                    let rx_cell = f.buffer_mut().cell_mut((x, rx_base_y)).expect("base traffic rx");
+                    rx_cell.set_char('⣿');
+                    rx_cell.set_style(Style::default().fg(Color::Cyan));
+
+                    let tx_cell = f.buffer_mut().cell_mut((x, tx_base_y)).expect("base traffic tx");
+                    tx_cell.set_char('⣿');
+                    tx_cell.set_style(Style::default().fg(Color::Magenta));
+                }
 
                 for (id, value) in rx_points.iter().enumerate() {
                     let x = traffic_x + id as u16;
                     let level = (((*value as f64 / max_rate.max(1) as f64) * (rx_rows.saturating_sub(1)) as f64).round() as usize).min(rx_rows.saturating_sub(1)); 
                     let y = traffic_inner.y + (rx_rows.saturating_sub(1) - level) as u16; 
 
-                    if let Some(prev_y) = prev_rx_y {
-                        let start = prev_y.min(y); 
-                        let end = prev_y.max(y);
+                    let start = y.min(rx_base_y); 
+                    let end = y.max(rx_base_y);
 
-                        for yy in start..=end {
+                    
+
+                    for yy in start..=end {
                             let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic rx cell"); 
                             cell.set_char('⣿'); 
                             cell.set_style(Style::default().fg(Color::Cyan));
-                        } 
-                    }
-
-                    let cell = f.buffer_mut().cell_mut((x, y)).expect("traffic rx cell"); 
-                    cell.set_char('⣿'); 
-                    cell.set_style(Style::default().fg(Color::Cyan));
-                    prev_rx_y = Some(y); 
+                        }  
                 }
                 
                 let tx_y = traffic_inner.y + rx_rows as u16; 
-                let mut prev_tx_y: Option<u16> = None; 
                 for (id, value) in tx_points.iter().enumerate() {
                     let x = traffic_x + id as u16; 
                     let level = (((*value as f64 / max_rate.max(1) as f64) * (tx_rows.saturating_sub(1)) as f64).round() as usize).min(tx_rows.saturating_sub(1)); 
                     let y: u16 = tx_y + level as u16; 
 
-                    if let Some(prev_y) = prev_tx_y {
-                        let start = prev_y.min(y); 
-                        let end = prev_y.max(1); 
+                    let start = y.min(tx_base_y); 
+                    let end = y.max(tx_base_y); 
 
-                        for yy in start..=end {
+                    for yy in start..=end {
                             let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic tx cell"); 
                             cell.set_char('⣿'); 
                             cell.set_style(Style::default().fg(Color::Magenta)); 
                         }
-                    }
-
-                    let cell = f.buffer_mut().cell_mut((x, y)).expect("traffic tx cell");
-                    cell.set_char('⣿'); 
-                    cell.set_style(Style::default().fg(Color::Magenta));
-                    prev_tx_y = Some(y);
+                    
                 }
             }
 
