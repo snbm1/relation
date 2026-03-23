@@ -223,10 +223,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
             rx_list.push_back(rx_rate);
             tx_list.push_back(tx_rate);
-            while rx_list.len() > 800 {
+            while rx_list.len() > 900 {
                 rx_list.pop_front();
             }
-            while tx_list.len() > 800 {
+            while tx_list.len() > 900 {
                 tx_list.pop_front();
             }
 
