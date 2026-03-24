@@ -77,6 +77,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut tun_mode: bool = false;
     let mut error_input = false;
     let mut running: Option<String> = None;
+    let mut changed_ip = false; 
+    let mut ip = direct_ip(); 
 
     let mut input_buffer = String::new();
 
@@ -174,6 +176,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 app.set_log_file();
                                 app.run_app(None, Some(number), false);
                                 enter_mode = true;
+                                changed_ip = true;
                             } else if enter_mode {
                                 let name = app.get_list()[selected_index].clone();
                                 if running.as_deref() == Some(name.as_str()) {
@@ -356,14 +359,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
            } else {
                 format!("Traffic ({:.0}) KB/s", max_rate as f64 / 1024.0)
            }; 
-           let ip = {
-            let proxy_ip = ip_addr(); 
-            if proxy_ip.contains("error") {
-                direct_ip()
-            } else {
-                 proxy_ip
-            }
-           };
+           if changed_ip {
+           ip = direct_ip();
+           changed_ip = false;
+        }
+
            let traffic_block = Block::default()
                 .title(title)
                 .title(Title::from(format!("interface: {} ip: {}", iface_detect(), ip)).position(Position::Bottom))
