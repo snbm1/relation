@@ -11,6 +11,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+use std::sync::{Arc, Mutex};
+use std::thread;
+
 use crate::App;
 
 use crossterm::{
@@ -82,7 +85,29 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut input_buffer = String::new();
 
+    let current_ip = Arc::new(Mutex::new("loading...".to_string())); 
+    let ip_shared = Arc::clone(&current_ip); 
+
+    thread::spawn(move || {
+        loop {
+            let ip = ip_addr(); 
+            let ip = if ip.contains("error") {
+                direct_ip()
+            } else {
+                ip 
+            };
+
+            if let Ok(mut ip_address) = ip_shared.lock() {
+                *ip_address = ip; 
+            }
+
+            thread::sleep(Duration::from_secs(6));
+        }
+    });
+
     loop {
+        let ip_base = current_ip.lock().map(|ip| ip.clone()).unwrap_or_else(|_| "ip unavailable".to_string()); 
+
         // -------- INPUT --------
         if event::poll(Duration::from_millis(500))? {
             if let Event::Key(key) = event::read()? {
@@ -366,7 +391,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
            let traffic_block = Block::default()
                 .title(title)
-                .title(Title::from(format!("interface: {} ip: {}", iface_detect(), ip)).position(Position::Bottom))
+                .title(Title::from(format!("interface: {} ip: {}", iface, ip_base)).position(Position::Bottom))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded); 
 
