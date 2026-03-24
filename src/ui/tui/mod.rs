@@ -356,10 +356,17 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
            } else {
                 format!("Traffic ({:.0}) KB/s", max_rate as f64 / 1024.0)
            }; 
-
+           let ip = {
+            let proxy_ip = ip_addr(); 
+            if proxy_ip.contains("error") {
+                direct_ip()
+            } else {
+                 proxy_ip
+            }
+           };
            let traffic_block = Block::default()
                 .title(title)
-                .title(Title::from(format!("interface: {} ip: {}", iface_detect(), ip_addr())).position(Position::Bottom))
+                .title(Title::from(format!("interface: {} ip: {}", iface_detect(), ip)).position(Position::Bottom))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded); 
 
