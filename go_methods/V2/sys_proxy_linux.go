@@ -1,3 +1,5 @@
+//go:build linux
+
 package V2
 
 import (
