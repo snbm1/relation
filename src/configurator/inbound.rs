@@ -2,6 +2,7 @@ pub mod direct;
 pub mod mixed;
 pub mod tun;
 
+use libc::IN6ADDR_ANY_INIT;
 use serde::{Deserialize, Serialize};
 
 use crate::configurator::{
@@ -131,6 +132,14 @@ impl Inbound {
                 }
             }
             Inbound::Tun(cfg) => None,
+        }
+    }
+
+    pub fn get_port(&self) -> Option<u16> {
+        match self {
+            Inbound::Mixed(cfg) => cfg.get_address_port(),
+            Inbound::Direct(cfg) => cfg.get_address_port(),
+            Inbound::Tun(_) => None,
         }
     }
 }

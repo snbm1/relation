@@ -119,10 +119,51 @@ impl Logger {
     }
 }
 
+#[derive(Copy, Debug, Clone)]
+pub enum InboundMod {
+    Http(u16),
+    Socks5(u16),
+    Mixed(u16),
+    Tun,
+    None,
+}
+
+pub struct Infor {
+    pub config_name: String,
+    pub inbound_mod: InboundMod,
+}
+
+impl Infor {
+    pub fn new() -> Self {
+        Self {
+            config_name: "".to_string(),
+            inbound_mod: InboundMod::None,
+        }
+    }
+
+    pub fn set_name(&mut self, name: &str) -> &mut Self {
+        self.config_name = name.to_string();
+        self
+    }
+
+    pub fn set_inbound(&mut self, inbound: InboundMod) -> &mut Self {
+        self.inbound_mod = inbound;
+        self
+    }
+
+    pub fn get_name(&self) -> String {
+        self.config_name.clone()
+    }
+
+    pub fn get_inbound(&self) -> InboundMod {
+        self.inbound_mod
+    }
+}
+
 pub struct App {
     data_dir: PathBuf,
     configs: Vec<String>,
-    selected_config: String,
+    inf_handler: Infor,
     cfg_handler: Configurator,
     stg_handler: Settings,
     log_handler: Logger,
@@ -136,18 +177,13 @@ impl App {
         let data_dir = proj_dirs.data_dir().to_path_buf();
         let config_dir = data_dir.join("config");
         let settings = Settings::new(data_dir.join("settings.toml"))?;
-        let mut selected = String::new();
-
-        if let Some(x) = &settings.current {
-            selected = x.clone();
-        }
 
         fs::create_dir_all(&config_dir).expect("Failed to create config directory");
 
         let mut mng = Self {
             data_dir,
             configs: vec![],
-            selected_config: selected,
+            inf_handler: Infor::new(),
             cfg_handler: Configurator::new(),
             stg_handler: settings,
             log_handler: Logger::new(),
@@ -217,7 +253,13 @@ impl App {
     pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
         let saved_name = self.save_config(name)?;
-        self.selected_config = saved_name.clone();
+        self.inf_handler.set_name(&saved_name).set_inbound(
+            *self
+                .cfg_handler
+                .get_inbounds_ports()
+                .first()
+                .context("No inbound exists")?,
+        );
         self.configs.push(saved_name);
         self.configs.sort();
         Ok(self)
@@ -235,7 +277,14 @@ impl App {
         if let Some(n) = tag {
             file_path = self.get_configs_path().join(format!("{}.json", n));
             self.stg_handler.current = Some(n.to_string().clone());
-            self.selected_config = n.to_string();
+            self.set_handler_config_by_name(n);
+            self.inf_handler.set_name(n).set_inbound(
+                *self
+                    .cfg_handler
+                    .get_inbounds_ports()
+                    .first()
+                    .context("No inbound exists")?,
+            );
         } else if let Some(n) = number {
             file_path = self.get_configs_path().join(format!(
                 "{}.json",
@@ -249,21 +298,17 @@ impl App {
                     .context("No exists config with that number")?
                     .clone(),
             );
-            self.selected_config = self
-                .get_list()
-                .get(n as usize - 1)
-                .context("No exists config with that number")?
-                .clone();
+            self.set_handler_config_by_number(n)?;
         } else if let Some(n) = self.stg_handler.current.clone() {
             file_path = self.get_configs_path().join(format!("{}.json", n));
-            self.selected_config = n.clone();
+            self.set_handler_config_by_name(&n)?;
         } else {
             file_path = self.get_configs_path().join(format!(
                 "{}.json",
                 self.get_list().first().context("Configs doesnt exist")?
             ));
             self.stg_handler.current = Some(self.get_list().first().unwrap().clone());
-            self.selected_config = self.get_list().first().unwrap().clone();
+            self.set_handler_config_by_name(self.get_list().first().unwrap())?;
         }
 
         bridge::start_safe(file_path.to_str().unwrap(), 0);
@@ -303,14 +348,21 @@ impl App {
                 .context("Config doesnt selected")?,
         )?;
         self.add_config(Some(new_name.clone()))?;
-        self.selected_config = new_name.to_string();
+        self.inf_handler.set_name(&new_name.to_string());
         Ok(())
     }
 
     pub fn set_handler_config_by_name(&mut self, name: &str) -> Result<()> {
         self.cfg_handler
             .load_from_file(self.get_configs_path().join(format!("{}.json", name)))?;
-        self.selected_config = name.to_string();
+
+        self.inf_handler.set_name(name).set_inbound(
+            self.cfg_handler
+                .get_inbounds_ports()
+                .first()
+                .context("")?
+                .clone(),
+        );
         Ok(())
     }
 
@@ -320,6 +372,16 @@ impl App {
                 "{}.json",
                 self.configs.get(number as usize).context("Config doesnt exist")?
             )))?;
+
+        self.inf_handler
+            .set_name(&self.configs.get(number as usize).unwrap())
+            .set_inbound(
+                self.cfg_handler
+                    .get_inbounds_ports()
+                    .first()
+                    .context("")?
+                    .clone(),
+            );
         Ok(())
     }
 
@@ -419,8 +481,8 @@ impl App {
     }
 
     pub fn get_selected_config(&self) -> Option<String> {
-        if !self.selected_config.is_empty() {
-            Some(self.selected_config.clone())
+        if !self.inf_handler.get_name().is_empty() {
+            Some(self.inf_handler.get_name().clone())
         } else {
             None
         }
