@@ -18,6 +18,7 @@ use crate::configurator::inbound::tun::TunConfig;
 use crate::configurator::log::LogConfig;
 use crate::configurator::route::routerule::DefaultRouteRule;
 use crate::configurator::route::routerule::LogicalRouteRule;
+use crate::datamanager::InboundMod;
 
 use anyhow::{Context, Result, anyhow};
 use std::fs::File;
@@ -171,6 +172,20 @@ impl Configurator {
         let mut res = vec![];
         for i in self.inbounds.get_vec_ref() {
             res.push(i.get_type());
+        }
+        res
+    }
+
+    pub fn get_inbounds_ports(&self) -> Vec<InboundMod> {
+        let mut res = vec![];
+        for i in self.inbounds.get_vec_ref() {
+            match &*i.get_type() {
+                "mixed" => res.push(InboundMod::Mixed(i.get_port().unwrap())),
+                "http" => res.push(InboundMod::Http(i.get_port().unwrap())),
+                "socks5" => res.push(InboundMod::Socks5(i.get_port().unwrap())),
+                "tun" => res.push(InboundMod::Tun),
+                _ => {}
+            }
         }
         res
     }

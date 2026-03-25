@@ -2,7 +2,7 @@ mod ifaces;
 use clap::builder::styling::Style as ClapStyle;
 use crossterm::event::KeyModifiers;
 use ifaces::*;
-use ratatui::widgets::block::{Title, Position};
+use ratatui::widgets::block::{Position, Title};
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
 use std::os::fd::FromRawFd;
@@ -80,25 +80,25 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut tun_mode: bool = false;
     let mut error_input = false;
     let mut running: Option<String> = None;
-    let mut changed_ip = false; 
-    let mut ip = direct_ip(); 
+    let mut changed_ip = false;
+    let mut ip = direct_ip();
 
     let mut input_buffer = String::new();
 
-    let current_ip = Arc::new(Mutex::new("loading...".to_string())); 
-    let ip_shared = Arc::clone(&current_ip); 
+    let current_ip = Arc::new(Mutex::new("loading...".to_string()));
+    let ip_shared = Arc::clone(&current_ip);
 
     thread::spawn(move || {
         loop {
-            let ip = ip_addr(); 
+            let ip = ip_addr();
             let ip = if ip.contains("error") {
                 direct_ip()
             } else {
-                ip 
+                ip
             };
 
             if let Ok(mut ip_address) = ip_shared.lock() {
-                *ip_address = ip; 
+                *ip_address = ip;
             }
 
             thread::sleep(Duration::from_secs(6));
@@ -106,7 +106,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     });
 
     loop {
-        let ip_base = current_ip.lock().map(|ip| ip.clone()).unwrap_or_else(|_| "ip unavailable".to_string()); 
+        let ip_base = current_ip
+            .lock()
+            .map(|ip| ip.clone())
+            .unwrap_or_else(|_| "ip unavailable".to_string());
 
         // -------- INPUT --------
         if event::poll(Duration::from_millis(500))? {
@@ -115,20 +118,22 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     match key.code {
                         KeyCode::Esc => {
                             input_mode = false;
-                            if tun_mode {tun_mode = false;}
+                            if tun_mode {
+                                tun_mode = false;
+                            }
                             error_input = false;
                             input_buffer.clear();
                         }
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                let cfg = app.handler_mut().clean(); 
+                                let cfg = app.handler_mut().clean();
                                 let result = if tun_mode {
-                                    cfg.default_tun().set_outbound_from_url(&input_buffer.clone())
-                                }
-                                else {
+                                    cfg.default_tun()
+                                        .set_outbound_from_url(&input_buffer.clone())
+                                } else {
                                     cfg.default().set_outbound_from_url(&input_buffer.clone())
-                                }; 
-                    
+                                };
+
                                 match result {
                                     Ok(_) => {
                                         if let Err(err) = app.add_config(None) {
@@ -138,7 +143,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                             input_buffer.clear();
                                             len = app.get_len();
                                             input_mode = false;
-                                            if tun_mode {tun_mode = false;}
+                                            if tun_mode {
+                                                tun_mode = false;
+                                            }
                                             selected_index = 0;
                                         }
                                     }
@@ -150,7 +157,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Backspace => {
                             input_buffer.pop();
-                            if input_buffer.is_empty(){
+                            if input_buffer.is_empty() {
                                 error_input = false;
                             }
                         }
@@ -206,7 +213,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 let name = app.get_list()[selected_index].clone();
                                 if running.as_deref() == Some(name.as_str()) {
                                     running = None;
-                                    app.stop_app();
+                                    app.stop_app()?;
                                     enter_mode = false;
                                 } else {
                                     app.stop_app();
@@ -377,38 +384,47 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             }
 
             //TRAFFIC BAR
-           let max_rate = rx_list.iter().chain(tx_list.iter()).copied().max().unwrap_or(64 * 1024).max(64 * 1024); 
+            let max_rate = rx_list
+                .iter()
+                .chain(tx_list.iter())
+                .copied()
+                .max()
+                .unwrap_or(64 * 1024)
+                .max(64 * 1024);
 
-           let title = if max_rate >= 1024 * 1024 {
+            let title = if max_rate >= 1024 * 1024 {
                 format!("Traffic ({:.1}) MB/s", max_rate as f64 / 1024.0 / 1024.0)
-           } else {
+            } else {
                 format!("Traffic ({:.0}) KB/s", max_rate as f64 / 1024.0)
-           }; 
-           if changed_ip {
-           ip = direct_ip();
-           changed_ip = false;
-        }
+            };
+            if changed_ip {
+                ip = direct_ip();
+                changed_ip = false;
+            }
 
-           let traffic_block = Block::default()
+            let traffic_block = Block::default()
                 .title(title)
-                .title(Title::from(format!("interface: {} ip: {}", iface, ip_base)).position(Position::Bottom))
+                .title(
+                    Title::from(format!("interface: {} ip: {}", iface, ip_base))
+                        .position(Position::Bottom),
+                )
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded); 
+                .border_type(BorderType::Rounded);
 
-            let traffic_inner = traffic_block.inner(vertical[1]); 
+            let traffic_inner = traffic_block.inner(vertical[1]);
             f.render_widget(traffic_block, vertical[1]);
 
             if traffic_inner.width > 3 && traffic_inner.height > 4 {
-                let traffic_x = traffic_inner.x; 
-                let traffic_width = traffic_inner.width; 
-                let traffic_height = traffic_inner.height as usize; 
-                let rx_rows = (traffic_height / 2).max(1); 
-                let tx_rows = traffic_height.saturating_sub(rx_rows).max(1); 
+                let traffic_x = traffic_inner.x;
+                let traffic_width = traffic_inner.width;
+                let traffic_height = traffic_inner.height as usize;
+                let rx_rows = (traffic_height / 2).max(1);
+                let tx_rows = traffic_height.saturating_sub(rx_rows).max(1);
 
                 let rx_base_y = traffic_inner.y + rx_rows as u16 - 1;
-                let tx_base_y = traffic_inner.y + rx_rows as u16; 
- 
-                let rx_points : Vec<u64> = rx_list
+                let tx_base_y = traffic_inner.y + rx_rows as u16;
+
+                let rx_points: Vec<u64> = rx_list
                     .iter()
                     .rev()
                     .take(traffic_width as usize)
@@ -416,9 +432,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     .collect::<Vec<_>>()
                     .into_iter()
                     .rev()
-                    .collect(); 
+                    .collect();
 
-                let tx_points : Vec<u64> = tx_list
+                let tx_points: Vec<u64> = tx_list
                     .iter()
                     .rev()
                     .take(traffic_width as usize)
@@ -426,53 +442,62 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     .collect::<Vec<_>>()
                     .into_iter()
                     .rev()
-                    .collect(); 
+                    .collect();
 
-                let history_len = rx_points.len().max(tx_points.len()) as u16; 
+                let history_len = rx_points.len().max(tx_points.len()) as u16;
 
                 for id in 0..history_len {
-                    let x  = traffic_x + id; 
-                    let rx_cell = f.buffer_mut().cell_mut((x, rx_base_y)).expect("base traffic rx");
+                    let x = traffic_x + id;
+                    let rx_cell = f
+                        .buffer_mut()
+                        .cell_mut((x, rx_base_y))
+                        .expect("base traffic rx");
                     rx_cell.set_char('⣿');
                     rx_cell.set_style(Style::default().fg(Color::Cyan));
 
-                    let tx_cell = f.buffer_mut().cell_mut((x, tx_base_y)).expect("base traffic tx");
+                    let tx_cell = f
+                        .buffer_mut()
+                        .cell_mut((x, tx_base_y))
+                        .expect("base traffic tx");
                     tx_cell.set_char('⣿');
                     tx_cell.set_style(Style::default().fg(Color::Magenta));
                 }
 
                 for (id, value) in rx_points.iter().enumerate() {
                     let x = traffic_x + id as u16;
-                    let level = (((*value as f64 / max_rate.max(1) as f64) * (rx_rows.saturating_sub(1)) as f64).round() as usize).min(rx_rows.saturating_sub(1)); 
-                    let y = traffic_inner.y + (rx_rows.saturating_sub(1) - level) as u16; 
+                    let level = (((*value as f64 / max_rate.max(1) as f64)
+                        * (rx_rows.saturating_sub(1)) as f64)
+                        .round() as usize)
+                        .min(rx_rows.saturating_sub(1));
+                    let y = traffic_inner.y + (rx_rows.saturating_sub(1) - level) as u16;
 
-                    let start = y.min(rx_base_y); 
+                    let start = y.min(rx_base_y);
                     let end = y.max(rx_base_y);
 
-                    
-
                     for yy in start..=end {
-                            let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic rx cell"); 
-                            cell.set_char('⣿'); 
-                            cell.set_style(Style::default().fg(Color::Cyan));
-                        }  
+                        let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic rx cell");
+                        cell.set_char('⣿');
+                        cell.set_style(Style::default().fg(Color::Cyan));
+                    }
                 }
-                
-                let tx_y = traffic_inner.y + rx_rows as u16; 
-                for (id, value) in tx_points.iter().enumerate() {
-                    let x = traffic_x + id as u16; 
-                    let level = (((*value as f64 / max_rate.max(1) as f64) * (tx_rows.saturating_sub(1)) as f64).round() as usize).min(tx_rows.saturating_sub(1)); 
-                    let y: u16 = tx_y + level as u16; 
 
-                    let start = y.min(tx_base_y); 
-                    let end = y.max(tx_base_y); 
+                let tx_y = traffic_inner.y + rx_rows as u16;
+                for (id, value) in tx_points.iter().enumerate() {
+                    let x = traffic_x + id as u16;
+                    let level = (((*value as f64 / max_rate.max(1) as f64)
+                        * (tx_rows.saturating_sub(1)) as f64)
+                        .round() as usize)
+                        .min(tx_rows.saturating_sub(1));
+                    let y: u16 = tx_y + level as u16;
+
+                    let start = y.min(tx_base_y);
+                    let end = y.max(tx_base_y);
 
                     for yy in start..=end {
-                            let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic tx cell"); 
-                            cell.set_char('⣿'); 
-                            cell.set_style(Style::default().fg(Color::Magenta)); 
-                        }
-                    
+                        let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic tx cell");
+                        cell.set_char('⣿');
+                        cell.set_style(Style::default().fg(Color::Magenta));
+                    }
                 }
             }
 

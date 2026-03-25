@@ -1,9 +1,9 @@
 use crate::configurator::shared::listenfields::ListenFields;
-use serde::{Deserialize, Serialize};
 use rellib::auto_skip_none;
+use serde::{Deserialize, Serialize};
 
-use crate::configurator::shared::Network;
 use crate::configurator::shared;
+use crate::configurator::shared::Network;
 
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -43,6 +43,13 @@ impl DirectConfig {
             listen: Some(shared::listenfields::ListenFields::with_listen(addr, port)),
             ..Default::default()
         }
+    }
+
+    pub fn get_address_port(&self) -> Option<u16> {
+        if let Some(x) = &self.listen {
+            return x.listen_port.clone();
+        }
+        None
     }
 
     pub fn check(&self) -> bool {
