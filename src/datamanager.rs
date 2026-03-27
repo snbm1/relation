@@ -1,7 +1,6 @@
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
-use std::ascii::escape_default;
 use std::collections::VecDeque;
 use std::fs::{self, File};
 use std::path::PathBuf;
@@ -268,7 +267,7 @@ impl App {
     pub fn run_app(
         &mut self,
         tag: Option<&str>,
-        number: Option<u16>,
+        number: Option<usize>,
         unable_system_proxy: bool,
     ) -> Result<()> {
         let _ = self.stg_handler.read(self.get_settings_path());
@@ -277,7 +276,7 @@ impl App {
         if let Some(n) = tag {
             file_path = self.get_configs_path().join(format!("{}.json", n));
             self.stg_handler.current = Some(n.to_string().clone());
-            self.set_handler_config_by_name(n);
+            self.set_handler_config_by_name(n)?;
             self.inf_handler.set_name(n).set_inbound(
                 *self
                     .cfg_handler
@@ -289,12 +288,12 @@ impl App {
             file_path = self.get_configs_path().join(format!(
                 "{}.json",
                 self.get_list()
-                    .get(n as usize - 1)
+                    .get(n)
                     .context("No exists config with that number")?
             ));
             self.stg_handler.current = Some(
                 self.get_list()
-                    .get(n as usize - 1)
+                    .get(n)
                     .context("No exists config with that number")?
                     .clone(),
             );
@@ -348,7 +347,7 @@ impl App {
                 .context("Config doesnt selected")?,
         )?;
         self.add_config(Some(new_name.clone()))?;
-        self.inf_handler.set_name(&new_name.to_string());
+        self.inf_handler.set_name(&new_name);
         Ok(())
     }
 
@@ -366,15 +365,15 @@ impl App {
         Ok(())
     }
 
-    pub fn set_handler_config_by_number(&mut self, number: u16) -> Result<()> {
+    pub fn set_handler_config_by_number(&mut self, number: usize) -> Result<()> {
         self.cfg_handler
             .load_from_file(self.get_configs_path().join(format!(
                 "{}.json",
-                self.configs.get(number as usize).context("Config doesnt exist")?
+                self.configs.get(number).context("Config doesnt exist")?
             )))?;
 
         self.inf_handler
-            .set_name(&self.configs.get(number as usize).unwrap())
+            .set_name(&self.configs.get(number).unwrap())
             .set_inbound(
                 self.cfg_handler
                     .get_inbounds_ports()
@@ -382,6 +381,37 @@ impl App {
                     .context("")?
                     .clone(),
             );
+        Ok(())
+    }
+
+    pub fn set_handler_config_by_current(&mut self) -> Result<()> {
+        if let Some(name) = self.stg_handler.current.clone() {
+            self.cfg_handler
+                .load_from_file(self.get_configs_path().join(format!("{}.json", &name)))?;
+            self.inf_handler.set_name(&name).set_inbound(
+                self.cfg_handler
+                    .get_inbounds_ports()
+                    .first()
+                    .context("")?
+                    .clone(),
+            );
+        } else {
+            if let Some(name) = self.get_list().first() {
+                self.cfg_handler
+                    .load_from_file(self.get_configs_path().join(format!("{}.json", &name)))?;
+                self.inf_handler.set_name(&name).set_inbound(
+                    self.cfg_handler
+                        .get_inbounds_ports()
+                        .first()
+                        .context("")?
+                        .clone(),
+                );
+                self.stg_handler.current = Some(name.clone());
+            } else {
+                return Err(anyhow!("No configs exist"));
+            }
+        }
+
         Ok(())
     }
 

@@ -81,7 +81,7 @@ impl OutboundConfig {
         self.servers
             .iter()
             .filter(|x| x.get_type() != "direct")
-            .map(|x| x.get_type())
+            .map(|x| x.get_type().to_string())
             .collect()
     }
 
@@ -90,7 +90,7 @@ impl OutboundConfig {
         for i in self.servers.iter() {
             servers_types.push(i.get_type());
         }
-        if servers_types.contains(&outbound_type.to_string()) {
+        if servers_types.contains(&outbound_type) {
             return self.get_ref_by_type(outbound_type).unwrap().get_addr();
         }
         "0.0.0.0".to_string()
@@ -103,9 +103,11 @@ impl OutboundConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum Outbound {
+    #[serde(rename = "direct")]
     Direct(direct::DirectConfig),
+    #[serde(rename = "vless")]
     Vless(vless::VlessConfig),
 }
 
@@ -117,10 +119,10 @@ impl Outbound {
         }
     }
 
-    pub fn get_type(&self) -> String {
+    pub fn get_type(&self) -> &'static str {
         match self {
-            Outbound::Direct(cfg) => cfg.get_type(),
-            Outbound::Vless(cfg) => cfg.get_type(),
+            Outbound::Direct(_) => "direct",
+            Outbound::Vless(_) => "vless",
         }
     }
 

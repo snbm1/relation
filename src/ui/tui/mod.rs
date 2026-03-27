@@ -206,7 +206,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 let number = selected_index as u16 + 1;
                                 running = Some(app.get_list()[selected_index].clone());
                                 app.set_log_file();
-                                app.run_app(None, Some(number), false);
+                                app.run_app(None, Some(number as usize - 1), false);
                                 enter_mode = true;
                                 changed_ip = true;
                             } else if enter_mode {
@@ -221,7 +221,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                     let number = selected_index as u16 + 1;
                                     running = Some(name.clone());
                                     app.set_log_file();
-                                    app.run_app(None, Some(number), false);
+                                    app.run_app(None, Some(number as usize - 1), false);
                                 }
                             }
                         }

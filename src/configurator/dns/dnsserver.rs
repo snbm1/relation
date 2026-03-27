@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::format;
 
 use rellib::auto_skip_none;
 
@@ -9,39 +8,52 @@ use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::tls::TlsConfig;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum DnsServer {
+    #[serde(rename = "local")]
     Local(DnsServerLocal),
+    #[serde(rename = "hosts")]
     Hosts(DnsServerHosts),
+    #[serde(rename = "tcp")]
     Tcp(DnsServerTcp),
+    #[serde(rename = "udp")]
     Udp(DnsServerUdp),
+    #[serde(rename = "tls")]
     Tls(DnsServerTls),
+    #[serde(rename = "quic")]
     Quic(DnsServerQuic),
+    #[serde(rename = "https")]
     Https(DnsServerHttps),
+    #[serde(rename = "h3")]
     Http3(DnsServerHttp3),
+    #[serde(rename = "dhcp")]
     Dhcp(DnsServerDhcp),
+    #[serde(rename = "fakeip")]
     FakeIp(DnsServerFakeIp),
+    #[serde(rename = "tailscale")]
     Tailscale(DnsServerTailscale),
+    #[serde(rename = "resolved")]
     Resolved(DnsServerResolved),
 }
 
 impl DnsServer {
-    pub fn get_type(&self) -> String {
+    pub fn get_type(&self) -> &'static str {
         match self {
-            DnsServer::Local(s) => s.get_type(),
-            DnsServer::Hosts(s) => s.get_type(),
-            DnsServer::Tcp(s) => s.get_type(),
-            DnsServer::Udp(s) => s.get_type(),
-            DnsServer::Tls(s) => s.get_type(),
-            DnsServer::Quic(s) => s.get_type(),
-            DnsServer::Https(s) => s.get_type(),
-            DnsServer::Http3(s) => s.get_type(),
-            DnsServer::Dhcp(s) => s.get_type(),
-            DnsServer::FakeIp(s) => s.get_type(),
-            DnsServer::Tailscale(s) => s.get_type(),
-            DnsServer::Resolved(s) => s.get_type(),
+            DnsServer::Local(_) => "local",
+            DnsServer::Hosts(_) => "hosts",
+            DnsServer::Tcp(_) => "tcp",
+            DnsServer::Udp(_) => "udp",
+            DnsServer::Tls(_) => "tls",
+            DnsServer::Quic(_) => "quic",
+            DnsServer::Https(_) => "https",
+            DnsServer::Http3(_) => "h3",
+            DnsServer::Dhcp(_) => "dhcp",
+            DnsServer::FakeIp(_) => "fakeip",
+            DnsServer::Tailscale(_) => "tailscale",
+            DnsServer::Resolved(_) => "resolved",
         }
     }
+
     pub fn get_tag(&self) -> String {
         match self {
             DnsServer::Local(s) => s.get_tag(),
@@ -63,7 +75,6 @@ impl DnsServer {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerLocal {
-    pub r#type: String,
     pub tag: String,
     pub prefer_go: Option<bool>,
 }
@@ -71,7 +82,6 @@ pub struct DnsServerLocal {
 impl DnsServerLocal {
     pub fn new() -> Self {
         Self {
-            r#type: "local".to_string(),
             tag: "dns-local".to_string(),
             prefer_go: None,
         }
@@ -79,14 +89,9 @@ impl DnsServerLocal {
 
     pub fn with_tag(name: String) -> Self {
         Self {
-            r#type: "local".to_string(),
             tag: name,
             prefer_go: None,
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
@@ -97,7 +102,6 @@ impl DnsServerLocal {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHosts {
-    pub r#type: String,
     pub tag: String,
     pub path: Option<ListableString>,
     pub predefined: Option<HashMap<String, ListableString>>,
@@ -106,7 +110,6 @@ pub struct DnsServerHosts {
 impl DnsServerHosts {
     pub fn new() -> Self {
         Self {
-            r#type: "hosts".to_string(),
             tag: "dns-hosts".to_string(),
             ..Default::default()
         }
@@ -114,14 +117,9 @@ impl DnsServerHosts {
 
     pub fn with_tag(name: String) -> Self {
         Self {
-            r#type: "hosts".to_string(),
             tag: name,
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        "hosts".to_string()
     }
 
     pub fn get_tag(&self) -> String {
@@ -132,7 +130,6 @@ impl DnsServerHosts {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTcp {
-    pub r#type: String,
     pub tag: String,
     pub server: String,
     pub server_port: Option<u16>,
@@ -143,7 +140,6 @@ pub struct DnsServerTcp {
 impl DnsServerTcp {
     pub fn new() -> Self {
         Self {
-            r#type: "udp".to_string(),
             tag: "dns-udp".to_string(),
             server: "8.8.8.8".to_string(),
             ..Default::default()
@@ -152,7 +148,6 @@ impl DnsServerTcp {
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
         Self {
-            r#type: "udp".to_string(),
             tag: "dns-udp".to_string(),
             server,
             server_port,
@@ -163,10 +158,6 @@ impl DnsServerTcp {
     pub fn change_tag(mut self, name: String) -> Self {
         self.tag = name;
         self
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
@@ -177,7 +168,6 @@ impl DnsServerTcp {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerUdp {
-    pub r#type: String,
     pub tag: String,
     pub server: String,
     pub server_port: Option<u16>,
@@ -188,7 +178,6 @@ pub struct DnsServerUdp {
 impl DnsServerUdp {
     pub fn new() -> Self {
         Self {
-            r#type: "udp".to_string(),
             tag: "dns-udp".to_string(),
             server: "8.8.8.8".to_string(),
             ..Default::default()
@@ -197,7 +186,6 @@ impl DnsServerUdp {
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
         Self {
-            r#type: "udp".to_string(),
             tag: "dns-udp".to_string(),
             server,
             server_port,
@@ -210,10 +198,6 @@ impl DnsServerUdp {
         self
     }
 
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
-    }
-
     pub fn get_tag(&self) -> String {
         self.tag.clone()
     }
@@ -222,7 +206,6 @@ impl DnsServerUdp {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTls {
-    pub r#type: String,
     pub tag: String,
     pub server: String,
     pub server_port: Option<u16>,
@@ -234,7 +217,6 @@ pub struct DnsServerTls {
 impl DnsServerTls {
     pub fn new() -> Self {
         Self {
-            r#type: "tls".to_string(),
             tag: "dns-tls".to_string(),
             server: "8.8.8.8".to_string(),
             ..Default::default()
@@ -243,16 +225,11 @@ impl DnsServerTls {
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
         Self {
-            r#type: "tls".to_string(),
             tag: "dns-tls".to_string(),
             server,
             server_port,
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
@@ -263,7 +240,6 @@ impl DnsServerTls {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerQuic {
-    pub r#type: String,
     pub tag: String,
     pub server: String,
     pub server_port: Option<u16>,
@@ -275,7 +251,6 @@ pub struct DnsServerQuic {
 impl DnsServerQuic {
     pub fn new() -> Self {
         Self {
-            r#type: "quic".to_string(),
             tag: "dns-quic".to_string(),
             server: "8.8.8.8".to_string(),
             ..Default::default()
@@ -284,16 +259,11 @@ impl DnsServerQuic {
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
         Self {
-            r#type: "quic".to_string(),
             tag: "dns-quic".to_string(),
             server,
             server_port,
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
@@ -304,7 +274,6 @@ impl DnsServerQuic {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttps {
-    pub r#type: String,
     pub tag: String,
     pub server: String,
     pub server_port: Option<u16>,
@@ -318,7 +287,6 @@ pub struct DnsServerHttps {
 impl DnsServerHttps {
     pub fn new() -> Self {
         Self {
-            r#type: "https".to_string(),
             tag: "dns-https".to_string(),
             server: "8.8.8.8".to_string(),
             ..Default::default()
@@ -327,16 +295,11 @@ impl DnsServerHttps {
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
         Self {
-            r#type: "https".to_string(),
             tag: "dns-https".to_string(),
             server,
             server_port,
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
@@ -347,7 +310,6 @@ impl DnsServerHttps {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerHttp3 {
-    pub r#type: String,
     pub tag: String,
     pub server: String,
     pub server_port: Option<u16>,
@@ -361,7 +323,6 @@ pub struct DnsServerHttp3 {
 impl DnsServerHttp3 {
     pub fn new() -> Self {
         Self {
-            r#type: "h3".to_string(),
             tag: "dns-h3".to_string(),
             server: "8.8.8.8".to_string(),
             ..Default::default()
@@ -370,16 +331,11 @@ impl DnsServerHttp3 {
 
     pub fn with_server(server: String, server_port: Option<u16>) -> Self {
         Self {
-            r#type: "h3".to_string(),
             tag: "dns-h3".to_string(),
             server,
             server_port,
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
@@ -390,7 +346,6 @@ impl DnsServerHttp3 {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerDhcp {
-    pub r#type: String,
     pub tag: String,
     pub interface: Option<String>,
     #[serde(flatten)]
@@ -400,7 +355,6 @@ pub struct DnsServerDhcp {
 impl DnsServerDhcp {
     pub fn new() -> Self {
         Self {
-            r#type: "dhcp".to_string(),
             tag: "dns-dhcp".to_string(),
             ..Default::default()
         }
@@ -408,15 +362,10 @@ impl DnsServerDhcp {
 
     pub fn with_interface(interface: &str) -> Self {
         Self {
-            r#type: "dhcp".to_string(),
             tag: "dns-dhcp".to_string(),
             interface: Some(interface.to_string()),
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {
@@ -427,7 +376,6 @@ impl DnsServerDhcp {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerFakeIp {
-    pub r#type: String,
     pub tag: String,
     pub address: String,
     pub inet4_range: Option<String>,
@@ -438,7 +386,6 @@ pub struct DnsServerFakeIp {
 impl DnsServerFakeIp {
     pub fn new() -> Self {
         Self {
-            r#type: "fakeip".to_string(),
             tag: "dns-fakeip".to_string(),
             ..Default::default()
         }
@@ -461,10 +408,6 @@ impl DnsServerFakeIp {
         self
     }
 
-    pub fn get_type(&self) -> String {
-        "fakeip".to_string()
-    }
-
     pub fn get_tag(&self) -> String {
         self.tag.clone()
     }
@@ -473,7 +416,6 @@ impl DnsServerFakeIp {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerTailscale {
-    pub r#type: String,
     pub tag: String,
     pub address: String,
     pub endpoint: Option<String>,
@@ -483,14 +425,9 @@ pub struct DnsServerTailscale {
 impl DnsServerTailscale {
     pub fn new() -> Self {
         Self {
-            r#type: "tailscale".to_string(),
             tag: "dns-tailscale".to_string(),
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        "tailscale".to_string()
     }
 
     pub fn get_tag(&self) -> String {
@@ -501,7 +438,6 @@ impl DnsServerTailscale {
 #[auto_skip_none]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct DnsServerResolved {
-    pub r#type: String,
     pub tag: String,
     pub service: Option<String>,
     pub accept_default_resolvers: Option<bool>,
@@ -510,14 +446,9 @@ pub struct DnsServerResolved {
 impl DnsServerResolved {
     pub fn new() -> Self {
         Self {
-            r#type: "resolved".to_string(),
             tag: "dns-resolved".to_string(),
             ..Default::default()
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.r#type.clone()
     }
 
     pub fn get_tag(&self) -> String {

@@ -71,8 +71,6 @@ enum PossibleValues {
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct VlessConfig {
-    #[serde(rename = "type")]
-    config_type: String,
     tag: String,
     server: String,
     server_port: u16,
@@ -90,7 +88,6 @@ pub struct VlessConfig {
 impl VlessConfig {
     pub fn new() -> VlessConfig {
         VlessConfig {
-            config_type: "vless".to_string(),
             tag: "outbound-vless".to_string(),
             ..Default::default()
         }
@@ -98,7 +95,6 @@ impl VlessConfig {
 
     pub fn with_tag(tag: String) -> Self {
         Self {
-            config_type: "vless".to_string(),
             tag,
             ..Default::default()
         }
@@ -120,10 +116,6 @@ impl VlessConfig {
                 }
             }
         }
-    }
-
-    pub fn get_type(&self) -> String {
-        self.config_type.clone()
     }
 
     pub fn get_tag(&self) -> String {

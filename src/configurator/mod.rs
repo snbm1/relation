@@ -62,8 +62,8 @@ impl Configurator {
     /// route private ip `direct`
     pub fn default(&mut self) -> &mut Self {
         self.dns
-            .add_udp("8.8.8.8".to_string(), None, None)
-            .add_local(None);
+            .add_local(None)
+            .add_udp("8.8.8.8".to_string(), None, None);
 
         self.inbounds
             .add_server(Inbound::Mixed(
@@ -171,7 +171,7 @@ impl Configurator {
     pub fn get_inbounds_types(&self) -> Vec<String> {
         let mut res = vec![];
         for i in self.inbounds.get_vec_ref() {
-            res.push(i.get_type());
+            res.push(i.get_type().to_string());
         }
         res
     }
@@ -179,7 +179,7 @@ impl Configurator {
     pub fn get_inbounds_ports(&self) -> Vec<InboundMod> {
         let mut res = vec![];
         for i in self.inbounds.get_vec_ref() {
-            match &*i.get_type() {
+            match i.get_type() {
                 "mixed" => res.push(InboundMod::Mixed(i.get_port().unwrap())),
                 "http" => res.push(InboundMod::Http(i.get_port().unwrap())),
                 "socks5" => res.push(InboundMod::Socks5(i.get_port().unwrap())),
@@ -190,8 +190,20 @@ impl Configurator {
         res
     }
 
-    pub fn get_dns_list(&self) -> Vec<DnsServer> {
-        self.dns.get_list()
+    pub fn get_dns_ref(&self) -> &DnsConfig {
+        &self.dns
+    }
+
+    pub fn get_inbound_ref(&self) -> &InboundConfig {
+        &self.inbounds
+    }
+
+    pub fn get_outbound_ref(&self) -> &OutboundConfig {
+        &self.outbounds
+    }
+
+    pub fn get_route_ref(&self) -> &RouteConfig {
+        &self.route
     }
 
     /// Set route rules in format: <ACTION>:<TYPE>:<VALUE>
@@ -395,22 +407,6 @@ impl Configurator {
         if let Some(value) = output {
             self.log.set_output(value);
         }
-        self
-    }
-
-    pub fn set_tun(&mut self) -> &mut Self {
-        self.inbounds
-            .clean()
-            .add_server(Inbound::Tun(
-                TunConfig::new()
-                    .set_auto_route(true)
-                    .set_auto_redirect(true)
-                    .set_strict_route(true)
-                    .set_stack("system".to_string())
-                    .set_mtu(1500)
-                    .add_ip("198.18.0.1/30"),
-            ))
-            .add_direct(None);
         self
     }
 

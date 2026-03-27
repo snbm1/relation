@@ -22,6 +22,7 @@ crossterm = { version = "*", optional = true }
 anyhow = "1.0"
 default-net = "*"
 ureq = "*" 
+yaml_serde = "0.10"
 
 [build-dependencies]
 bindgen = "0.72"

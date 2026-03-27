@@ -7,8 +7,8 @@ use crate::configurator::outbound::OutboundConfig;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum RouteRule {
-    Default(DefaultRouteRule),
     Logical(LogicalRouteRule),
+    Default(DefaultRouteRule),
 }
 
 #[auto_skip_none]

@@ -86,6 +86,9 @@ enum Commands {
         /// Set a custom name of config
         #[arg(long)]
         name: Option<String>,
+
+        #[arg(long)]
+        print: bool,
     },
 
     /// Dispay list of possible configs
@@ -176,17 +179,39 @@ impl Cli {
                 route,
                 manage,
                 name,
+                print,
             } => {
                 let rr = match value {
                     Some(x) => match x {
                         ConfigEn::Text(t) => manager.set_handler_config_by_name(&t),
-                        ConfigEn::Number(n) => manager.set_handler_config_by_number(*n),
+                        ConfigEn::Number(n) => {
+                            manager.set_handler_config_by_number(*n as usize - 1)
+                        }
                     },
-                    None => Ok(()),
+                    None => manager.set_handler_config_by_current(),
                 };
 
                 if let Err(x) = rr {
                     return Err(anyhow!(x));
+                }
+
+                if *print {
+                    println!(
+                        "DNS:\n{}",
+                        yaml_serde::to_string(manager.handler_ref().get_dns_ref())?
+                    );
+                    println!(
+                        "INBOUND:\n{}",
+                        yaml_serde::to_string(manager.handler_ref().get_inbound_ref())?
+                    );
+                    println!(
+                        "OUTBOUND:\n{}",
+                        yaml_serde::to_string(manager.handler_ref().get_outbound_ref())?
+                    );
+                    println!(
+                        "ROUTE:\n{}",
+                        yaml_serde::to_string(manager.handler_ref().get_route_ref())?
+                    );
                 }
 
                 if let Some(value) = dns {
@@ -239,7 +264,7 @@ impl Cli {
                     Some(x) => match x {
                         ConfigEn::Text(t) => manager.run_app(Some(&t), None, *unable_system_proxy),
                         ConfigEn::Number(n) => {
-                            manager.run_app(None, Some(*n), *unable_system_proxy)
+                            manager.run_app(None, Some(*n as usize - 1), *unable_system_proxy)
                         }
                     },
                     None => manager.run_app(None, None, *unable_system_proxy),
