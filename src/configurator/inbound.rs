@@ -2,7 +2,6 @@ pub mod direct;
 pub mod mixed;
 pub mod tun;
 
-use libc::IN6ADDR_ANY_INIT;
 use serde::{Deserialize, Serialize};
 
 use crate::configurator::{
@@ -89,10 +88,13 @@ impl InboundConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum Inbound {
+    #[serde(rename = "direct")]
     Direct(direct::DirectConfig),
+    #[serde(rename = "mixed")]
     Mixed(mixed::MixedConfig),
+    #[serde(rename = "tun")]
     Tun(tun::TunConfig),
 }
 
@@ -105,11 +107,11 @@ impl Inbound {
         }
     }
 
-    pub fn get_type(&self) -> String {
+    pub fn get_type(&self) -> &'static str {
         match self {
-            Inbound::Direct(cfg) => cfg.get_type(),
-            Inbound::Mixed(cfg) => cfg.get_type(),
-            Inbound::Tun(cfg) => cfg.get_type(),
+            Inbound::Direct(_) => "direct",
+            Inbound::Mixed(_) => "mixed",
+            Inbound::Tun(_) => "tun",
         }
     }
     pub fn get_system_proxy_status(&self) -> Option<(String, u16, bool)> {
@@ -117,15 +119,10 @@ impl Inbound {
             Inbound::Direct(cfg) => None,
             Inbound::Mixed(cfg) => {
                 if cfg.is_system_proxy() {
-                    let socks_status = if cfg.get_type() == "socks" {
-                        true
-                    } else {
-                        false
-                    };
                     Some((
                         cfg.get_address().unwrap(),
                         cfg.get_address_port().unwrap(),
-                        socks_status,
+                        false,
                     ))
                 } else {
                     None

@@ -25,8 +25,6 @@ impl Http_proxy {
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct TunConfig {
-    #[serde(rename = "type")]
-    pub config_type: Option<String>,
     pub tag: Option<String>,
     pub interface_name: Option<String>,
     pub address: Vec<String>,
@@ -67,7 +65,6 @@ pub struct TunConfig {
 impl TunConfig {
     pub fn new() -> Self {
         Self {
-            config_type: Some("tun".to_string()),
             tag: Some("inbound-tun".to_string()),
             address: vec![],
             ..Default::default()
@@ -110,10 +107,6 @@ impl TunConfig {
     pub fn set_stack(mut self, stack: String) -> Self {
         self.stack = Some(stack);
         self
-    }
-
-    pub fn get_type(&self) -> String {
-        self.config_type.clone().expect("[ERROR] No type")
     }
 
     pub fn get_tag(&self) -> String {

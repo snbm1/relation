@@ -7,8 +7,6 @@ use crate::configurator::shared;
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct MixedConfig {
-    #[serde(rename = "type")]
-    pub config_type: Option<String>,
     pub tag: Option<String>,
     #[serde(flatten)]
     pub listen: Option<ListenFields>,
@@ -18,7 +16,6 @@ pub struct MixedConfig {
 impl MixedConfig {
     pub fn new() -> Self {
         MixedConfig {
-            config_type: Some("mixed".to_string()),
             tag: Some("inbound-mixed".to_string()),
             ..Default::default()
         }
@@ -26,7 +23,6 @@ impl MixedConfig {
 
     pub fn with_listen(addr: ListenFields) -> Self {
         Self {
-            config_type: Some("mixed".to_string()),
             tag: Some("inbound-mixed".to_string()),
             listen: Some(addr),
             set_system_proxy: None,
@@ -35,7 +31,6 @@ impl MixedConfig {
 
     pub fn with_addr(addr: Option<String>, port: Option<u16>) -> Self {
         Self {
-            config_type: Some("mixed".to_string()),
             tag: Some("inbound-mixed".to_string()),
             listen: Some(shared::listenfields::ListenFields::with_listen(addr, port)),
             ..Default::default()
@@ -59,10 +54,6 @@ impl MixedConfig {
             return x.listen_port.clone();
         }
         None
-    }
-
-    pub fn get_type(&self) -> String {
-        self.config_type.clone().expect("[ERROR] No type")
     }
 
     pub fn get_tag(&self) -> String {
