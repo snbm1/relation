@@ -1,7 +1,7 @@
 mod ifaces;
-use clap::builder::styling::Style as ClapStyle;
-use crossterm::event::KeyModifiers;
+mod minireq;
 use ifaces::*;
+use minireq::*;
 use ratatui::widgets::block::{Position, Title};
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::App;
+
 
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -80,8 +81,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut tun_mode: bool = false;
     let mut error_input = false;
     let mut running: Option<String> = None;
-    let mut changed_ip = false;
-    let mut ip = direct_ip();
 
     let mut input_buffer = String::new();
 
@@ -90,12 +89,18 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     thread::spawn(move || {
         loop {
-            let ip = ip_addr();
-            let ip = if ip.contains("error") {
-                direct_ip()
-            } else {
-                ip
-            };
+            let ip = match get_ip(Some("127.0.0.1:12334")) {
+                Ok(ip) => ip, 
+                Err(_) => {
+                    match get_ip(None) {
+                        Ok(ip) => ip, 
+                        Err(_) => {
+                            "0.0.0.0".to_string()
+                        }
+                    }
+                }
+            }; 
+            
 
             if let Ok(mut ip_address) = ip_shared.lock() {
                 *ip_address = ip;
@@ -208,7 +213,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 app.set_log_file();
                                 app.run_app(None, Some(number as usize - 1), false);
                                 enter_mode = true;
-                                changed_ip = true;
                             } else if enter_mode {
                                 let name = app.get_list()[selected_index].clone();
                                 if running.as_deref() == Some(name.as_str()) {
@@ -397,10 +401,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 format!("Traffic ({:.0}) KB/s", max_rate as f64 / 1024.0)
             };
-            if changed_ip {
-                ip = direct_ip();
-                changed_ip = false;
-            }
+
 
             let traffic_block = Block::default()
                 .title(title)

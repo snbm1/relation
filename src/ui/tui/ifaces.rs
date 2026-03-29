@@ -3,7 +3,6 @@ use std::fs;
 use std::io;
 
 
-use ureq::{Agent, Proxy}; 
 
 use crate::App;
 
@@ -39,35 +38,35 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
     Ok(Counters { rx: 0, tx: 0 })
 }
 
-pub fn ip_addr() -> String {
-    let proxy = match Proxy::new("http://127.0.0.1:12334") {
-        Ok(p) => p, 
-        Err(_) => return "proxy error".to_string(),
-    };
+// pub fn ip_addr() -> String {
+//     let proxy = match Proxy::new("http://127.0.0.1:12334") {
+//         Ok(p) => p, 
+//         Err(_) => return "proxy error".to_string(),
+//     };
 
-    let agent = Agent::new_with_config(
-        ureq::config::Config::builder().proxy(Some((proxy))).build(),
-    );
-    let mut response = match agent.get("https://api.ipify.org").header("Connection", "close").call() {
-        Ok(r) => r,
-        Err(_) => return "responce proxy error".to_string(),
-    };
+//     let agent = Agent::new_with_config(
+//         ureq::config::Config::builder().proxy(Some((proxy))).build(),
+//     );
+//     let mut response = match agent.get("https://api.ipify.org").header("Connection", "close").call() {
+//         Ok(r) => r,
+//         Err(_) => return "responce proxy error".to_string(),
+//     };
 
-    match response.body_mut().read_to_string() {
-        Ok(ip) => ip,
-        Err(_) => "read proxy error".to_string(),
-    }
-}
+//     match response.body_mut().read_to_string() {
+//         Ok(ip) => ip,
+//         Err(_) => "read proxy error".to_string(),
+//     }
+// }
 
-pub fn direct_ip() -> String {
-    let mut responce = match ureq::get("https://api.ipify.org").header("Connection", "close").call() {
-        Ok(r) => r, 
-        Err(_) => return "responce error".to_string(), 
-    };
+// pub fn direct_ip() -> String {
+//     let mut responce = match ureq::get("https://api.ipify.org").header("Connection", "close").call() {
+//         Ok(r) => r, 
+//         Err(_) => return "responce error".to_string(), 
+//     };
 
-    match responce.body_mut().read_to_string() {
-        Ok(ip) => ip, 
-        Err(_) => "read error".to_string(), 
-    }
+//     match responce.body_mut().read_to_string() {
+//         Ok(ip) => ip, 
+//         Err(_) => "read error".to_string(), 
+//     }
     
-}
+// }
