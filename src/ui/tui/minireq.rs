@@ -3,7 +3,7 @@ use std::{
     io::{Read, Write},
     net::TcpStream,
 };
-
+//This is realisation of mini ureq 
 pub fn parse_status_code(status: &str) -> Result<u16, Box<dyn Error>> {
     let mut parts = status.split_whitespace();
     let _http_ver = parts.next().ok_or("Missing HTTP version")?;
@@ -20,7 +20,7 @@ pub fn send_http_request(addr: &str, request: &str) -> Result<String, Box<dyn Er
     Ok(response)
 }
 
-
+// Don't remember adding auto port func 
 pub fn get_ip(proxy: Option<&str>) -> Result<String, Box<dyn Error>> {
     let (addr, request) = match proxy {
         None => {
