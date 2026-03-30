@@ -2,7 +2,7 @@ PROJECT := methods
 LIB_NAME := librelation.so
 SRC_DIR := go_methods
 
-SINGBOX_TAGS := with_grpc with_dhcp with_quic with_utls with_acme with_gvisor with_tailscale
+SINGBOX_TAGS := with_dhcp with_quic with_utls with_acme with_gvisor with_tailscale
 TAGS := linux $(SINGBOX_TAGS)
 
 

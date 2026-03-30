@@ -486,6 +486,10 @@ impl App {
         &mut self.cfg_handler
     }
 
+    pub fn get_inf_ref(&self) -> &Infor {
+        &self.inf_handler
+    }
+
     pub fn get_data_path(&self) -> PathBuf {
         self.data_dir.clone()
     }
