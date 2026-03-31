@@ -16,7 +16,6 @@ use std::thread;
 
 use crate::App;
 
-
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -67,18 +66,18 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut prev = read_iface(&iface)?;
     let mut prev_time = Instant::now();
 
-    let mut rx_rate: u64 = 0;
-    let mut tx_rate: u64 = 0;
+    let mut rx_rate: u64;
+    let mut tx_rate: u64;
 
     let mut rx_list: VecDeque<u64> = VecDeque::new();
     let mut tx_list: VecDeque<u64> = VecDeque::new();
 
-    let mut selected_index: usize = 0;
+    let mut selected_index = 0;
     let mut len = app.get_len();
 
-    let mut enter_mode: bool = false;
+    let mut enter_mode = false;
     let mut input_mode = false;
-    let mut tun_mode: bool = false;
+    let mut tun_mode = false;
     let mut error_input = false;
     let mut running: Option<String> = None;
 
@@ -87,26 +86,29 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let current_ip = Arc::new(Mutex::new("loading...".to_string()));
     let ip_shared = Arc::clone(&current_ip);
 
+    let change_flag = Arc::new(Mutex::new(true));
+    let change_shared = Arc::clone(&change_flag);
+
     thread::spawn(move || {
         loop {
-            let ip = match get_ip(Some("127.0.0.1:12334")) {
-                Ok(ip) => ip, 
-                Err(_) => {
-                    match get_ip(None) {
-                        Ok(ip) => ip, 
-                        Err(_) => {
-                            "0.0.0.0".to_string()
-                        }
-                    }
-                }
-            }; 
-            
+            if let Ok(mut flag) = change_shared.lock()
+                && *flag
+            {
+                let ip = match get_ip(Some("127.0.0.1:12334")) {
+                    Ok(ip) => ip,
+                    Err(_) => match get_ip(None) {
+                        Ok(ip) => ip,
+                        Err(_) => "0.0.0.0".to_string(),
+                    },
+                };
+                *flag = false;
 
-            if let Ok(mut ip_address) = ip_shared.lock() {
-                *ip_address = ip;
+                if let Ok(mut ip_address) = ip_shared.lock() {
+                    *ip_address = ip;
+                }
             }
 
-            thread::sleep(Duration::from_secs(6));
+            thread::sleep(Duration::from_millis(200));
         }
     });
 
@@ -117,7 +119,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or_else(|_| "ip unavailable".to_string());
 
         // -------- INPUT --------
-        if event::poll(Duration::from_millis(500))? {
+        if event::poll(Duration::from_millis(200))? {
             if let Event::Key(key) = event::read()? {
                 if input_mode {
                     match key.code {
@@ -141,7 +143,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                                 match result {
                                     Ok(_) => {
-                                        if let Err(err) = app.add_config(None) {
+                                        if let Err(_) = app.add_config(None) {
                                             error_input = true;
                                         } else {
                                             error_input = false;
@@ -154,7 +156,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                             selected_index = 0;
                                         }
                                     }
-                                    Err(err) => {
+                                    Err(_) => {
                                         error_input = true;
                                     }
                                 }
@@ -175,7 +177,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     match key.code {
                         KeyCode::Char('q') => {
                             if enter_mode {
-                                app.stop_app();
+                                app.stop_app()?;
                             }
 
                             break;
@@ -190,10 +192,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         KeyCode::Char('d') => {
                             if len > 0 {
                                 let name = app.get_list()[selected_index].clone();
-                                app.remove_config_by_number(selected_index);
+                                app.remove_config_by_number(selected_index)?;
 
                                 if running.as_deref() == Some(name.as_str()) {
-                                    app.stop_app();
+                                    app.stop_app()?;
                                     running = None;
                                     enter_mode = false;
                                 }
@@ -207,11 +209,14 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Enter => {
                             let len = app.get_len();
+                            if let Ok(mut flag) = change_flag.lock() {
+                                *flag = true;
+                            }
                             if len > 0 && !enter_mode {
                                 let number = selected_index as u16 + 1;
                                 running = Some(app.get_list()[selected_index].clone());
                                 app.set_log_file();
-                                app.run_app(None, Some(number as usize - 1), false);
+                                app.run_app(None, Some(number as usize - 1), false)?;
                                 enter_mode = true;
                             } else if enter_mode {
                                 let name = app.get_list()[selected_index].clone();
@@ -220,12 +225,12 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                     app.stop_app()?;
                                     enter_mode = false;
                                 } else {
-                                    app.stop_app();
+                                    app.stop_app()?;
                                     std::thread::sleep(Duration::from_millis(100));
                                     let number = selected_index as u16 + 1;
                                     running = Some(name.clone());
                                     app.set_log_file();
-                                    app.run_app(None, Some(number as usize - 1), false);
+                                    app.run_app(None, Some(number as usize - 1), false)?;
                                 }
                             }
                         }
@@ -248,7 +253,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        if prev_time.elapsed() >= Duration::from_millis(500) {
+        if prev_time.elapsed() >= Duration::from_millis(200) {
             let now = Instant::now();
             let dt = (now - prev_time).as_secs_f64().max(0.001);
 
@@ -401,7 +406,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 format!("Traffic ({:.0}) KB/s", max_rate as f64 / 1024.0)
             };
-
 
             let traffic_block = Block::default()
                 .title(title)
