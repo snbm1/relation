@@ -3,7 +3,7 @@ pub mod dnsrule;
 pub mod dnsruleaction;
 pub mod dnsserver;
 
-use rellib::auto_skip_none;
+use macros::auto_skip_none;
 
 use dnsserver::*;
 

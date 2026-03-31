@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use rellib::auto_skip_none;
+use macros::auto_skip_none;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]

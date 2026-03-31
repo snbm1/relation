@@ -1,7 +1,7 @@
 use crate::configurator::dns::dnsruleaction::*;
+use macros::auto_skip_none;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use rellib::auto_skip_none;
 
 use crate::configurator::shared::Listable;
 use crate::configurator::shared::ListableString;

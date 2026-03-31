@@ -1,8 +1,6 @@
 use crate::configurator::shared::listenfields::ListenFields;
-use rellib::auto_skip_none;
+use macros::auto_skip_none;
 use serde::{Deserialize, Serialize};
-
-use crate::configurator::shared;
 
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
