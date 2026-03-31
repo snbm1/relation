@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use rellib::auto_skip_none;
+use macros::auto_skip_none;
 use serde::{Deserialize, Serialize};
 
 #[auto_skip_none]

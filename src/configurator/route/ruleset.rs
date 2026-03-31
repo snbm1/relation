@@ -1,5 +1,5 @@
+use macros::auto_skip_none;
 use serde::{Deserialize, Serialize};
-use rellib::auto_skip_none;
 
 use crate::configurator::shared::Network;
 

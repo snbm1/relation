@@ -737,6 +737,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "memalloc"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -995,8 +1004,8 @@ dependencies = [
  "default-net",
  "directories",
  "libc",
+ "macros",
  "ratatui",
- "rellib",
  "serde",
  "serde_json",
  "signal-hook 0.4.3",
@@ -1004,15 +1013,6 @@ dependencies = [
  "url",
  "urlencoding",
  "yaml_serde",
-]
-
-[[package]]
-name = "rellib"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use rellib::auto_skip_none;
+use macros::auto_skip_none;
 
 use crate::configurator::shared::ListableString;
 use crate::configurator::shared::dialfields::DialFields;

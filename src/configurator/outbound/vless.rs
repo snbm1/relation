@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 use urlencoding;
 
-use rellib::auto_skip_none;
+use macros::auto_skip_none;
 
 use crate::configurator::shared::Network;
 use crate::configurator::shared::dialfields::DialFields;
