@@ -279,7 +279,7 @@ impl Cli {
                     for line in manager.get_new_logs() {
                         println!("{}", line);
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    std::thread::sleep(std::time::Duration::from_millis(200));
                 }
 
                 if let Err(x) = manager.stop_app() {
