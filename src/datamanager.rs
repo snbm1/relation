@@ -124,19 +124,18 @@ pub enum InboundMod {
     Socks5(u16),
     Mixed(u16),
     Tun,
-    None,
 }
 
 pub struct Infor {
     pub config_name: String,
-    pub inbound_mod: InboundMod,
+    pub inbound_mod: Vec<InboundMod>,
 }
 
 impl Infor {
     pub fn new() -> Self {
         Self {
             config_name: "".to_string(),
-            inbound_mod: InboundMod::None,
+            inbound_mod: vec![],
         }
     }
 
@@ -145,7 +144,7 @@ impl Infor {
         self
     }
 
-    pub fn set_inbound(&mut self, inbound: InboundMod) -> &mut Self {
+    pub fn set_inbounds(&mut self, inbound: Vec<InboundMod>) -> &mut Self {
         self.inbound_mod = inbound;
         self
     }
@@ -154,8 +153,18 @@ impl Infor {
         self.config_name.clone()
     }
 
-    pub fn get_inbound(&self) -> InboundMod {
-        self.inbound_mod
+    pub fn get_inbound(&self) -> Option<Vec<InboundMod>> {
+        if self.inbound_mod.is_empty() {
+            None
+        } else {
+            Some(self.inbound_mod.clone())
+        }
+    }
+
+    pub fn get_inbound_ports(&self) -> Option<Vec<u16>> {
+        let mut rs = vec![];
+
+        if rs.is_empty() { None } else { Some(rs) }
     }
 }
 
@@ -252,13 +261,9 @@ impl App {
     pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
         let saved_name = self.save_config(name)?;
-        self.inf_handler.set_name(&saved_name).set_inbound(
-            *self
-                .cfg_handler
-                .get_inbounds_ports()
-                .first()
-                .context("No inbound exists")?,
-        );
+        self.inf_handler
+            .set_name(&saved_name)
+            .set_inbounds(self.cfg_handler.get_inbounds_ports());
         self.configs.push(saved_name);
         self.configs.sort();
         Ok(self)
@@ -277,13 +282,9 @@ impl App {
             file_path = self.get_configs_path().join(format!("{}.json", n));
             self.stg_handler.current = Some(n.to_string().clone());
             self.set_handler_config_by_name(n)?;
-            self.inf_handler.set_name(n).set_inbound(
-                *self
-                    .cfg_handler
-                    .get_inbounds_ports()
-                    .first()
-                    .context("No inbound exists")?,
-            );
+            self.inf_handler
+                .set_name(n)
+                .set_inbounds(self.cfg_handler.get_inbounds_ports());
         } else if let Some(n) = number {
             file_path = self.get_configs_path().join(format!(
                 "{}.json",
@@ -355,13 +356,9 @@ impl App {
         self.cfg_handler
             .load_from_file(self.get_configs_path().join(format!("{}.json", name)))?;
 
-        self.inf_handler.set_name(name).set_inbound(
-            self.cfg_handler
-                .get_inbounds_ports()
-                .first()
-                .context("")?
-                .clone(),
-        );
+        self.inf_handler
+            .set_name(name)
+            .set_inbounds(self.cfg_handler.get_inbounds_ports());
         Ok(())
     }
 
@@ -374,13 +371,7 @@ impl App {
 
         self.inf_handler
             .set_name(&self.configs.get(number).unwrap())
-            .set_inbound(
-                self.cfg_handler
-                    .get_inbounds_ports()
-                    .first()
-                    .context("")?
-                    .clone(),
-            );
+            .set_inbounds(self.cfg_handler.get_inbounds_ports());
         Ok(())
     }
 
@@ -388,24 +379,16 @@ impl App {
         if let Some(name) = self.stg_handler.current.clone() {
             self.cfg_handler
                 .load_from_file(self.get_configs_path().join(format!("{}.json", &name)))?;
-            self.inf_handler.set_name(&name).set_inbound(
-                self.cfg_handler
-                    .get_inbounds_ports()
-                    .first()
-                    .context("")?
-                    .clone(),
-            );
+            self.inf_handler
+                .set_name(&name)
+                .set_inbounds(self.cfg_handler.get_inbounds_ports());
         } else {
             if let Some(name) = self.get_list().first() {
                 self.cfg_handler
                     .load_from_file(self.get_configs_path().join(format!("{}.json", &name)))?;
-                self.inf_handler.set_name(&name).set_inbound(
-                    self.cfg_handler
-                        .get_inbounds_ports()
-                        .first()
-                        .context("")?
-                        .clone(),
-                );
+                self.inf_handler
+                    .set_name(&name)
+                    .set_inbounds(self.cfg_handler.get_inbounds_ports());
                 self.stg_handler.current = Some(name.clone());
             } else {
                 return Err(anyhow!("No configs exist"));
