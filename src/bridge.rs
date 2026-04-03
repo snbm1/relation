@@ -17,7 +17,7 @@ unsafe fn take_go_string(ptr: *mut c_char) -> Option<String> {
     }
     let s = CStr::from_ptr(ptr).to_string_lossy().into_owned();
     os_free(ptr as *mut c_void);
-    Some(s)
+    if s.is_empty() { None } else { Some(s) }
 }
 
 /// &str → CString → *mut c_char (cgo ожидает `char*`)

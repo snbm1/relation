@@ -1,12 +1,12 @@
-use crate::{Request, socket_name};
+use crate::{Request, Response, socket_name};
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use interprocess::local_socket::tokio::{Stream, prelude::*};
-use libc::{SYS_sched_get_priority_max, hostent};
 use std::fs;
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::runtime::Runtime;
+use tokio::time::{Duration, timeout};
 
 use crate::datamanager::*;
 
@@ -18,7 +18,6 @@ pub struct App {
     stg_handler: Settings,
     log_handler: Logger,
     runtime: Runtime,
-    socket_stream: Stream,
 }
 
 impl App {
@@ -36,8 +35,6 @@ impl App {
             .enable_all()
             .build()?;
 
-        let socket_stream = runtime.block_on(Self::connect_socket())?;
-
         let mut app = Self {
             data_dir,
             configs: vec![],
@@ -46,7 +43,6 @@ impl App {
             stg_handler: settings,
             log_handler: Logger::new(),
             runtime,
-            socket_stream,
         };
 
         app.configs = app.read_configs()?;
@@ -169,14 +165,10 @@ impl App {
             self.set_handler_config_by_name(self.get_list().first().unwrap())?;
         }
 
-        println!("Worked 2");
+        println!("{}", file_path.to_str().unwrap().to_string());
         self.runtime.block_on(async {
-            send_start(
-                &mut self.socket_stream,
-                file_path.to_str().unwrap().to_string(),
-            )
-            .await
-        });
+            send_start(file_path.to_str().unwrap().to_string()).await
+        })?;
         println!("Worked 3");
 
         if unable_system_proxy {
@@ -190,14 +182,8 @@ impl App {
                 self.handler_ref().get_list_of_system_proxies().first()
             {
                 self.runtime.block_on(async {
-                    send_enable_sys_proxy(
-                        &mut self.socket_stream,
-                        host.to_string(),
-                        *port,
-                        *support_socks,
-                    )
-                    .await
-                });
+                    send_enable_sys_proxy(host.to_string(), *port, *support_socks).await
+                })?;
             }
         }
         let _ = self.stg_handler.save(self.get_settings_path());
@@ -207,10 +193,9 @@ impl App {
     pub fn stop_app(&mut self) -> Result<()> {
         if !self.stg_handler.unable_system_proxy.unwrap_or(true) {
             self.runtime
-                .block_on(async { send_disable_sys_proxy(&mut self.socket_stream).await });
+                .block_on(async { send_disable_sys_proxy().await })?;
         }
-        self.runtime
-            .block_on(async { send_stop(&mut self.socket_stream).await });
+        self.runtime.block_on(async { send_stop().await })?;
         let _ = self.stg_handler.save(self.get_settings_path());
         self.log_handler.clean();
         self.remove_log_file()?;
@@ -399,12 +384,8 @@ impl App {
 }
 
 #[inline]
-async fn send_disable_sys_proxy(
-    socket_stream: &mut (impl tokio::io::AsyncWriteExt + tokio::io::AsyncReadExt + Unpin),
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-
-    let request = Request::disable_sys_proxy();
+async fn send_request(request: Request) -> Result<Response> {
+    let mut socket_stream = App::connect_socket().await?;
     let payload = serde_json::to_vec(&request)?;
 
     socket_stream.write_all(&payload).await?;
@@ -412,72 +393,38 @@ async fn send_disable_sys_proxy(
     socket_stream.flush().await?;
 
     let mut response = String::new();
-    let mut reader = BufReader::new(socket_stream);
-    reader.read_line(&mut response).await?;
+    let mut reader = BufReader::new(&mut socket_stream);
+    timeout(Duration::from_secs(3), reader.read_line(&mut response))
+        .await
+        .context("daemon did not respond in time")??;
 
-    Ok(response)
+    if response.trim().is_empty() {
+        return Err(anyhow!("daemon returned empty response"));
+    }
+
+    let response: Response = serde_json::from_str(response.trim())?;
+    match response {
+        Response::Error(message) => Err(anyhow!(message)),
+        other => Ok(other),
+    }
 }
 
 #[inline]
-async fn send_stop(
-    socket_stream: &mut (impl tokio::io::AsyncWriteExt + tokio::io::AsyncReadExt + Unpin),
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-
-    let request = Request::stop();
-    let payload = serde_json::to_vec(&request)?;
-
-    socket_stream.write_all(&payload).await?;
-    socket_stream.write_all(b"\n").await?;
-    socket_stream.flush().await?;
-
-    let mut response = String::new();
-    let mut reader = BufReader::new(socket_stream);
-    reader.read_line(&mut response).await?;
-
-    Ok(response)
+async fn send_disable_sys_proxy() -> Result<Response> {
+    send_request(Request::disable_sys_proxy()).await
 }
 
 #[inline]
-async fn send_start(
-    socket_stream: &mut (impl tokio::io::AsyncWriteExt + tokio::io::AsyncReadExt + Unpin),
-    config_path: String,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-
-    let request = Request::start(config_path);
-    let payload = serde_json::to_vec(&request)?;
-
-    socket_stream.write_all(&payload).await?;
-    socket_stream.write_all(b"\n").await?;
-    socket_stream.flush().await?;
-
-    let mut response = String::new();
-    let mut reader = BufReader::new(socket_stream);
-    reader.read_line(&mut response).await?;
-
-    Ok(response)
+async fn send_stop() -> Result<Response> {
+    send_request(Request::stop()).await
 }
 
 #[inline]
-async fn send_enable_sys_proxy(
-    socket_stream: &mut (impl tokio::io::AsyncWriteExt + tokio::io::AsyncReadExt + Unpin),
-    host: String,
-    port: u16,
-    support_socks: bool,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+async fn send_start(config_path: String) -> Result<Response> {
+    send_request(Request::start(config_path)).await
+}
 
-    let request = Request::enable_sys_proxy(host, port, support_socks);
-    let payload = serde_json::to_vec(&request)?;
-
-    socket_stream.write_all(&payload).await?;
-    socket_stream.write_all(b"\n").await?;
-    socket_stream.flush().await?;
-
-    let mut response = String::new();
-    let mut reader = BufReader::new(socket_stream);
-    reader.read_line(&mut response).await?;
-
-    Ok(response)
+#[inline]
+async fn send_enable_sys_proxy(host: String, port: u16, support_socks: bool) -> Result<Response> {
+    send_request(Request::enable_sys_proxy(host, port, support_socks)).await
 }
