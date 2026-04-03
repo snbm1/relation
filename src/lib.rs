@@ -52,10 +52,10 @@ impl Request {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
-    Status,
-    Start(String),
-    Stop,
     EnableSysProxy((String, u16, bool)),
+    Start(String),
+    Status,
+    Stop,
     DisableSysProxy,
 }
 

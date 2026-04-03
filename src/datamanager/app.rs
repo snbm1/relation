@@ -1,10 +1,7 @@
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
-use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
-use std::fs::{self, File};
+use std::fs;
 use std::path::PathBuf;
-use toml;
 
 use crate::datamanager::*;
 
