@@ -1,10 +1,5 @@
-use default_net::{self, get_default_interface};
-use std::fs;
+use default_net;
 use std::io;
-
-
-
-use crate::App;
 
 #[derive(Clone, Copy)]
 pub struct Counters {
@@ -40,7 +35,7 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
 
 // pub fn ip_addr() -> String {
 //     let proxy = match Proxy::new("http://127.0.0.1:12334") {
-//         Ok(p) => p, 
+//         Ok(p) => p,
 //         Err(_) => return "proxy error".to_string(),
 //     };
 
@@ -60,13 +55,14 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
 
 // pub fn direct_ip() -> String {
 //     let mut responce = match ureq::get("https://api.ipify.org").header("Connection", "close").call() {
-//         Ok(r) => r, 
-//         Err(_) => return "responce error".to_string(), 
+//         Ok(r) => r,
+//         Err(_) => return "responce error".to_string(),
 //     };
 
 //     match responce.body_mut().read_to_string() {
-//         Ok(ip) => ip, 
-//         Err(_) => "read error".to_string(), 
+//         Ok(ip) => ip,
+//         Err(_) => "read error".to_string(),
 //     }
-    
+
 // }
+

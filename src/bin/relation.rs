@@ -1,12 +1,7 @@
-mod bridge;
-mod configurator;
-mod datamanager;
-mod ui;
-
 use anyhow::Result;
 use clap::Parser;
-use datamanager::App;
-use ui::Cli;
+use relation::app::App;
+use relation::ui::Cli;
 
 fn main() -> Result<()> {
     let mut datamanager = App::new("relation")?;
