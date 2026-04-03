@@ -1,12 +1,11 @@
 use anyhow::Result;
-#[cfg(unix)]
 use anyhow::{Context, bail};
 use interprocess::local_socket::{
     ListenerOptions,
     tokio::{Stream, prelude::*},
 };
-#[cfg(unix)]
 use relation::{socket_name, socket_path};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     env, fs,
     process::{Command, Stdio},
@@ -18,10 +17,13 @@ use tokio::{
     signal,
 };
 
+use relation::bridge;
 use relation::{Command as ClientCommand, Request, Response};
 
 const DETACHED_ENV: &str = "DMN_DETACHED";
 const FOREGROUND_FLAG: &str = "--foreground";
+
+static RUNNING: AtomicBool = AtomicBool::new(false);
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -203,6 +205,35 @@ async fn handle_client(stream: Stream) -> Result<()> {
         }
 
         let request: Request = serde_json::from_str(line.trim())?;
+        let response = match request.command {
+            ClientCommand::Status => {
+                if RUNNING.load(Ordering::Relaxed) {
+                    Response::Running
+                } else {
+                    Response::Stopped
+                }
+            }
+            ClientCommand::Start(config_path) => {
+                bridge::start_safe(&config_path, 0);
+                Response::Ok
+            }
+            ClientCommand::Stop => {
+                bridge::stop_safe();
+                Response::Ok
+            }
+            ClientCommand::EnableSysProxy((host, port, support_socks)) => {
+                bridge::enable_system_proxy_safe(&host, port as i64, support_socks);
+                Response::Ok
+            }
+            ClientCommand::DisableSysProxy => {
+                bridge::disable_system_proxy_safe();
+                Response::Ok
+            }
+        };
+        let payload = serde_json::to_vec(&response)?;
+        writer.write_all(&payload).await?;
+        writer.write_all(b"\n").await?;
+        writer.flush().await?;
     }
 
     Ok(())
