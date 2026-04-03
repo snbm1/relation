@@ -180,9 +180,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     match key.code {
                         KeyCode::Char('q') => {
-                            if enter_mode {
-                                #[cfg(not(feature = "daemon"))]
+                            if running.is_some() {
+                                // #[cfg(not(feature = "daemon"))] 
                                 app.stop_app()?;
+                                running = None; 
+                                enter_mode = false; 
                             }
 
                             break;
