@@ -115,7 +115,13 @@ enum Commands {
 
         #[arg(long, short)]
         unable_system_proxy: bool,
+
+        #[arg(long, short)]
+        quiet: bool,
     },
+
+    ///Stop application
+    Stop,
 }
 
 #[derive(Debug, Clone)]
@@ -261,8 +267,11 @@ impl Cli {
             Commands::Run {
                 value,
                 unable_system_proxy,
+                quiet,
             } => {
-                setup_signal_handler();
+                if !quiet {
+                    setup_signal_handler();
+                }
 
                 let rr = match value {
                     Some(x) => match x {
@@ -278,14 +287,22 @@ impl Cli {
                     return Err(anyhow!(x));
                 }
 
-                while RUNNING.load(Ordering::SeqCst) {
-                    manager.read_logs();
-                    for line in manager.get_new_logs() {
-                        println!("{}", line);
+                if !quiet {
+                    while RUNNING.load(Ordering::SeqCst) {
+                        manager.read_logs();
+                        for line in manager.get_new_logs() {
+                            println!("{}", line);
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(200));
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(200));
-                }
 
+                    if let Err(x) = manager.stop_app() {
+                        println!("{x}");
+                    }
+                }
+            }
+
+            Commands::Stop => {
                 if let Err(x) = manager.stop_app() {
                     println!("{x}");
                 }
