@@ -1,6 +1,6 @@
 pub mod app;
-mod bridge;
-mod configurator;
+pub mod bridge;
+pub mod configurator;
 pub mod ui;
 
 use anyhow::Result;
@@ -26,7 +26,7 @@ impl Request {
 
     pub fn start(config_path: String) -> Self {
         Request {
-            command: Command::Start { config_path },
+            command: Command::Start(config_path),
         }
     }
 
@@ -36,9 +36,9 @@ impl Request {
         }
     }
 
-    pub fn enable_sys_proxy(port: u16) -> Self {
+    pub fn enable_sys_proxy(host: String, port: u16, support_socks: bool) -> Self {
         Request {
-            command: Command::EnableSysProxy { port },
+            command: Command::EnableSysProxy((host, port, support_socks)),
         }
     }
 
@@ -53,22 +53,19 @@ impl Request {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
     Status,
-    Start { config_path: String },
+    Start(String),
     Stop,
-    EnableSysProxy { port: u16 },
+    EnableSysProxy((String, u16, bool)),
     DisableSysProxy,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum StatusResponse {
+pub enum Response {
     Running,
     Stopped,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Response {
-    pub reply: Result<(), String>,
+    Error(String),
+    Ok,
 }
 
 #[cfg(unix)]
