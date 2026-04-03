@@ -204,6 +204,8 @@ async fn handle_client(stream: Stream) -> Result<()> {
             break;
         }
 
+        println!("{}", line.clone());
+
         let request: Request = serde_json::from_str(line.trim())?;
         println!("{:?}", request);
         let response = match request.command {
@@ -215,20 +217,34 @@ async fn handle_client(stream: Stream) -> Result<()> {
                 }
             }
             ClientCommand::Start(config_path) => {
-                bridge::start_safe(&config_path, 0);
-                Response::Ok
+                match bridge::start_safe(&config_path, 0) {
+                    Some(error) => Response::Error(error),
+                    None => {
+                        RUNNING.store(true, Ordering::Relaxed);
+                        Response::Ok
+                    }
+                }
             }
             ClientCommand::Stop => {
-                bridge::stop_safe();
-                Response::Ok
+                match bridge::stop_safe() {
+                    Some(error) => Response::Error(error),
+                    None => {
+                        RUNNING.store(false, Ordering::Relaxed);
+                        Response::Ok
+                    }
+                }
             }
             ClientCommand::EnableSysProxy((host, port, support_socks)) => {
-                bridge::enable_system_proxy_safe(&host, port as i64, support_socks);
-                Response::Ok
+                match bridge::enable_system_proxy_safe(&host, port as i64, support_socks) {
+                    Some(error) => Response::Error(error),
+                    None => Response::Ok,
+                }
             }
             ClientCommand::DisableSysProxy => {
-                bridge::disable_system_proxy_safe();
-                Response::Ok
+                match bridge::disable_system_proxy_safe() {
+                    Some(error) => Response::Error(error),
+                    None => Response::Ok,
+                }
             }
         };
         let payload = serde_json::to_vec(&response)?;
