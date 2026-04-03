@@ -22,6 +22,8 @@ crossterm = { version = "*", optional = true }
 anyhow = "1.0"
 default-net = "*"
 yaml_serde = "0.10"
+interprocess = { version = "2", features = ["tokio"] }
+tokio = { version = "1", features = ["macros", "net", "io-util", "rt-multi-thread", "signal"] }
 
 [build-dependencies]
 bindgen = "0.72"
