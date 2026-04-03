@@ -30,7 +30,13 @@ bindgen = "0.72"
 
 [features]
 tui = ["dep:ratatui", "dep:crossterm"]
+daemon = []
 default = ["tui"]
+
+[[bin]]
+name="relationd"
+path="src/bin/relationd.rs"
+required-features = ["daemon"]
 
 [profile.release]
 opt-level = "z"

@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::app::App;
+use crate::datamanager::app::App;
 
 use signal_hook::consts::SIGINT;
 use signal_hook::iterator::Signals;

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use relation::app::App;
+use relation::datamanager::app::App;
 use relation::ui::Cli;
 
 fn main() -> Result<()> {
