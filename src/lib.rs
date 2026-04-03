@@ -1,6 +1,6 @@
-pub mod app;
 pub mod bridge;
 pub mod configurator;
+pub mod datamanager;
 pub mod ui;
 
 use anyhow::Result;
