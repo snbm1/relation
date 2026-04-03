@@ -129,8 +129,6 @@ impl App {
     ) -> Result<()> {
         let _ = self.stg_handler.read(self.get_settings_path());
 
-        println!("Worked");
-
         let file_path;
         if let Some(n) = tag {
             file_path = self.get_configs_path().join(format!("{}.json", n));
@@ -165,11 +163,8 @@ impl App {
             self.set_handler_config_by_name(self.get_list().first().unwrap())?;
         }
 
-        println!("{}", file_path.to_str().unwrap().to_string());
-        self.runtime.block_on(async {
-            send_start(file_path.to_str().unwrap().to_string()).await
-        })?;
-        println!("Worked 3");
+        self.runtime
+            .block_on(async { send_start(file_path.to_str().unwrap().to_string()).await })?;
 
         if unable_system_proxy {
             self.stg_handler.unable_system_proxy = Some(unable_system_proxy);
@@ -201,6 +196,15 @@ impl App {
         self.remove_log_file()?;
 
         Ok(())
+    }
+
+    pub fn get_status(&mut self) -> Result<bool> {
+        let status = self.runtime.block_on(async { send_status().await })?;
+        match status {
+            Response::Running => return Ok(true),
+            Response::Stopped => return Ok(false),
+            _ => Err(anyhow!("incorrect status")),
+        }
     }
 
     pub fn rename_config(&mut self, new_name: String) -> Result<()> {
@@ -427,4 +431,9 @@ async fn send_start(config_path: String) -> Result<Response> {
 #[inline]
 async fn send_enable_sys_proxy(host: String, port: u16, support_socks: bool) -> Result<Response> {
     send_request(Request::enable_sys_proxy(host, port, support_socks)).await
+}
+
+#[inline]
+async fn send_status() -> Result<Response> {
+    send_request(Request::status()).await
 }

@@ -98,6 +98,10 @@ enum Commands {
     /// Dispay list of possible configs
     List,
 
+    /// Get daemon status
+    #[cfg(feature = "daemon")]
+    Status,
+
     /// Run terminal user interface
     #[cfg(feature = "tui")]
     Tui,
@@ -116,11 +120,13 @@ enum Commands {
         #[arg(long, short)]
         unable_system_proxy: bool,
 
+        #[cfg(feature = "daemon")]
         #[arg(long, short)]
         quiet: bool,
     },
 
     ///Stop application
+    #[cfg(feature = "daemon")]
     Stop,
 }
 
@@ -267,11 +273,16 @@ impl Cli {
             Commands::Run {
                 value,
                 unable_system_proxy,
+                #[cfg(feature = "daemon")]
                 quiet,
             } => {
+                #[cfg(feature = "daemon")]
                 if !quiet {
                     setup_signal_handler();
                 }
+
+                #[cfg(not(feature = "daemon"))]
+                setup_signal_handler();
 
                 let rr = match value {
                     Some(x) => match x {
@@ -287,7 +298,23 @@ impl Cli {
                     return Err(anyhow!(x));
                 }
 
+                #[cfg(feature = "daemon")]
                 if !quiet {
+                    while RUNNING.load(Ordering::SeqCst) {
+                        manager.read_logs();
+                        for line in manager.get_new_logs() {
+                            println!("{}", line);
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(200));
+                    }
+
+                    if let Err(x) = manager.stop_app() {
+                        println!("{x}");
+                    }
+                }
+
+                #[cfg(not(feature = "daemon"))]
+                {
                     while RUNNING.load(Ordering::SeqCst) {
                         manager.read_logs();
                         for line in manager.get_new_logs() {
@@ -302,6 +329,7 @@ impl Cli {
                 }
             }
 
+            #[cfg(feature = "daemon")]
             Commands::Stop => {
                 if let Err(x) = manager.stop_app() {
                     println!("{x}");
@@ -311,6 +339,11 @@ impl Cli {
             #[cfg(feature = "tui")]
             Commands::Tui => {
                 let _ = tui::run(manager);
+            }
+
+            #[cfg(feature = "daemon")]
+            Commands::Status => {
+                println!("Is running: {}", manager.get_status()?);
             }
         }
         Ok(())

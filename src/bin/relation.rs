@@ -4,6 +4,7 @@ use relation::ui::Cli;
 
 #[cfg(not(feature = "daemon"))]
 use relation::datamanager::app::App;
+
 #[cfg(feature = "daemon")]
 use relation::datamanager::async_app::App;
 
