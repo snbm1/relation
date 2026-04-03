@@ -11,7 +11,6 @@ pub mod app;
 #[cfg(feature = "daemon")]
 pub mod async_app;
 
-use crate::bridge;
 use crate::configurator::Configurator;
 
 #[derive(Debug, Serialize, Deserialize)]
