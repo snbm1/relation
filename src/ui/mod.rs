@@ -8,7 +8,11 @@ use clap::{Parser, Subcommand};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+#[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
+
+#[cfg(feature = "daemon")]
+use crate::datamanager::async_app::App;
 
 use signal_hook::consts::SIGINT;
 use signal_hook::iterator::Signals;

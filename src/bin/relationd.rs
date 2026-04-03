@@ -205,6 +205,7 @@ async fn handle_client(stream: Stream) -> Result<()> {
         }
 
         let request: Request = serde_json::from_str(line.trim())?;
+        println!("{:?}", request);
         let response = match request.command {
             ClientCommand::Status => {
                 if RUNNING.load(Ordering::Relaxed) {

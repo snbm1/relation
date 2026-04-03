@@ -31,7 +31,7 @@ bindgen = "0.72"
 [features]
 tui = ["dep:ratatui", "dep:crossterm"]
 daemon = []
-default = ["tui"]
+default = ["tui", "daemon"]
 
 [[bin]]
 name="relationd"

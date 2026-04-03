@@ -14,7 +14,11 @@ use std::{
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+#[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
+
+#[cfg(feature = "daemon")]
+use crate::datamanager::async_app::App;
 
 use crossterm::{
     event::{self, Event, KeyCode},
