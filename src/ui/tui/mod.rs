@@ -14,7 +14,7 @@ use std::{
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use crate::App;
+use crate::app::App;
 
 use crossterm::{
     event::{self, Event, KeyCode},
