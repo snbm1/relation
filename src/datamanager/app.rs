@@ -1,3 +1,4 @@
+use crate::bridge;
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use std::fs;
