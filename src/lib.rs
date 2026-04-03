@@ -3,11 +3,14 @@ pub mod configurator;
 pub mod datamanager;
 pub mod ui;
 
-use anyhow::Result;
 #[cfg(not(windows))]
+#[cfg(feature = "daemon")]
 use interprocess::local_socket::{GenericFilePath, ToFsName};
 #[cfg(windows)]
+#[cfg(feature = "daemon")]
 use interprocess::local_socket::{GenericNamespaced, ToNsName};
+
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 pub const SOCKET_NAME: &str = "relation.sock";
@@ -69,10 +72,12 @@ pub enum Response {
 }
 
 #[cfg(unix)]
+#[cfg(feature = "daemon")]
 pub fn socket_path() -> &'static str {
     "/tmp/relation.sock"
 }
 
+#[cfg(feature = "daemon")]
 pub fn socket_name() -> Result<interprocess::local_socket::Name<'static>> {
     #[cfg(windows)]
     let name = SOCKET_NAME.to_ns_name::<GenericNamespaced>()?;
