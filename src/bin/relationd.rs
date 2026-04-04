@@ -1,5 +1,4 @@
 use anyhow::Result;
-use anyhow::anyhow;
 use anyhow::{Context, bail};
 use interprocess::local_socket::{
     ListenerOptions,
@@ -15,6 +14,7 @@ use std::{
 };
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    sync::mpsc,
     signal,
 };
 
@@ -42,6 +42,7 @@ async fn main() -> Result<()> {
     let _socket_guard = prepare_socket_file()?;
 
     let listener = ListenerOptions::new().name(socket_name()?).create_tokio()?;
+    let (shutdown_tx, mut shutdown_rx) = mpsc::unbounded_channel();
 
     eprintln!("daemon listening");
 
@@ -49,11 +50,16 @@ async fn main() -> Result<()> {
         tokio::select! {
             accept_result = listener.accept() => {
                 let stream = accept_result?;
+                let shutdown_tx = shutdown_tx.clone();
                 tokio::spawn(async move {
-                    if let Err(error) = handle_client(stream).await {
+                    if let Err(error) = handle_client(stream, shutdown_tx).await {
                         eprintln!("client error: {error}");
                     }
                 });
+            }
+            Some(()) = shutdown_rx.recv() => {
+                eprintln!("daemon shutting down");
+                break;
             }
             signal_result = signal::ctrl_c() => {
                 signal_result?;
@@ -194,7 +200,7 @@ fn daemon_is_running() -> Result<bool> {
     }
 }
 
-async fn handle_client(stream: Stream) -> Result<()> {
+async fn handle_client(stream: Stream, shutdown_tx: mpsc::UnboundedSender<()>) -> Result<()> {
     let mut reader = BufReader::new(&stream);
     let mut writer = &stream;
     let mut line = String::new();
@@ -277,6 +283,7 @@ async fn handle_client(stream: Stream) -> Result<()> {
         writer.flush().await?;
 
         if quit_flag {
+            let _ = shutdown_tx.send(());
             return Ok(());
         }
     }
