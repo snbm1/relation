@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::runtime::Runtime;
-use tokio::time::{Duration, timeout};
+use tokio::time::{Duration, sleep, timeout};
 
 use crate::datamanager::*;
 
@@ -50,7 +50,23 @@ impl App {
     }
 
     async fn connect_socket() -> Result<Stream> {
-        Ok(Stream::connect(socket_name()?).await?)
+        match Stream::connect(socket_name()?).await {
+            Ok(x) => Ok(x),
+            Err(_) => {
+                crate::run_daemon()?;
+
+                for _ in 0..20 {
+                    match Stream::connect(socket_name()?).await {
+                        Ok(stream) => return Ok(stream),
+                        Err(_) => sleep(Duration::from_millis(100)).await,
+                    }
+                }
+
+                Err(anyhow::anyhow!(
+                    "relationd started but socket was not ready in time"
+                ))
+            }
+        }
     }
 
     pub fn read_configs(&mut self) -> Result<Vec<String>> {
@@ -163,6 +179,11 @@ impl App {
             self.set_handler_config_by_name(self.get_list().first().unwrap())?;
         }
 
+        self.run_app_by_path(file_path, unable_system_proxy)?;
+        Ok(())
+    }
+
+    fn run_app_by_path(&mut self, file_path: PathBuf, unable_system_proxy: bool) -> Result<()> {
         self.runtime
             .block_on(async { send_start(file_path.to_str().unwrap().to_string()).await })?;
 
@@ -181,7 +202,7 @@ impl App {
                 })?;
             }
         }
-        let _ = self.stg_handler.save(self.get_settings_path());
+        self.stg_handler.save(self.get_settings_path())?;
         Ok(())
     }
 

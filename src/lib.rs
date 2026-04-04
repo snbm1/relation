@@ -3,6 +3,8 @@ pub mod configurator;
 pub mod datamanager;
 pub mod ui;
 
+use std::process::{Command as StdCommand, Stdio};
+
 #[cfg(not(windows))]
 #[cfg(feature = "daemon")]
 use interprocess::local_socket::{GenericFilePath, ToFsName};
@@ -86,4 +88,21 @@ pub fn socket_name() -> Result<interprocess::local_socket::Name<'static>> {
     let name = socket_path().to_fs_name::<GenericFilePath>()?;
 
     Ok(name)
+}
+
+#[cfg(feature = "daemon")]
+pub fn run_daemon() -> Result<()> {
+    let possigle_paths = ["relationd", "./relationd"];
+    for i in possigle_paths {
+        let mut command = StdCommand::new(i);
+        command
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+
+        if command.spawn().is_ok() {
+            return Ok(());
+        }
+    }
+    Err(anyhow::anyhow!("Cant run relationd"))
 }
