@@ -228,6 +228,11 @@ impl App {
         }
     }
 
+    pub fn send_quit(&mut self) -> Result<()> {
+        self.runtime.block_on(async { send_quit().await })?;
+        Ok(())
+    }
+
     pub fn rename_config(&mut self, new_name: String) -> Result<()> {
         self.remove_config(
             &self
@@ -452,6 +457,11 @@ async fn send_start(config_path: String) -> Result<Response> {
 #[inline]
 async fn send_enable_sys_proxy(host: String, port: u16, support_socks: bool) -> Result<Response> {
     send_request(Request::enable_sys_proxy(host, port, support_socks)).await
+}
+
+#[inline]
+async fn send_quit() -> Result<Response> {
+    send_request(Request::quit()).await
 }
 
 #[inline]
