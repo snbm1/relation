@@ -20,7 +20,7 @@ use tokio::{
 use relation::bridge;
 use relation::{Command as ClientCommand, Request, Response};
 
-const DETACHED_ENV: &str = "DMN_DETACHED";
+const DETACHED_ENV: &str = "RELATION_DETACHED";
 const FOREGROUND_FLAG: &str = "--foreground";
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
