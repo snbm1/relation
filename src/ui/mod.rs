@@ -125,9 +125,13 @@ enum Commands {
         quiet: bool,
     },
 
-    ///Stop application
+    ///Stop proxy
     #[cfg(feature = "daemon")]
     Stop,
+
+    ///Stop and shutdown proxy
+    #[cfg(feature = "daemon")]
+    Quit,
 }
 
 #[derive(Debug, Clone)]
@@ -345,6 +349,9 @@ impl Cli {
             Commands::Status => {
                 println!("Is running: {}", manager.get_status()?);
             }
+
+            #[cfg(feature = "daemon")]
+            Commands::Quit => manager.send_quit()?,
         }
         Ok(())
     }

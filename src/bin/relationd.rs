@@ -1,4 +1,5 @@
 use anyhow::Result;
+use anyhow::anyhow;
 use anyhow::{Context, bail};
 use interprocess::local_socket::{
     ListenerOptions,
@@ -24,6 +25,7 @@ const DETACHED_ENV: &str = "RELATION_DETACHED";
 const FOREGROUND_FLAG: &str = "--foreground";
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
+static SYSPROXY: AtomicBool = AtomicBool::new(false);
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -196,6 +198,7 @@ async fn handle_client(stream: Stream) -> Result<()> {
     let mut reader = BufReader::new(&stream);
     let mut writer = &stream;
     let mut line = String::new();
+    let mut quit_flag = false;
 
     loop {
         line.clear();
@@ -230,18 +233,52 @@ async fn handle_client(stream: Stream) -> Result<()> {
             ClientCommand::EnableSysProxy((host, port, support_socks)) => {
                 match bridge::enable_system_proxy_safe(&host, port as i64, support_socks) {
                     Some(error) => Response::Error(error),
-                    None => Response::Ok,
+                    None => {
+                        SYSPROXY.store(true, Ordering::Relaxed);
+                        Response::Ok
+                    }
                 }
             }
             ClientCommand::DisableSysProxy => match bridge::disable_system_proxy_safe() {
                 Some(error) => Response::Error(error),
-                None => Response::Ok,
+                None => {
+                    SYSPROXY.store(false, Ordering::Relaxed);
+                    Response::Ok
+                }
             },
+            ClientCommand::Quit => {
+                quit_flag = true;
+                if !RUNNING.load(Ordering::Relaxed) {
+                    Response::Ok
+                } else if SYSPROXY.load(Ordering::Relaxed) {
+                    if let Some(error) = bridge::disable_system_proxy_safe() {
+                        Response::Error(error)
+                    } else {
+                        SYSPROXY.store(false, Ordering::Relaxed);
+
+                        if let Some(error) = bridge::stop_safe() {
+                            Response::Error(error)
+                        } else {
+                            RUNNING.store(false, Ordering::Relaxed);
+                            Response::Ok
+                        }
+                    }
+                } else if let Some(error) = bridge::stop_safe() {
+                    Response::Error(error)
+                } else {
+                    RUNNING.store(false, Ordering::Relaxed);
+                    Response::Ok
+                }
+            }
         };
         let payload = serde_json::to_vec(&response)?;
         writer.write_all(&payload).await?;
         writer.write_all(b"\n").await?;
         writer.flush().await?;
+
+        if quit_flag {
+            return Ok(());
+        }
     }
 
     Ok(())

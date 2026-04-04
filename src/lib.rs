@@ -8,6 +8,7 @@ use std::process::{Command as StdCommand, Stdio};
 #[cfg(not(windows))]
 #[cfg(feature = "daemon")]
 use interprocess::local_socket::{GenericFilePath, ToFsName};
+
 #[cfg(windows)]
 #[cfg(feature = "daemon")]
 use interprocess::local_socket::{GenericNamespaced, ToNsName};
@@ -52,6 +53,12 @@ impl Request {
             command: Command::DisableSysProxy,
         }
     }
+
+    pub fn quit() -> Self {
+        Request {
+            command: Command::Quit,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,6 +69,7 @@ pub enum Command {
     Status,
     Stop,
     DisableSysProxy,
+    Quit,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
