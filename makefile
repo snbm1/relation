@@ -24,13 +24,13 @@ release:
 	cp target/release/relation .
 	cp target/release/relationd .
 
-install: release install-files
-
 install-files:
 	install -Dm755 target/release/relation $(DESTDIR)$(BINDIR)/relation
 	install -Dm755 target/release/relationd $(DESTDIR)$(BINDIR)/relationd
 	install -Dm755 $(LIB_NAME) $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 	install -Dm644 README.md $(DESTDIR)$(PREFIX)/share/doc/relation/README.md
+
+install: release install-files
 
 clean:
 	rm -f $(LIB_NAME) $(LIB_HEADER) $(BINARIES)
