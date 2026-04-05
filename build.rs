@@ -4,6 +4,9 @@ use std::path::PathBuf;
 fn main() {
     let go_dir = PathBuf::from(".");
 
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=librelation.h");
+
     println!("cargo:rustc-link-search=native={}", go_dir.display());
     println!("cargo:rustc-link-lib=dylib=relation");
 
