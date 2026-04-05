@@ -179,7 +179,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     }
                 } else {
                     match key.code {
-                        KeyCode::Char('q') => {
+                        KeyCode::Char('q') | KeyCode::Esc => {
                             if running.is_some() {
                                 // #[cfg(not(feature = "daemon"))]
                                 app.stop_app()?;
