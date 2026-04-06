@@ -13,7 +13,7 @@ macros = { path = "macros" }
 urlencoding = "2"
 url = "2"
 clap = { version = "4", features = ["derive", "color", "help"] }
-clap_complete = { version = "4", features = ["unstable-dynamic"] }
+clap_complete = { version = "4", features = ["unstable-dynamic"], optional = true }
 directories = "6"
 libc = "0.2"
 toml = "*"
@@ -32,7 +32,8 @@ bindgen = "0.72"
 [features]
 tui = ["dep:ratatui", "dep:crossterm", "dep:default-net"]
 daemon = ["dep:interprocess", "dep:tokio"]
-default = ["tui", "daemon"]
+autocomlete = ["dep:clap_complete"]
+default = ["tui", "daemon", "autocomlete"]
 
 [[bin]]
 name="relationd"
