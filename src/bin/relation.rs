@@ -1,7 +1,11 @@
 use anyhow::Result;
-use clap::{CommandFactory, Parser};
+
+#[cfg(feature = "autocomlete")]
+use clap::CommandFactory;
 #[cfg(feature = "autocomlete")]
 use clap_complete::env::CompleteEnv;
+
+use clap::Parser;
 use relation::ui::Cli;
 
 #[cfg(not(feature = "daemon"))]
