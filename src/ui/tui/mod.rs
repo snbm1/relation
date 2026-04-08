@@ -85,6 +85,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut error_input = false;
     let mut running: Option<String> = None;
 
+    let mut settings_panel = true; 
+
     let mut input_buffer = String::new();
 
     let current_ip = Arc::new(Mutex::new("loading...".to_string()));
