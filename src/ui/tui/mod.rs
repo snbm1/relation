@@ -34,7 +34,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, Wrap},
 };
 
 pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
@@ -359,6 +359,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 };
 
                 let input = Paragraph::new(input_buffer.as_str())
+                    .wrap(Wrap { trim: true }) // To future float
                     .block(
                         Block::default()
                             .title(message)
@@ -411,18 +412,24 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap_or(64 * 1024)
                 .max(64 * 1024);
 
-            let title = if max_rate >= 1024 * 1024 {
-                format!("Traffic ({:.1}) MB/s", max_rate as f64 / 1024.0 / 1024.0)
+            let current_rate = rx_list
+                .back()
+                .copied()
+                .unwrap_or_default()
+                .max(tx_list.back().copied().unwrap_or_default());
+
+            let title = if current_rate >= 1024 * 1024 {
+                format!(
+                    "Traffic ({:.1}) MB/s",
+                    current_rate as f64 / 1024.0 / 1024.0
+                )
             } else {
-                format!("Traffic ({:.0}) KB/s", max_rate as f64 / 1024.0)
+                format!("Traffic ({:.0}) KB/s", current_rate as f64 / 1024.0)
             };
 
             let traffic_block = Block::default()
                 .title(title)
-                .title(
-                    Title::from(format!("interface: {} ip: {}", iface, ip_base))
-                        .position(Position::Bottom),
-                )
+                .title(Title::from(format!("{}: {}", iface, ip_base)).position(Position::Bottom))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded);
 
