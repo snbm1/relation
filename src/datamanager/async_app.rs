@@ -63,7 +63,7 @@ impl App {
                 }
 
                 Err(anyhow::anyhow!(
-                    "relationd started but socket was not ready in time"
+                    "relationd started but it is impossible to connect to socket"
                 ))
             }
         }
