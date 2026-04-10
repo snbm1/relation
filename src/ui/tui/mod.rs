@@ -2,6 +2,7 @@ mod ifaces;
 mod minireq;
 use ifaces::*;
 use minireq::*;
+use ratatui::symbols::block;
 use ratatui::widgets::block::{Position, Title};
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
@@ -218,6 +219,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                     selected_index = len - 1;
                                 }
                             }
+                        }
+                        KeyCode::Tab => {
+                            settings_panel = !settings_panel; 
                         }
                         KeyCode::Enter => {
                             let len = app.get_len();
@@ -525,19 +529,26 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
 
-            // RIGHT PANEL
-            let logs = app.get_logs();
-            let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
-            let log_list = List::new(log_items).block(
-                Block::default()
-                    .title(Line::from("Logs").centered())
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded),
-            );
+            // LOG PANEL
+            if !settings_panel {
+                let logs = app.get_logs();
+                let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
+                let log_list = List::new(log_items).block(
+                    Block::default()
+                        .title(Line::from("Logs"))
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded),
+                );
 
-            f.render_widget(log_list, horizontal[1]);
+                f.render_widget(log_list, horizontal[1]);
+                app.read_logs();
+            } else {
+                let block = Block::default().title("Settings").borders(Borders::ALL).border_type(BorderType::Rounded);
+                f.render_widget(block, horizontal[1]);
+            }
+            
+
         })?;
-        app.read_logs();
     }
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
