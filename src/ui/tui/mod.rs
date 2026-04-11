@@ -1,5 +1,6 @@
 mod ifaces;
 mod minireq;
+use clap::builder::Str;
 use ifaces::*;
 use minireq::*;
 use ratatui::symbols::block;
@@ -86,7 +87,17 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut error_input = false;
     let mut running: Option<String> = None;
 
+    let mut transit = false; 
+
+    // settings vars 
     let mut settings_panel = true; 
+    let mut rule_action: Option<String> = None; 
+    let mut rule_type: Option<String> = None; 
+    let mut rule_value: Option<String> = None; 
+    let mut settings_selected = 0; 
+    let mut context_menu = false; 
+    let mut popup_selected = 0;
+    let mut context_menu_selected = 0; 
 
     let mut input_buffer = String::new();
 
@@ -251,14 +262,25 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
 
+                        KeyCode::Right => {
+                            transit = true; 
+                        }
+                        KeyCode::Left => {
+                            transit = false; 
+                        }
+
                         KeyCode::Down | KeyCode::Char('j') => {
-                            if len > 0 {
+                            if transit && settings_panel {
+                                settings_selected = (settings_selected + 1) & 3; 
+                            } else if !transit && len > 0 {
                                 selected_index = (selected_index + 1) % len;
                             }
                         }
 
                         KeyCode::Up | KeyCode::Char('k') => {
-                            if len > 0 {
+                            if transit && settings_panel {
+                                settings_selected = (settings_selected + 3 - 1) & 3;
+                            } else if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
                             }
                         }
@@ -529,7 +551,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
 
-            // LOG PANEL
+            // LOG/SETTINGS PANEL
             if !settings_panel {
                 let logs = app.get_logs();
                 let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
@@ -543,8 +565,25 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 f.render_widget(log_list, horizontal[1]);
                 app.read_logs();
             } else {
-                let block = Block::default().title("Settings").borders(Borders::ALL).border_type(BorderType::Rounded);
-                f.render_widget(block, horizontal[1]);
+                let settings = Paragraph::new(vec![
+                    Line::from(vec![
+                        Span::styled("Action: ", Style::default().add_modifier(Modifier::BOLD)), 
+                    ]), 
+                ])
+                .block(
+                    Block::default()
+                        .title("Settings")
+                        .borders(Borders::ALL)
+                        .border_style(
+                            if transit {
+                                Style::default().fg(Color::Blue)
+                            } else {
+                                Style::default()
+                            }
+                        )
+                        .border_type(BorderType::Rounded), 
+                ); 
+                f.render_widget(settings, horizontal[1]);
             }
             
 
