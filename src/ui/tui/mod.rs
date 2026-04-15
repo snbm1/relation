@@ -36,7 +36,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, BorderType, Borders, List, Clear, ListItem, ListState, Paragraph},
 };
 
 pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
@@ -98,6 +98,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut context_menu = false; 
     let mut popup_selected = 0;
     let mut context_menu_selected = 0; 
+
 
     let mut input_buffer = String::new();
 
@@ -203,7 +204,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
 
                         KeyCode::Esc => {
-                            break;
+                            if context_menu {
+                                context_menu = false
+                            } else {
+                                break;
+                            }
                         }
 
                         KeyCode::Char('a') => {
@@ -235,52 +240,63 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             settings_panel = !settings_panel; 
                         }
                         KeyCode::Enter => {
-                            let len = app.get_len();
-                            if let Ok(mut flag) = change_flag.lock() {
-                                *flag = true;
-                            }
-                            if len > 0 && !enter_mode {
-                                let number = selected_index as u16 + 1;
-                                running = Some(app.get_list()[selected_index].clone());
-                                app.set_log_file();
-                                app.run_app(None, Some(number as usize - 1), false)?;
-                                enter_mode = true;
-                            } else if enter_mode {
-                                let name = app.get_list()[selected_index].clone();
-                                if running.as_deref() == Some(name.as_str()) {
-                                    running = None;
-                                    app.stop_app()?;
-                                    enter_mode = false;
-                                } else {
-                                    app.stop_app()?;
-                                    std::thread::sleep(Duration::from_millis(100));
+                            if transit && settings_panel {
+                                context_menu = true; 
+                                popup_selected = 0; 
+                                context_menu_selected = settings_selected; 
+                            } else {
+                                let len = app.get_len();
+                                if let Ok(mut flag) = change_flag.lock() {
+                                    *flag = true;
+                                }
+                                if len > 0 && !enter_mode {
                                     let number = selected_index as u16 + 1;
-                                    running = Some(name.clone());
+                                    running = Some(app.get_list()[selected_index].clone());
                                     app.set_log_file();
                                     app.run_app(None, Some(number as usize - 1), false)?;
+                                    enter_mode = true;
+                                } else if enter_mode {
+                                    let name = app.get_list()[selected_index].clone();
+                                    if running.as_deref() == Some(name.as_str()) {
+                                        running = None;
+                                        app.stop_app()?;
+                                        enter_mode = false;
+                                    } else {
+                                        app.stop_app()?;
+                                        std::thread::sleep(Duration::from_millis(100));
+                                        let number = selected_index as u16 + 1;
+                                        running = Some(name.clone());
+                                        app.set_log_file();
+                                        app.run_app(None, Some(number as usize - 1), false)?;
+                                    }
                                 }
                             }
                         }
 
                         KeyCode::Right => {
-                            transit = true; 
+                            if !transit {
+                                transit = true; 
+                            } else if transit && settings_panel {
+                                settings_selected = (settings_selected + 1) % 3; 
+                            }
                         }
                         KeyCode::Left => {
-                            transit = false; 
+                            if settings_selected - 1 < 0 && transit {
+                                transit = false; 
+                            } else if transit && settings_panel {
+                                settings_selected = (settings_selected + 3 - 1) % 3;
+                            }
+
                         }
 
                         KeyCode::Down | KeyCode::Char('j') => {
-                            if transit && settings_panel {
-                                settings_selected = (settings_selected + 1) & 3; 
-                            } else if !transit && len > 0 {
+                            if !transit && len > 0 {
                                 selected_index = (selected_index + 1) % len;
                             }
                         }
 
                         KeyCode::Up | KeyCode::Char('k') => {
-                            if transit && settings_panel {
-                                settings_selected = (settings_selected + 3 - 1) & 3;
-                            } else if len > 0 && !transit {
+                            if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
                             }
                         }
@@ -366,6 +382,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     Block::default()
                         .title("Configs")
                         .borders(Borders::ALL)
+                        .border_style(if !transit {
+                            Style::default().fg(Color::Yellow)
+                        } else {
+                            Style::default()
+                        })
                         .border_type(BorderType::Rounded),
                 )
                 .highlight_style(
@@ -565,11 +586,40 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 f.render_widget(log_list, horizontal[1]);
                 app.read_logs();
             } else {
-                let settings = Paragraph::new(vec![
-                    Line::from(vec![
-                        Span::styled("Action: ", Style::default().add_modifier(Modifier::BOLD)), 
-                    ]), 
-                ])
+                    let action_text = rule_action.as_deref().unwrap_or("empty"); 
+                    let type_text = rule_type.as_deref().unwrap_or("empty"); 
+                    let value_text = rule_value.as_deref().unwrap_or("empty"); 
+                let action_style = if transit && settings_selected == 0 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let type_style = if transit && settings_selected == 1 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let value_style = if transit && settings_selected == 2 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let settings = Paragraph::new(Line::from(vec![
+                    Span::styled("Action: ", action_style),
+                    Span::styled(action_text, action_style),
+                    Span::raw("   "),
+                    Span::styled("Type: ", type_style),
+                    Span::styled(type_text, type_style),
+                    Span::raw("   "),
+                    Span::styled("Value: ", value_style),
+                    Span::styled(value_text, value_style),
+                ]))
                 .block(
                     Block::default()
                         .title("Settings")
@@ -584,6 +634,45 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         .border_type(BorderType::Rounded), 
                 ); 
                 f.render_widget(settings, horizontal[1]);
+            }
+
+            // Context Menu
+            if context_menu {
+                let context_panel_area = ratatui::layout::Rect {
+                    x: horizontal[1].x + 4, 
+                    y: horizontal[1].y + 2, 
+                    width: horizontal[1].width.saturating_sub(8), 
+                    height: 7, 
+                }; 
+
+                f.render_widget(Clear, context_panel_area);
+
+                let context_items: Vec<ListItem> = if context_menu_selected == 0 {
+                    vec!["r", "h", "s"].into_iter().map(ListItem::new).collect()  
+                } else {
+                    vec!["No items!"].into_iter().map(ListItem::new).collect()
+                };
+
+                let mut state = ListState::default(); 
+                state.select(Some(popup_selected));
+
+                let list = List::new(context_items) 
+                    .block(
+                        Block::default()
+                            .title("Select")
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded)
+                            .border_style(Style::default().fg(Color::Yellow)),
+                    )
+                    .highlight_style(
+                        Style::default()
+                            .bg(Color::LightRed)
+                            .fg(Color::LightGreen)
+                            .add_modifier(Modifier::BOLD),
+
+                    )
+                    .highlight_symbol(">> "); 
+                f.render_stateful_widget(list, context_panel_area, &mut state);
             }
             
 
