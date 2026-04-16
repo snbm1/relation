@@ -240,7 +240,25 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             settings_panel = !settings_panel; 
                         }
                         KeyCode::Enter => {
-                            if transit && settings_panel {
+                            if context_menu {
+                                match context_menu_selected {
+                                    0 => {
+                                        let value = match popup_selected {
+                                            0 => "r", 
+                                            1 => "h", 
+                                            2 => "s", 
+                                            _ => "", 
+                                        };
+                                        if !value.is_empty() {
+                                            rule_action = Some(value.to_string()); 
+                                        }
+                                    }
+                                    _ => {}
+                                }
+
+                                context_menu = false; 
+                                popup_selected = 0; 
+                            } else if transit && settings_panel {
                                 context_menu = true; 
                                 popup_selected = 0; 
                                 context_menu_selected = settings_selected; 
@@ -292,12 +310,19 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         KeyCode::Down | KeyCode::Char('j') => {
                             if !transit && len > 0 {
                                 selected_index = (selected_index + 1) % len;
+                            } else if context_menu {
+                                let context_len = if context_menu_selected == 0 { 3 } else { 1 };
+                                popup_selected = (popup_selected + 1) % context_len; 
                             }
+
                         }
 
                         KeyCode::Up | KeyCode::Char('k') => {
                             if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
+                            } else if context_menu {
+                                let context_len = if context_menu_selected == 0 { 3 } else { 1 };
+                                popup_selected = (popup_selected + context_len - 1) % context_len; 
                             }
                         }
 
@@ -666,7 +691,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     )
                     .highlight_style(
                         Style::default()
-                            .bg(Color::LightRed)
                             .fg(Color::LightGreen)
                             .add_modifier(Modifier::BOLD),
 
