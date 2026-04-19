@@ -97,7 +97,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut settings_selected = 0; 
     let mut context_menu = false; 
     let mut popup_selected = 0;
-    let mut context_menu_selected = 0; 
+    let mut value_input = false; 
+    // let mut context_menu_selected = 0; 
 
 
     let mut input_buffer = String::new(); 
@@ -194,6 +195,31 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         _ => {}
                     }
+                } if value_input {
+                    match key.code {
+                        KeyCode::Esc => {
+                            value_input = false; 
+                            input_buffer.clear();
+                        } 
+                        KeyCode::Enter => {
+                            if !input_buffer.is_empty() {
+                                rule_value = Some(input_buffer.clone()); 
+                            }
+                            value_input = false; 
+                            input_buffer.clear();
+                        }
+                        KeyCode::Backspace => {
+                            input_buffer.pop();
+                        }
+
+                        KeyCode::Char(c) => {
+                            input_buffer.push(c);
+                        }
+
+                        _ => {}
+                    }
+
+                    continue;
                 } else {
                     match key.code {
                         KeyCode::Char('q') => {
@@ -207,21 +233,15 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                         KeyCode::Esc => {
                             if context_menu {
-                                context_menu = false
+                                if custom {
+                                    custom = false; 
+                                    input_buffer.clear();
+                                } else {
+                                    context_menu = false; 
+                                    popup_selected = 0; 
+                                }
                             } else {
                                 break;
-                            }
-                        }
-
-                        KeyCode::Char(c) => {
-                            if context_menu && context_menu_selected == 1 && custom && popup_selected == 31 {
-                                input_buffer.push(c);
-                            }
-                        }
-
-                        KeyCode::Backspace => {
-                            if context_menu && context_menu_selected == 1 && custom && popup_selected == 31 {
-                                input_buffer.pop();
                             }
                         }
 
@@ -253,9 +273,22 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         KeyCode::Tab => {
                             settings_panel = !settings_panel; 
                         }
+
+                        KeyCode::Char(c) => {
+                            if context_menu && settings_selected == 1 && custom && popup_selected == 31 {
+                                input_buffer.push(c);
+                            }
+                        }
+
+                        KeyCode::Backspace => {
+                            if context_menu && settings_selected == 1 && custom && popup_selected == 31 {
+                                input_buffer.pop();
+                            }
+                        }
+
                         KeyCode::Enter => {
                             if context_menu {
-                                match context_menu_selected {
+                                match settings_selected {
                                     0 => {
                                         let value = match popup_selected {
                                             0 => "r", 
@@ -265,13 +298,21 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                         };
                                         if !value.is_empty() {
                                             rule_action = Some(value.to_string()); 
+                                            context_menu = false; 
+                                            popup_selected = 0;
                                         }
                                     }
 
                                     1 => {
                                         if popup_selected == 31 {
-                                            custom = true; 
-                                            input_buffer.clear();
+                                            if !custom {
+                                                custom = true; 
+                                                input_buffer.clear();
+                                            } else if !input_buffer.is_empty() {
+                                                rule_type = Some(input_buffer.clone()); 
+                                                custom = false; 
+                                                input_buffer.clear();
+                                            }
                                         } else {
                                                 let value = match popup_selected {
                                                 0 => "ib", 
@@ -310,21 +351,28 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                                         if !value.is_empty() {
                                             rule_type = Some(value.to_string());
-                                            context_menu = false; 
-                                            popup_selected = 0;
                                             custom = false; 
                                             input_buffer.clear();
                                         }
                                         }
 
+                                        if !custom {
+                                            context_menu = false; 
+                                            popup_selected = 0;
+                                        }
                                     }
                                     _ => {}
                                 }
  
                             } else if transit && settings_panel {
-                                context_menu = true; 
-                                popup_selected = 0; 
-                                context_menu_selected = settings_selected; 
+                                if settings_selected == 2 {
+                                    value_input = true; 
+                                    input_buffer.clear();
+                                } else {
+                                    context_menu = true; 
+                                    popup_selected = 0; 
+                                }
+                                // context_menu_selected = settings_selected; 
                             } else {
                                 let len = app.get_len();
                                 if let Ok(mut flag) = change_flag.lock() {
@@ -335,6 +383,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                     running = Some(app.get_list()[selected_index].clone());
                                     app.set_log_file();
                                     app.run_app(None, Some(number as usize - 1), false)?;
+                                    settings_panel = false; 
+                                    transit = false;
                                     enter_mode = true;
                                 } else if enter_mode {
                                     let name = app.get_list()[selected_index].clone();
@@ -349,6 +399,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                         running = Some(name.clone());
                                         app.set_log_file();
                                         app.run_app(None, Some(number as usize - 1), false)?;
+                                        settings_panel = false; 
+                                        transit = false;
                                     }
                                 }
                             }
@@ -374,7 +426,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             if !transit && len > 0 {
                                 selected_index = (selected_index + 1) % len;
                             } else if context_menu {
-                                let context_len = if context_menu_selected == 0 { 3 } else if context_menu_selected == 1 { 32 } else  { 1 };
+                                let context_len = if settings_selected == 0 { 3 } else if settings_selected == 1 { 32 } else  { 1 };
                                 popup_selected = (popup_selected + 1) % context_len; 
                             }
 
@@ -384,7 +436,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
                             } else if context_menu {
-                                let context_len = if context_menu_selected == 0 { 3 } else if context_menu_selected == 1 { 32 } else { 1 };
+                                let context_len = if settings_selected == 0 { 3 } else if settings_selected == 1 { 32 } else { 1 };
                                 popup_selected = (popup_selected + context_len - 1) % context_len; 
                             }
                         }
@@ -735,9 +787,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                 f.render_widget(Clear, context_panel_area);
 
-                let context_items: Vec<ListItem> = if context_menu_selected == 0 {
+                let context_items: Vec<ListItem> = if settings_selected == 0 {
                     vec!["r", "h", "s"].into_iter().map(ListItem::new).collect()  
-                } else if context_menu_selected == 1 {
+                } else if settings_selected == 1 {
                     let mut items: Vec<ListItem> = vec!["inbound", "ip version", "auth user", "protocol", "client", "domain", "domain suffix", "domain keyword", "domain regex", "geosite", "source geoip", "geoip", "source ip cidr", "ip is private", "ip cidr", "ip is private", "source port", "range", "port", "range", "process name", "process path", "regex", "package name", "user", "user id", "clash mode", "network type", "network", "is expensive", "constrained"].into_iter().map(ListItem::new).collect();
                     if custom {
                         items.push(ListItem::new(format!("Input: {}", input_buffer)));
@@ -770,6 +822,27 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     .highlight_symbol(">> "); 
                 f.render_stateful_widget(list, context_panel_area, &mut state);
             }
+
+            if value_input {
+                    let input = Paragraph::new(input_buffer.as_str())
+                        .block(
+                            Block::default()
+                                .title("Enter value")
+                                .borders(Borders::ALL)
+                                .border_type(BorderType::Rounded),
+                        )
+                        .style(Style::default().fg(Color::Green));
+
+                    let area = ratatui::layout::Rect {
+                        x: horizontal[1].x + 2, 
+                        y: horizontal[1].y + 4, 
+                        width: horizontal[1].width.saturating_sub(4), 
+                        height: 3,
+                    };
+
+                    f.render_widget(Clear, area);
+                    f.render_widget(input, area);
+                }
             
 
         })?;
