@@ -10,9 +10,7 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", go_dir.display());
     println!("cargo:rustc-link-lib=dylib=relation");
 
-    println!(
-        "cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN"
-    );
+    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
 
     let bindings = bindgen::Builder::default()
         .header("librelation.h")

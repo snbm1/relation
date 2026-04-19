@@ -111,6 +111,29 @@ impl DnsConfig {
         self
     }
 
+    pub fn remove_server(&mut self, index: usize) -> DnsServer {
+        self.servers.remove(index)
+    }
+
+    pub fn move_server(&mut self, from: usize, to: usize) {
+        let value = self.remove_server(from);
+        self.servers.insert(to, value);
+    }
+
+    pub fn remove_rule(&mut self, index: usize) -> String {
+        match self.rules {
+            Some(_) => self.rules.as_mut().unwrap().remove(index),
+            None => "".to_string(),
+        }
+    }
+
+    pub fn move_rule(&mut self, from: usize, to: usize) {
+        let value = self.remove_rule(from);
+        if !value.is_empty() {
+            self.rules.as_mut().unwrap().insert(to, value);
+        }
+    }
+
     pub fn clean(&mut self) -> &mut Self {
         *self = Self::new();
         self

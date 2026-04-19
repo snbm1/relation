@@ -329,42 +329,10 @@ impl Configurator {
         Ok(self)
     }
 
-    /// Set route rules in format: <ACTION>:<VALUE1>:<VALUE2>
-    ///
-    ///If action contains one value you need only:
-    ///     <ACTION>:<VALUE>
-    ///
-    /// ACTION:             VALUES:
-    /// "r"    -> Remove    `usize`         -> remove by index <VALUE>
-    /// "m"    -> Move      `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
-    pub fn manage_route_rules(&mut self, rules: &Vec<String>) -> Result<&mut Self> {
-        for i in rules {
-            let ri: Vec<&str> = i.split(":").collect();
-            match *ri.first().context("Incorrect route rules manage input")? {
-                "r" => {
-                    let _ = self.route.remove_rule(
-                        ri.get(1)
-                            .context("Incorrect route rules manage input")?
-                            .parse()?,
-                    );
-                }
-                "m" => {
-                    self.route.move_rule(
-                        ri.get(1)
-                            .context("Incorrect route rules manage input")?
-                            .parse()?,
-                        ri.get(2)
-                            .context("Incorrect route rules manage input")?
-                            .parse()?,
-                    );
-                }
-                _ => {}
-            }
-        }
-
-        Ok(self)
-    }
-
+    /// Set route rules in format: <TYPE>:<VALUE1>:<VALUE2>
+    /// TYPES:
+    /// "up" -> udp <ADDR>:<PORT>
+    /// "tp" -> tcp <ADDR>:<PORT>
     pub fn add_dns_servers(&mut self, dns: &Vec<String>) -> Result<&mut Self> {
         for i in dns {
             let dh;
@@ -376,7 +344,7 @@ impl Configurator {
             if df.len() < 3 {
                 df_port = None;
                 if df.len() < 2 {
-                    df_type = "udp";
+                    df_type = "up";
                     df_addr = df[0];
                 } else {
                     df_type = df[0];
@@ -389,16 +357,84 @@ impl Configurator {
             }
 
             match df_type {
-                "tcp" => {
+                "tp" => {
                     dh = DnsServer::Tcp(DnsServerTcp::with_server(df_addr.to_string(), df_port))
                 }
-                "udp" => {
+                "up" => {
                     dh = DnsServer::Udp(DnsServerUdp::with_server(df_addr.to_string(), df_port))
                 }
                 _ => return Err(anyhow!("Cant parse that type of dns yet")),
             }
             self.dns.add_server(dh);
         }
+        Ok(self)
+    }
+
+    /// Manage listables values in format: <ACTION>:<VALUE1>:<VALUE2>
+    ///
+    ///If action contains one value you need only:
+    ///     <ACTION>:<VALUE>
+    ///
+    /// ACTION:             VALUES:
+    /// "rr" -> Remove rule    `usize`         -> remove by index <VALUE>
+    /// "mr" -> Move rule      `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
+    /// "fr" -> final outbound     `str`           -> set default outbound by type
+    /// "rd" -> Remove dns server `usize`         -> remove by index <VALUE>
+    /// "md" -> Move dns server `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
+    /// "fd" -> final dns server `str`           -> set default dns server by type
+    /// "rs" -> Remove dns server `usize`         -> remove by index <VALUE>
+    /// "ms" -> Move dns server `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
+    pub fn manage(&mut self, values: &Vec<String>) -> Result<&mut Self> {
+        for i in values {
+            let ri: Vec<&str> = i.split(":").collect();
+            match *ri.first().context("Incorrect manage input")? {
+                "rr" => {
+                    let _ = self
+                        .route
+                        .remove_rule(ri.get(1).context("Incorrect manage input")?.parse()?);
+                }
+                "mr" => {
+                    self.route.move_rule(
+                        ri.get(1).context("Incorrect manage input")?.parse()?,
+                        ri.get(2).context("Incorrect manage input")?.parse()?,
+                    );
+                }
+                "fr" => {
+                    self.route.set_final_by_type(
+                        &self.outbounds,
+                        ri.get(1).context("Incorrect manage input")?,
+                    );
+                }
+                "rd" => {
+                    let _ = self
+                        .dns
+                        .remove_server(ri.get(1).context("Incorrect manage input")?.parse()?);
+                }
+                "md" => {
+                    self.dns.move_server(
+                        ri.get(1).context("Incorrect manage input")?.parse()?,
+                        ri.get(2).context("Incorrect manage input")?.parse()?,
+                    );
+                }
+                "fd" => {
+                    self.dns
+                        .set_final_by_type(ri.get(1).context("Incorrect manage input")?);
+                }
+                "rs" => {
+                    let _ = self
+                        .dns
+                        .remove_rule(ri.get(1).context("Incorrect manage input")?.parse()?);
+                }
+                "ms" => {
+                    self.dns.move_rule(
+                        ri.get(1).context("Incorrect manage input")?.parse()?,
+                        ri.get(2).context("Incorrect manage input")?.parse()?,
+                    );
+                }
+                _ => {}
+            }
+        }
+
         Ok(self)
     }
 
