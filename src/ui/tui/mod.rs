@@ -195,7 +195,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         _ => {}
                     }
-                } if value_input {
+                } else if value_input {
                     match key.code {
                         KeyCode::Esc => {
                             value_input = false; 
@@ -219,7 +219,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         _ => {}
                     }
 
-                    continue;
                 } else {
                     match key.code {
                         KeyCode::Char('q') => {
@@ -275,13 +274,13 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
 
                         KeyCode::Char(c) => {
-                            if context_menu && settings_selected == 1 && custom && popup_selected == 31 {
+                            if context_menu && settings_selected == 0 && custom && popup_selected == 3 {
                                 input_buffer.push(c);
                             }
                         }
 
                         KeyCode::Backspace => {
-                            if context_menu && settings_selected == 1 && custom && popup_selected == 31 {
+                            if context_menu && settings_selected == 0 && custom && popup_selected == 3 {
                                 input_buffer.pop();
                             }
                         }
@@ -290,30 +289,31 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             if context_menu {
                                 match settings_selected {
                                     0 => {
-                                        let value = match popup_selected {
+                                        if popup_selected == 3 {
+                                            if !custom {
+                                                custom = true; 
+                                                input_buffer.clear();
+                                            } else if !input_buffer.is_empty() {
+                                                rule_action = Some(input_buffer.clone()); 
+                                                custom = false; 
+                                                input_buffer.clear();
+                                            }
+                                        } else {
+                                            let value = match popup_selected {
                                             0 => "r", 
                                             1 => "h", 
                                             2 => "s", 
                                             _ => "", 
                                         };
-                                        if !value.is_empty() {
-                                            rule_action = Some(value.to_string()); 
-                                            context_menu = false; 
-                                            popup_selected = 0;
+                                            if !value.is_empty() {
+                                                rule_action = Some(value.to_string()); 
+                                                context_menu = false; 
+                                                popup_selected = 0;
+                                            }
                                         }
                                     }
 
                                     1 => {
-                                        if popup_selected == 31 {
-                                            if !custom {
-                                                custom = true; 
-                                                input_buffer.clear();
-                                            } else if !input_buffer.is_empty() {
-                                                rule_type = Some(input_buffer.clone()); 
-                                                custom = false; 
-                                                input_buffer.clear();
-                                            }
-                                        } else {
                                                 let value = match popup_selected {
                                                 0 => "ib", 
                                                 1 => "iv", 
@@ -351,17 +351,16 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                                         if !value.is_empty() {
                                             rule_type = Some(value.to_string());
-                                            custom = false; 
-                                            input_buffer.clear();
                                         }
-                                        }
+                                        
 
-                                        if !custom {
-                                            context_menu = false; 
-                                            popup_selected = 0;
-                                        }
                                     }
+
                                     _ => {}
+                                }
+                                if !custom {
+                                    context_menu = false; 
+                                    popup_selected = 0;
                                 }
  
                             } else if transit && settings_panel {
@@ -426,7 +425,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             if !transit && len > 0 {
                                 selected_index = (selected_index + 1) % len;
                             } else if context_menu {
-                                let context_len = if settings_selected == 0 { 3 } else if settings_selected == 1 { 32 } else  { 1 };
+                                let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else  { 1 };
                                 popup_selected = (popup_selected + 1) % context_len; 
                             }
 
@@ -436,7 +435,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
                             } else if context_menu {
-                                let context_len = if settings_selected == 0 { 3 } else if settings_selected == 1 { 32 } else { 1 };
+                                let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else { 1 };
                                 popup_selected = (popup_selected + context_len - 1) % context_len; 
                             }
                         }
@@ -788,16 +787,16 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 f.render_widget(Clear, context_panel_area);
 
                 let context_items: Vec<ListItem> = if settings_selected == 0 {
-                    vec!["r", "h", "s"].into_iter().map(ListItem::new).collect()  
-                } else if settings_selected == 1 {
-                    let mut items: Vec<ListItem> = vec!["inbound", "ip version", "auth user", "protocol", "client", "domain", "domain suffix", "domain keyword", "domain regex", "geosite", "source geoip", "geoip", "source ip cidr", "ip is private", "ip cidr", "ip is private", "source port", "range", "port", "range", "process name", "process path", "regex", "package name", "user", "user id", "clash mode", "network type", "network", "is expensive", "constrained"].into_iter().map(ListItem::new).collect();
+                    let mut items: Vec<ListItem> = vec!["r", "h", "s"].into_iter().map(ListItem::new).collect(); 
                     if custom {
                         items.push(ListItem::new(format!("Input: {}", input_buffer)));
                     } else {
                         items.push(ListItem::new("personal"));
                     }
 
-                    items 
+                    items  
+                } else if settings_selected == 1 {
+                    vec!["inbound", "ip version", "auth user", "protocol", "client", "domain", "domain suffix", "domain keyword", "domain regex", "geosite", "source geoip", "geoip", "source ip cidr", "ip is private", "ip cidr", "ip is private", "source port", "range", "port", "range", "process name", "process path", "regex", "package name", "user", "user id", "clash mode", "network type", "network", "is expensive", "constrained"].into_iter().map(ListItem::new).collect()
                 } else {
                     vec!["No items!"].into_iter().map(ListItem::new).collect()
                 };
