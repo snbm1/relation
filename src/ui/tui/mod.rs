@@ -100,6 +100,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut value_input = false; 
     // let mut context_menu_selected = 0; 
 
+    let mut choice_copy = 0; 
 
     let mut input_buffer = String::new(); 
 
@@ -411,6 +412,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             } else if transit && settings_panel {
                                 settings_selected = (settings_selected + 1) % 3; 
                             }
+
+                            choice_copy = settings_selected; 
                         }
                         KeyCode::Left => {
                             if settings_selected - 1 < 0 && transit {
@@ -419,6 +422,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 settings_selected = (settings_selected + 3 - 1) % 3;
                             }
 
+                            choice_copy = settings_selected
                         }
 
                         KeyCode::Down | KeyCode::Char('j') => {
@@ -427,6 +431,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             } else if context_menu {
                                 let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else  { 1 };
                                 popup_selected = (popup_selected + 1) % context_len; 
+                            } else if transit && settings_panel && !value_input {
+                                if settings_selected != 3 {
+                                    settings_selected = 3; 
+                                }
                             }
 
                         }
@@ -437,6 +445,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             } else if context_menu {
                                 let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else { 1 };
                                 popup_selected = (popup_selected + context_len - 1) % context_len; 
+                            } else if transit && settings_panel && !value_input {
+                                if settings_selected == 3 {
+                                    settings_selected = choice_copy;
+                                }
                             }
                         }
 
@@ -749,16 +761,31 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let settings = Paragraph::new(Line::from(vec![
-                    Span::styled("Action: ", action_style),
-                    Span::styled(action_text, action_style),
-                    Span::raw("   "),
-                    Span::styled("Type: ", type_style),
-                    Span::styled(type_text, type_style),
-                    Span::raw("   "),
-                    Span::styled("Value: ", value_style),
-                    Span::styled(value_text, value_style),
-                ]))
+                let enter_style = if transit && settings_selected == 3 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+
+                let settings = Paragraph::new(vec![
+                    Line::from(vec![
+                        Span::styled("Action: ", action_style),
+                        Span::styled(action_text, action_style),
+                        Span::raw("   "),
+                        Span::styled("Type: ", type_style),
+                        Span::styled(type_text, type_style),
+                        Span::raw("   "),
+                        Span::styled("Value: ", value_style),
+                        Span::styled(value_text, value_style),
+                    ]),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::raw("                 "),
+                        Span::styled("[ENTER]", enter_style),
+                    ]),
+                ])
                 .block(
                     Block::default()
                         .title("Settings")
