@@ -291,15 +291,15 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             if settings_selected == 3 {
                                 let mut route_rules: Vec<String> = Vec::new(); 
                                 if let Some(action) = rule_action.as_ref() {
-                                    route_rules.push(format!("{}:", action));
+                                    route_rules.push(action.to_string());
                                 }
                                 if let Some(r_type) = rule_type.as_ref() {
-                                    route_rules.push(format!("{}:", r_type));
+                                    route_rules.push(r_type.to_string());
                                 }
                                 if let Some(value) = rule_value.as_ref() {
-                                    route_rules.push(format!("{}:", value));
+                                    route_rules.push(value.to_string());
                                 }
-
+                                let route_rules = vec![route_rules.join(":")]; 
                                 app.handler_mut().add_route_rules(&route_rules)?;
 
                             }
@@ -385,8 +385,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                     value_input = true; 
                                     input_buffer.clear();
                                 } else {
-                                    context_menu = true; 
-                                    popup_selected = 0; 
+                                    if settings_selected != 3 {
+                                        context_menu = true; 
+                                        popup_selected = 0;
+                                    }
                                 }
                                 // context_menu_selected = settings_selected; 
                             } else {
