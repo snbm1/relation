@@ -1,5 +1,6 @@
 mod ifaces;
 mod minireq;
+use crate::configurator::Configurator;
 use clap::builder::Str;
 use ifaces::*;
 use minireq::*;
@@ -287,6 +288,21 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
 
                         KeyCode::Enter => {
+                            if settings_selected == 3 {
+                                let mut route_rules: Vec<String> = Vec::new(); 
+                                if let Some(action) = rule_action.as_ref() {
+                                    route_rules.push(format!("{}:", action));
+                                }
+                                if let Some(r_type) = rule_type.as_ref() {
+                                    route_rules.push(format!("{}:", r_type));
+                                }
+                                if let Some(value) = rule_value.as_ref() {
+                                    route_rules.push(format!("{}:", value));
+                                }
+
+                                app.handler_mut().add_route_rules(&route_rules)?;
+
+                            }
                             if context_menu {
                                 match settings_selected {
                                     0 => {
