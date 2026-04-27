@@ -73,12 +73,31 @@ pub enum Command {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum Response {
-    Running,
+    Running(DaemonStatus),
     Stopped,
     Error(String),
     Ok,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DaemonStatus {
+    pub file: String,
+    pub sys_proxy: bool,
+}
+
+impl DaemonStatus {
+    pub fn running(&self) -> bool {
+        !self.file.is_empty()
+    }
+
+    pub fn stopped() -> Self {
+        Self {
+            file: String::new(),
+            sys_proxy: false,
+        }
+    }
 }
 
 #[cfg(unix)]

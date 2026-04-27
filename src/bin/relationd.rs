@@ -5,7 +5,7 @@ use interprocess::local_socket::{
     tokio::{Stream, prelude::*},
 };
 use relation::{socket_name, socket_path};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{
     env, fs,
     process::{Command, Stdio},
@@ -14,9 +14,11 @@ use std::{
 };
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
-    sync::mpsc,
     signal,
+    sync::{Mutex, mpsc},
 };
+
+use relation::DaemonStatus;
 
 use relation::bridge;
 use relation::{Command as ClientCommand, Request, Response};
@@ -24,8 +26,7 @@ use relation::{Command as ClientCommand, Request, Response};
 const DETACHED_ENV: &str = "RELATION_DETACHED";
 const FOREGROUND_FLAG: &str = "--foreground";
 
-static RUNNING: AtomicBool = AtomicBool::new(false);
-static SYSPROXY: AtomicBool = AtomicBool::new(false);
+type SharedStatus = Arc<Mutex<DaemonStatus>>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -43,6 +44,10 @@ async fn main() -> Result<()> {
 
     let listener = ListenerOptions::new().name(socket_name()?).create_tokio()?;
     let (shutdown_tx, mut shutdown_rx) = mpsc::unbounded_channel();
+    let status = Arc::new(Mutex::new(DaemonStatus {
+        file: String::new(),
+        sys_proxy: false,
+    }));
 
     eprintln!("daemon listening");
 
@@ -50,17 +55,22 @@ async fn main() -> Result<()> {
         tokio::select! {
             accept_result = listener.accept() => {
                 let stream = accept_result?;
+
                 let shutdown_tx = shutdown_tx.clone();
+                let status = status.clone();
+
                 tokio::spawn(async move {
-                    if let Err(error) = handle_client(stream, shutdown_tx).await {
+                    if let Err(error) = handle_client(stream, shutdown_tx, status).await {
                         eprintln!("client error: {error}");
                     }
                 });
             }
+
             Some(()) = shutdown_rx.recv() => {
                 eprintln!("daemon shutting down");
                 break;
             }
+
             signal_result = signal::ctrl_c() => {
                 signal_result?;
                 println!("daemon shutting down");
@@ -200,83 +210,116 @@ fn daemon_is_running() -> Result<bool> {
     }
 }
 
-async fn handle_client(stream: Stream, shutdown_tx: mpsc::UnboundedSender<()>) -> Result<()> {
+async fn handle_client(
+    stream: Stream,
+    shutdown_tx: mpsc::UnboundedSender<()>,
+    status: SharedStatus,
+) -> Result<()> {
     let mut reader = BufReader::new(&stream);
     let mut writer = &stream;
     let mut line = String::new();
-    let mut quit_flag = false;
 
     loop {
         line.clear();
+
         let read = reader.read_line(&mut line).await?;
         if read == 0 {
             break;
         }
 
         let request: Request = serde_json::from_str(line.trim())?;
+        let mut quit_flag = false;
+
         let response = match request.command {
             ClientCommand::Status => {
-                if RUNNING.load(Ordering::Relaxed) {
-                    Response::Running
-                } else {
+                let status = status.lock().await;
+
+                if status.file.is_empty() {
                     Response::Stopped
+                } else {
+                    Response::Running(status.clone())
                 }
             }
+
             ClientCommand::Start(config_path) => match bridge::start_safe(&config_path, 0) {
                 Some(error) => Response::Error(error),
                 None => {
-                    RUNNING.store(true, Ordering::Relaxed);
+                    let mut status = status.lock().await;
+                    status.file = config_path;
+
                     Response::Ok
                 }
             },
+
             ClientCommand::Stop => match bridge::stop_safe() {
                 Some(error) => Response::Error(error),
                 None => {
-                    RUNNING.store(false, Ordering::Relaxed);
+                    let mut status = status.lock().await;
+                    status.file.clear();
+                    status.sys_proxy = false;
+
                     Response::Ok
                 }
             },
+
             ClientCommand::EnableSysProxy((host, port, support_socks)) => {
                 match bridge::enable_system_proxy_safe(&host, port as i64, support_socks) {
                     Some(error) => Response::Error(error),
                     None => {
-                        SYSPROXY.store(true, Ordering::Relaxed);
+                        let mut status = status.lock().await;
+                        status.sys_proxy = true;
+
                         Response::Ok
                     }
                 }
             }
+
             ClientCommand::DisableSysProxy => match bridge::disable_system_proxy_safe() {
                 Some(error) => Response::Error(error),
                 None => {
-                    SYSPROXY.store(false, Ordering::Relaxed);
+                    let mut status = status.lock().await;
+                    status.sys_proxy = false;
+
                     Response::Ok
                 }
             },
+
             ClientCommand::Quit => {
                 quit_flag = true;
-                if !RUNNING.load(Ordering::Relaxed) {
+
+                let current_status = {
+                    let status = status.lock().await;
+                    status.clone()
+                };
+
+                if current_status.file.is_empty() {
                     Response::Ok
-                } else if SYSPROXY.load(Ordering::Relaxed) {
+                } else if current_status.sys_proxy {
                     if let Some(error) = bridge::disable_system_proxy_safe() {
                         Response::Error(error)
+                    } else if let Some(error) = bridge::stop_safe() {
+                        Response::Error(error)
                     } else {
-                        SYSPROXY.store(false, Ordering::Relaxed);
+                        let mut status = status.lock().await;
+                        status.file.clear();
+                        status.sys_proxy = false;
 
-                        if let Some(error) = bridge::stop_safe() {
-                            Response::Error(error)
-                        } else {
-                            RUNNING.store(false, Ordering::Relaxed);
+                        Response::Ok
+                    }
+                } else {
+                    match bridge::stop_safe() {
+                        Some(error) => Response::Error(error),
+                        None => {
+                            let mut status = status.lock().await;
+                            status.file.clear();
+
                             Response::Ok
                         }
                     }
-                } else if let Some(error) = bridge::stop_safe() {
-                    Response::Error(error)
-                } else {
-                    RUNNING.store(false, Ordering::Relaxed);
-                    Response::Ok
                 }
             }
         };
+
         let payload = serde_json::to_vec(&response)?;
         writer.write_all(&payload).await?;
         writer.write_all(b"\n").await?;
