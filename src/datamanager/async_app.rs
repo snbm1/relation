@@ -1,4 +1,4 @@
-use crate::{Request, Response, socket_name};
+use crate::{DaemonStatus, Request, Response, socket_name};
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use interprocess::local_socket::tokio::{Stream, prelude::*};
@@ -219,12 +219,12 @@ impl App {
         Ok(())
     }
 
-    pub fn get_status(&mut self) -> Result<bool> {
+    pub fn get_status(&mut self) -> Result<Option<DaemonStatus>> {
         let status = self.runtime.block_on(async { send_status().await })?;
         match status {
-            Response::Running => return Ok(true),
-            Response::Stopped => return Ok(false),
-            _ => Err(anyhow!("incorrect status")),
+            Response::Running(x) => return Ok(Some(x)),
+            Response::Stopped => return Ok(None),
+            _ => Err(anyhow!("Incorrect response")),
         }
     }
 
