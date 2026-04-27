@@ -11,6 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -83,7 +84,13 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut input_mode = false;
     let mut tun_mode = false;
     let mut error_input = false;
-    let mut running: Option<String> = None;
+    let mut running: Option<String> = app.get_status()?.map(|s| {
+        PathBuf::from(s.file)
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .unwrap_or("")
+            .to_string()
+    });
 
     let mut input_buffer = String::new();
 
