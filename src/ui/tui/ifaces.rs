@@ -12,7 +12,7 @@ pub fn iface_detect() -> String {
         Ok(interface) => {
             return interface.name;
         }
-        Err(e) => panic!("Error in getting interface"),
+        Err(e) => format!("Nothing"),
     }
 }
 

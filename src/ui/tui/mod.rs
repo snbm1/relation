@@ -428,7 +428,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             if !transit {
                                 transit = true; 
                             } else if transit && settings_panel {
-                                settings_selected = (settings_selected + 1) % 3; 
+                                settings_selected = (settings_selected + 1) % 6; 
                             }
 
                             choice_copy = settings_selected; 
@@ -450,8 +450,12 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else  { 1 };
                                 popup_selected = (popup_selected + 1) % context_len; 
                             } else if transit && settings_panel && !value_input {
-                                if settings_selected != 3 {
+                                if settings_selected == 0 {
                                     settings_selected = 3; 
+                                } else if settings_selected == 1 {
+                                    settings_selected = 3; 
+                                } else if settings_selected == 2 {
+                                    settings_selected == 4;
                                 }
                             }
 
@@ -779,7 +783,21 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let enter_style = if transit && settings_selected == 3 {
+                let Dns_style = if transit && settings_selected == 3 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let manage_style = if transit && settings_selected == 4 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let enter_style = if transit && settings_selected == 5 {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
@@ -797,6 +815,13 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         Span::raw("   "),
                         Span::styled("Value: ", value_style),
                         Span::styled(value_text, value_style),
+                    ]),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::styled("Add DNS servers: ", Dns_style), 
+                        Span::raw("                      "),
+                        Span::styled("manage ", manage_style), 
+
                     ]),
                     Line::from(""),
                     Line::from(vec![
