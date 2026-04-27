@@ -108,7 +108,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut value_input = false; 
     // let mut context_menu_selected = 0; 
 
-    let mut choice_copy = 0; 
 
     let mut input_buffer = String::new(); 
 
@@ -438,7 +437,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 settings_selected = (settings_selected + 1) % 6; 
                             }
 
-                            choice_copy = settings_selected; 
                         }
                         KeyCode::Left => {
                             if settings_selected - 1 < 0 && transit {
@@ -447,7 +445,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 settings_selected = (settings_selected + 3 - 1) % 3;
                             }
 
-                            choice_copy = settings_selected
                         }
 
                         KeyCode::Down | KeyCode::Char('j') => {
@@ -457,13 +454,16 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else  { 1 };
                                 popup_selected = (popup_selected + 1) % context_len; 
                             } else if transit && settings_panel && !value_input {
-                                if settings_selected == 0 {
-                                    settings_selected = 3; 
-                                } else if settings_selected == 1 {
-                                    settings_selected = 3; 
-                                } else if settings_selected == 2 {
-                                    settings_selected == 4;
-                                }
+                                settings_selected = match settings_selected {
+                                    0 => 3, 
+                                    1 => 3, 
+                                    2 => 4, 
+                                    3 => 5, 
+                                    4 => 5, 
+
+                                    _ => settings_selected,
+                                }; 
+
                             }
 
                         }
@@ -475,9 +475,13 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else { 1 };
                                 popup_selected = (popup_selected + context_len - 1) % context_len; 
                             } else if transit && settings_panel && !value_input {
-                                if settings_selected == 3 {
-                                    settings_selected = choice_copy;
-                                }
+                                settings_selected = match settings_selected {
+                                    5 => 4, 
+                                    3 => 0, 
+                                    4 => 1, 
+
+                                    _ => settings_selected, 
+                                }; 
                             }
                         }
 
