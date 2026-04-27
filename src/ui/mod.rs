@@ -347,7 +347,13 @@ impl Cli {
 
             #[cfg(feature = "daemon")]
             Commands::Status => {
-                println!("Is running: {}", manager.get_status()?);
+                let a = manager.get_status()?;
+                if a.is_none() {
+                    println!("Not started");
+                } else {
+                    println!("Running config: {}", a.as_ref().unwrap().file);
+                    println!("System proxy: {}", a.as_ref().unwrap().sys_proxy);
+                }
             }
 
             #[cfg(feature = "daemon")]
