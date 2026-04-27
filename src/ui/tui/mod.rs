@@ -1,7 +1,10 @@
 mod ifaces;
 mod minireq;
+use crate::configurator::Configurator;
+use clap::builder::Str;
 use ifaces::*;
 use minireq::*;
+use ratatui::symbols::block;
 use ratatui::widgets::block::{Position, Title};
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
@@ -34,7 +37,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
 
 pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
@@ -85,7 +88,24 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     let mut error_input = false;
     let mut running: Option<String> = None;
 
-    let mut input_buffer = String::new();
+    let mut transit = false; 
+
+    // settings vars 
+    let mut settings_panel = true; 
+    let mut rule_action: Option<String> = None; 
+    let mut rule_type: Option<String> = None; 
+    let mut rule_value: Option<String> = None; 
+    let mut settings_selected = 0; 
+    let mut context_menu = false; 
+    let mut popup_selected = 0;
+    let mut value_input = false; 
+    // let mut context_menu_selected = 0; 
+
+    let mut choice_copy = 0; 
+
+    let mut input_buffer = String::new(); 
+
+    let mut custom = false; 
 
     let current_ip = Arc::new(Mutex::new("loading...".to_string()));
     let ip_shared = Arc::clone(&current_ip);
@@ -177,6 +197,30 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
                         _ => {}
                     }
+                } else if value_input {
+                    match key.code {
+                        KeyCode::Esc => {
+                            value_input = false; 
+                            input_buffer.clear();
+                        } 
+                        KeyCode::Enter => {
+                            if !input_buffer.is_empty() {
+                                rule_value = Some(input_buffer.clone()); 
+                            }
+                            value_input = false; 
+                            input_buffer.clear();
+                        }
+                        KeyCode::Backspace => {
+                            input_buffer.pop();
+                        }
+
+                        KeyCode::Char(c) => {
+                            input_buffer.push(c);
+                        }
+
+                        _ => {}
+                    }
+
                 } else {
                     match key.code {
                         KeyCode::Char('q') => {
@@ -189,7 +233,17 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         }
 
                         KeyCode::Esc => {
-                            break;
+                            if context_menu {
+                                if custom {
+                                    custom = false; 
+                                    input_buffer.clear();
+                                } else {
+                                    context_menu = false; 
+                                    popup_selected = 0; 
+                                }
+                            } else {
+                                break;
+                            }
                         }
 
                         KeyCode::Char('a') => {
@@ -217,43 +271,206 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 }
                             }
                         }
-                        KeyCode::Enter => {
-                            let len = app.get_len();
-                            if let Ok(mut flag) = change_flag.lock() {
-                                *flag = true;
+                        KeyCode::Tab => {
+                            settings_panel = !settings_panel; 
+                        }
+
+                        KeyCode::Char(c) => {
+                            if context_menu && settings_selected == 0 && custom && popup_selected == 3 {
+                                input_buffer.push(c);
                             }
-                            if len > 0 && !enter_mode {
-                                let number = selected_index as u16 + 1;
-                                running = Some(app.get_list()[selected_index].clone());
-                                app.set_log_file();
-                                app.run_app(None, Some(number as usize - 1), false)?;
-                                enter_mode = true;
-                            } else if enter_mode {
-                                let name = app.get_list()[selected_index].clone();
-                                if running.as_deref() == Some(name.as_str()) {
-                                    running = None;
-                                    app.stop_app()?;
-                                    enter_mode = false;
+                        }
+
+                        KeyCode::Backspace => {
+                            if context_menu && settings_selected == 0 && custom && popup_selected == 3 {
+                                input_buffer.pop();
+                            }
+                        }
+
+                        KeyCode::Enter => {
+                            if settings_selected == 3 {
+                                let mut route_rules: Vec<String> = Vec::new(); 
+                                if let Some(action) = rule_action.as_ref() {
+                                    route_rules.push(action.to_string());
+                                }
+                                if let Some(r_type) = rule_type.as_ref() {
+                                    route_rules.push(r_type.to_string());
+                                }
+                                if let Some(value) = rule_value.as_ref() {
+                                    route_rules.push(value.to_string());
+                                }
+                                let route_rules = vec![route_rules.join(":")]; 
+                                app.handler_mut().add_route_rules(&route_rules)?;
+
+                            }
+                            if context_menu {
+                                match settings_selected {
+                                    0 => {
+                                        if popup_selected == 3 {
+                                            if !custom {
+                                                custom = true; 
+                                                input_buffer.clear();
+                                            } else if !input_buffer.is_empty() {
+                                                rule_action = Some(input_buffer.clone()); 
+                                                custom = false; 
+                                                input_buffer.clear();
+                                            }
+                                        } else {
+                                            let value = match popup_selected {
+                                            0 => "r", 
+                                            1 => "h", 
+                                            2 => "s", 
+                                            _ => "", 
+                                        };
+                                            if !value.is_empty() {
+                                                rule_action = Some(value.to_string()); 
+                                                context_menu = false; 
+                                                popup_selected = 0;
+                                            }
+                                        }
+                                    }
+
+                                    1 => {
+                                                let value = match popup_selected {
+                                                0 => "ib", 
+                                                1 => "iv", 
+                                                2 => "au", 
+                                                3 => "pl", 
+                                                4 => "cl", 
+                                                5 => "dm", 
+                                                6 => "ds", 
+                                                7 => "dk", 
+                                                8 => "dr", 
+                                                9 => "gs", 
+                                                10 => "sg", 
+                                                11 => "gp", 
+                                                12 => "sc", 
+                                                13 => "si", 
+                                                14 => "ic",
+                                                15 => "ip", 
+                                                16 => "sp", 
+                                                17 => "sr", 
+                                                18 => "pt", 
+                                                19 => "pr", 
+                                                20 => "pn", 
+                                                21 => "pp", 
+                                                22 => "pg", 
+                                                23 => "kn", 
+                                                24 => "ur", 
+                                                25 => "ui", 
+                                                26 => "cm", 
+                                                27 => "nt", 
+                                                28 => "nk", 
+                                                29 => "ne", 
+                                                30 => "nc", 
+                                                _ => "",
+                                            };
+
+                                        if !value.is_empty() {
+                                            rule_type = Some(value.to_string());
+                                        }
+                                        
+
+                                    }
+
+                                    _ => {}
+                                }
+                                if !custom {
+                                    context_menu = false; 
+                                    popup_selected = 0;
+                                }
+ 
+                            } else if transit && settings_panel {
+                                if settings_selected == 2 {
+                                    value_input = true; 
+                                    input_buffer.clear();
                                 } else {
-                                    app.stop_app()?;
-                                    std::thread::sleep(Duration::from_millis(100));
+                                    if settings_selected != 3 {
+                                        context_menu = true; 
+                                        popup_selected = 0;
+                                    }
+                                }
+                                // context_menu_selected = settings_selected; 
+                            } else {
+                                let len = app.get_len();
+                                if let Ok(mut flag) = change_flag.lock() {
+                                    *flag = true;
+                                }
+                                if len > 0 && !enter_mode {
                                     let number = selected_index as u16 + 1;
-                                    running = Some(name.clone());
+                                    running = Some(app.get_list()[selected_index].clone());
                                     app.set_log_file();
                                     app.run_app(None, Some(number as usize - 1), false)?;
+                                    settings_panel = false; 
+                                    transit = false;
+                                    enter_mode = true;
+                                } else if enter_mode {
+                                    let name = app.get_list()[selected_index].clone();
+                                    if running.as_deref() == Some(name.as_str()) {
+                                        running = None;
+                                        app.stop_app()?;
+                                        enter_mode = false;
+                                    } else {
+                                        app.stop_app()?;
+                                        std::thread::sleep(Duration::from_millis(100));
+                                        let number = selected_index as u16 + 1;
+                                        running = Some(name.clone());
+                                        app.set_log_file();
+                                        app.run_app(None, Some(number as usize - 1), false)?;
+                                        settings_panel = false; 
+                                        transit = false;
+                                    }
                                 }
                             }
                         }
 
-                        KeyCode::Down | KeyCode::Char('j') => {
-                            if len > 0 {
-                                selected_index = (selected_index + 1) % len;
+                        KeyCode::Right => {
+                            if !transit {
+                                transit = true; 
+                            } else if transit && settings_panel {
+                                settings_selected = (settings_selected + 1) % 6; 
                             }
+
+                            choice_copy = settings_selected; 
+                        }
+                        KeyCode::Left => {
+                            if settings_selected - 1 < 0 && transit {
+                                transit = false; 
+                            } else if transit && settings_panel {
+                                settings_selected = (settings_selected + 3 - 1) % 3;
+                            }
+
+                            choice_copy = settings_selected
+                        }
+
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            if !transit && len > 0 {
+                                selected_index = (selected_index + 1) % len;
+                            } else if context_menu {
+                                let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else  { 1 };
+                                popup_selected = (popup_selected + 1) % context_len; 
+                            } else if transit && settings_panel && !value_input {
+                                if settings_selected == 0 {
+                                    settings_selected = 3; 
+                                } else if settings_selected == 1 {
+                                    settings_selected = 3; 
+                                } else if settings_selected == 2 {
+                                    settings_selected == 4;
+                                }
+                            }
+
                         }
 
                         KeyCode::Up | KeyCode::Char('k') => {
-                            if len > 0 {
+                            if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
+                            } else if context_menu {
+                                let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else { 1 };
+                                popup_selected = (popup_selected + context_len - 1) % context_len; 
+                            } else if transit && settings_panel && !value_input {
+                                if settings_selected == 3 {
+                                    settings_selected = choice_copy;
+                                }
                             }
                         }
 
@@ -338,6 +555,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     Block::default()
                         .title("Configs")
                         .borders(Borders::ALL)
+                        .border_style(if !transit {
+                            Style::default().fg(Color::Yellow)
+                        } else {
+                            Style::default()
+                        })
                         .border_type(BorderType::Rounded),
                 )
                 .highlight_style(
@@ -530,19 +752,176 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
 
-            // RIGHT PANEL
-            let logs = app.get_logs();
-            let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
-            let log_list = List::new(log_items).block(
-                Block::default()
-                    .title(Line::from("Logs").centered())
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded),
-            );
+            // LOG/SETTINGS PANEL
+            if !settings_panel {
+                let logs = app.get_logs();
+                let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
+                let log_list = List::new(log_items).block(
+                    Block::default()
+                        .title(Line::from("Logs"))
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded),
+                );
 
-            f.render_widget(log_list, horizontal[1]);
+                f.render_widget(log_list, horizontal[1]);
+                app.read_logs();
+            } else {
+                    let action_text = rule_action.as_deref().unwrap_or("empty"); 
+                    let type_text = rule_type.as_deref().unwrap_or("empty"); 
+                    let value_text = rule_value.as_deref().unwrap_or("empty"); 
+                let action_style = if transit && settings_selected == 0 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let type_style = if transit && settings_selected == 1 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let value_style = if transit && settings_selected == 2 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let Dns_style = if transit && settings_selected == 3 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let manage_style = if transit && settings_selected == 4 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let enter_style = if transit && settings_selected == 5 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+
+                let settings = Paragraph::new(vec![
+                    Line::from(vec![
+                        Span::styled("Action: ", action_style),
+                        Span::styled(action_text, action_style),
+                        Span::raw("   "),
+                        Span::styled("Type: ", type_style),
+                        Span::styled(type_text, type_style),
+                        Span::raw("   "),
+                        Span::styled("Value: ", value_style),
+                        Span::styled(value_text, value_style),
+                    ]),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::styled("Add DNS servers: ", Dns_style), 
+                        Span::raw("                      "),
+                        Span::styled("manage ", manage_style), 
+
+                    ]),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::raw("                 "),
+                        Span::styled("[ENTER]", enter_style),
+                    ]),
+                ])
+                .block(
+                    Block::default()
+                        .title("Settings")
+                        .borders(Borders::ALL)
+                        .border_style(
+                            if transit {
+                                Style::default().fg(Color::Blue)
+                            } else {
+                                Style::default()
+                            }
+                        )
+                        .border_type(BorderType::Rounded), 
+                ); 
+                f.render_widget(settings, horizontal[1]);
+            }
+
+            // Context Menu
+            if context_menu {
+                let context_panel_area = ratatui::layout::Rect {
+                    x: horizontal[1].x + 4, 
+                    y: horizontal[1].y + 2, 
+                    width: horizontal[1].width.saturating_sub(8), 
+                    height: 7, 
+                }; 
+
+                f.render_widget(Clear, context_panel_area);
+
+                let context_items: Vec<ListItem> = if settings_selected == 0 {
+                    let mut items: Vec<ListItem> = vec!["r", "h", "s"].into_iter().map(ListItem::new).collect(); 
+                    if custom {
+                        items.push(ListItem::new(format!("Input: {}", input_buffer)));
+                    } else {
+                        items.push(ListItem::new("personal"));
+                    }
+
+                    items  
+                } else if settings_selected == 1 {
+                    vec!["inbound", "ip version", "auth user", "protocol", "client", "domain", "domain suffix", "domain keyword", "domain regex", "geosite", "source geoip", "geoip", "source ip cidr", "ip is private", "ip cidr", "ip is private", "source port", "range", "port", "range", "process name", "process path", "regex", "package name", "user", "user id", "clash mode", "network type", "network", "is expensive", "constrained"].into_iter().map(ListItem::new).collect()
+                } else {
+                    vec!["No items!"].into_iter().map(ListItem::new).collect()
+                };
+
+                let mut state = ListState::default(); 
+                state.select(Some(popup_selected));
+
+                let list = List::new(context_items) 
+                    .block(
+                        Block::default()
+                            .title("Select")
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded)
+                            .border_style(Style::default().fg(Color::Yellow)),
+                    )
+                    .highlight_style(
+                        Style::default()
+                            .fg(Color::LightGreen)
+                            .add_modifier(Modifier::BOLD),
+
+                    )
+                    .highlight_symbol(">> "); 
+                f.render_stateful_widget(list, context_panel_area, &mut state);
+            }
+
+            if value_input {
+                    let input = Paragraph::new(input_buffer.as_str())
+                        .block(
+                            Block::default()
+                                .title("Enter value")
+                                .borders(Borders::ALL)
+                                .border_type(BorderType::Rounded),
+                        )
+                        .style(Style::default().fg(Color::Green));
+
+                    let area = ratatui::layout::Rect {
+                        x: horizontal[1].x + 2, 
+                        y: horizontal[1].y + 4, 
+                        width: horizontal[1].width.saturating_sub(4), 
+                        height: 3,
+                    };
+
+                    f.render_widget(Clear, area);
+                    f.render_widget(input, area);
+                }
+            
+
         })?;
-        app.read_logs();
     }
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
