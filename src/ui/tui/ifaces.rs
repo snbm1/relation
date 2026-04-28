@@ -65,4 +65,3 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
 //     }
 
 // }
-
