@@ -95,23 +95,22 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             .to_string()
     });
 
-    let mut transit = false; 
+    let mut transit = false;
 
-    // settings vars 
-    let mut settings_panel = true; 
-    let mut rule_action: Option<String> = None; 
-    let mut rule_type: Option<String> = None; 
-    let mut rule_value: Option<String> = None; 
-    let mut settings_selected = 0; 
-    let mut context_menu = false; 
+    // settings vars
+    let mut settings_panel = true;
+    let mut rule_action: Option<String> = None;
+    let mut rule_type: Option<String> = None;
+    let mut rule_value: Option<String> = None;
+    let mut settings_selected = 0;
+    let mut context_menu = false;
     let mut popup_selected = 0;
-    let mut value_input = false; 
-    // let mut context_menu_selected = 0; 
+    let mut value_input = false;
+    // let mut context_menu_selected = 0;
 
+    let mut input_buffer = String::new();
 
-    let mut input_buffer = String::new(); 
-
-    let mut custom = false; 
+    let mut custom = false;
 
     let current_ip = Arc::new(Mutex::new("loading...".to_string()));
     let ip_shared = Arc::clone(&current_ip);
@@ -206,14 +205,14 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 } else if value_input {
                     match key.code {
                         KeyCode::Esc => {
-                            value_input = false; 
+                            value_input = false;
                             input_buffer.clear();
-                        } 
+                        }
                         KeyCode::Enter => {
                             if !input_buffer.is_empty() {
-                                rule_value = Some(input_buffer.clone()); 
+                                rule_value = Some(input_buffer.clone());
                             }
-                            value_input = false; 
+                            value_input = false;
                             input_buffer.clear();
                         }
                         KeyCode::Backspace => {
@@ -226,7 +225,6 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                         _ => {}
                     }
-
                 } else {
                     match key.code {
                         KeyCode::Char('q') => {
@@ -241,11 +239,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         KeyCode::Esc => {
                             if context_menu {
                                 if custom {
-                                    custom = false; 
+                                    custom = false;
                                     input_buffer.clear();
                                 } else {
-                                    context_menu = false; 
-                                    popup_selected = 0; 
+                                    context_menu = false;
+                                    popup_selected = 0;
                                 }
                             } else {
                                 break;
@@ -278,24 +276,32 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
                         KeyCode::Tab => {
-                            settings_panel = !settings_panel; 
+                            settings_panel = !settings_panel;
                         }
 
                         KeyCode::Char(c) => {
-                            if context_menu && settings_selected == 0 && custom && popup_selected == 3 {
+                            if context_menu
+                                && settings_selected == 0
+                                && custom
+                                && popup_selected == 3
+                            {
                                 input_buffer.push(c);
                             }
                         }
 
                         KeyCode::Backspace => {
-                            if context_menu && settings_selected == 0 && custom && popup_selected == 3 {
+                            if context_menu
+                                && settings_selected == 0
+                                && custom
+                                && popup_selected == 3
+                            {
                                 input_buffer.pop();
                             }
                         }
 
                         KeyCode::Enter => {
                             if settings_selected == 3 {
-                                let mut route_rules: Vec<String> = Vec::new(); 
+                                let mut route_rules: Vec<String> = Vec::new();
                                 if let Some(action) = rule_action.as_ref() {
                                     route_rules.push(action.to_string());
                                 }
@@ -305,98 +311,94 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                 if let Some(value) = rule_value.as_ref() {
                                     route_rules.push(value.to_string());
                                 }
-                                let route_rules = vec![route_rules.join(":")]; 
+                                let route_rules = vec![route_rules.join(":")];
                                 app.handler_mut().add_route_rules(&route_rules)?;
-
                             }
                             if context_menu {
                                 match settings_selected {
                                     0 => {
                                         if popup_selected == 3 {
                                             if !custom {
-                                                custom = true; 
+                                                custom = true;
                                                 input_buffer.clear();
                                             } else if !input_buffer.is_empty() {
-                                                rule_action = Some(input_buffer.clone()); 
-                                                custom = false; 
+                                                rule_action = Some(input_buffer.clone());
+                                                custom = false;
                                                 input_buffer.clear();
                                             }
                                         } else {
                                             let value = match popup_selected {
-                                            0 => "r", 
-                                            1 => "h", 
-                                            2 => "s", 
-                                            _ => "", 
-                                        };
+                                                0 => "r",
+                                                1 => "h",
+                                                2 => "s",
+                                                _ => "",
+                                            };
                                             if !value.is_empty() {
-                                                rule_action = Some(value.to_string()); 
-                                                context_menu = false; 
+                                                rule_action = Some(value.to_string());
+                                                context_menu = false;
                                                 popup_selected = 0;
                                             }
                                         }
                                     }
 
                                     1 => {
-                                                let value = match popup_selected {
-                                                0 => "ib", 
-                                                1 => "iv", 
-                                                2 => "au", 
-                                                3 => "pl", 
-                                                4 => "cl", 
-                                                5 => "dm", 
-                                                6 => "ds", 
-                                                7 => "dk", 
-                                                8 => "dr", 
-                                                9 => "gs", 
-                                                10 => "sg", 
-                                                11 => "gp", 
-                                                12 => "sc", 
-                                                13 => "si", 
-                                                14 => "ic",
-                                                15 => "ip", 
-                                                16 => "sp", 
-                                                17 => "sr", 
-                                                18 => "pt", 
-                                                19 => "pr", 
-                                                20 => "pn", 
-                                                21 => "pp", 
-                                                22 => "pg", 
-                                                23 => "kn", 
-                                                24 => "ur", 
-                                                25 => "ui", 
-                                                26 => "cm", 
-                                                27 => "nt", 
-                                                28 => "nk", 
-                                                29 => "ne", 
-                                                30 => "nc", 
-                                                _ => "",
-                                            };
+                                        let value = match popup_selected {
+                                            0 => "ib",
+                                            1 => "iv",
+                                            2 => "au",
+                                            3 => "pl",
+                                            4 => "cl",
+                                            5 => "dm",
+                                            6 => "ds",
+                                            7 => "dk",
+                                            8 => "dr",
+                                            9 => "gs",
+                                            10 => "sg",
+                                            11 => "gp",
+                                            12 => "sc",
+                                            13 => "si",
+                                            14 => "ic",
+                                            15 => "ip",
+                                            16 => "sp",
+                                            17 => "sr",
+                                            18 => "pt",
+                                            19 => "pr",
+                                            20 => "pn",
+                                            21 => "pp",
+                                            22 => "pg",
+                                            23 => "kn",
+                                            24 => "ur",
+                                            25 => "ui",
+                                            26 => "cm",
+                                            27 => "nt",
+                                            28 => "nk",
+                                            29 => "ne",
+                                            30 => "nc",
+                                            _ => "",
+                                        };
 
                                         if !value.is_empty() {
                                             rule_type = Some(value.to_string());
                                         }
-                                        
-
                                     }
 
                                     _ => {}
                                 }
                                 if !custom {
-                                    context_menu = false; 
+                                    context_menu = false;
                                     popup_selected = 0;
                                 }
- 
                             } else if transit && settings_panel {
                                 if settings_selected == 2 {
-                                    value_input = true; 
+                                    value_input = true;
                                     input_buffer.clear();
                                 } else {
                                     if settings_selected != 3 {
-                                        context_menu = true; 
+                                        context_menu = true;
                                         popup_selected = 0;
                                     }
                                 }
-                                // context_menu_selected = settings_selected; 
+                                // context_menu_selected = settings_selected;
                             } else {
                                 let len = app.get_len();
                                 if let Ok(mut flag) = change_flag.lock() {
@@ -407,7 +409,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                     running = Some(app.get_list()[selected_index].clone());
                                     app.set_log_file();
                                     app.run_app(None, Some(number as usize - 1), false)?;
-                                    settings_panel = false; 
+                                    settings_panel = false;
                                     transit = false;
                                     enter_mode = true;
                                 } else if enter_mode {
@@ -423,7 +425,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                                         running = Some(name.clone());
                                         app.set_log_file();
                                         app.run_app(None, Some(number as usize - 1), false)?;
-                                        settings_panel = false; 
+                                        settings_panel = false;
                                         transit = false;
                                     }
                                 }
@@ -432,56 +434,64 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                         KeyCode::Right => {
                             if !transit {
-                                transit = true; 
+                                transit = true;
                             } else if transit && settings_panel {
-                                settings_selected = (settings_selected + 1) % 6; 
+                                settings_selected = (settings_selected + 1) % 6;
                             }
-
                         }
                         KeyCode::Left => {
                             if settings_selected - 1 < 0 && transit {
-                                transit = false; 
+                                transit = false;
                             } else if transit && settings_panel {
                                 settings_selected = (settings_selected + 3 - 1) % 3;
                             }
-
                         }
 
                         KeyCode::Down | KeyCode::Char('j') => {
                             if !transit && len > 0 {
                                 selected_index = (selected_index + 1) % len;
                             } else if context_menu {
-                                let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else  { 1 };
-                                popup_selected = (popup_selected + 1) % context_len; 
+                                let context_len = if settings_selected == 0 {
+                                    4
+                                } else if settings_selected == 1 {
+                                    31
+                                } else {
+                                    1
+                                };
+                                popup_selected = (popup_selected + 1) % context_len;
                             } else if transit && settings_panel && !value_input {
                                 settings_selected = match settings_selected {
-                                    0 => 3, 
-                                    1 => 3, 
-                                    2 => 4, 
-                                    3 => 5, 
-                                    4 => 5, 
+                                    0 => 3,
+                                    1 => 3,
+                                    2 => 4,
+                                    3 => 5,
+                                    4 => 5,
 
                                     _ => settings_selected,
-                                }; 
-
+                                };
                             }
-
                         }
 
                         KeyCode::Up | KeyCode::Char('k') => {
                             if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
                             } else if context_menu {
-                                let context_len = if settings_selected == 0 { 4 } else if settings_selected == 1 { 31 } else { 1 };
-                                popup_selected = (popup_selected + context_len - 1) % context_len; 
+                                let context_len = if settings_selected == 0 {
+                                    4
+                                } else if settings_selected == 1 {
+                                    31
+                                } else {
+                                    1
+                                };
+                                popup_selected = (popup_selected + context_len - 1) % context_len;
                             } else if transit && settings_panel && !value_input {
                                 settings_selected = match settings_selected {
-                                    5 => 4, 
-                                    3 => 0, 
-                                    4 => 1, 
+                                    5 => 4,
+                                    3 => 0,
+                                    4 => 1,
 
-                                    _ => settings_selected, 
-                                }; 
+                                    _ => settings_selected,
+                                };
                             }
                         }
 
@@ -766,7 +776,8 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             // LOG/SETTINGS PANEL
             if !settings_panel {
                 let logs = app.get_logs();
-                let log_items: Vec<ListItem> = logs.iter().map(|l| ListItem::new(l.clone())).collect();
+                let log_items: Vec<ListItem> =
+                    logs.iter().map(|l| ListItem::new(l.clone())).collect();
                 let log_list = List::new(log_items).block(
                     Block::default()
                         .title(Line::from("Logs"))
@@ -777,9 +788,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 f.render_widget(log_list, horizontal[1]);
                 app.read_logs();
             } else {
-                    let action_text = rule_action.as_deref().unwrap_or("empty"); 
-                    let type_text = rule_type.as_deref().unwrap_or("empty"); 
-                    let value_text = rule_value.as_deref().unwrap_or("empty"); 
+                let action_text = rule_action.as_deref().unwrap_or("empty");
+                let type_text = rule_type.as_deref().unwrap_or("empty");
+                let value_text = rule_value.as_deref().unwrap_or("empty");
                 let action_style = if transit && settings_selected == 0 {
                     Style::default()
                         .fg(Color::Green)
@@ -836,10 +847,9 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     ]),
                     Line::from(""),
                     Line::from(vec![
-                        Span::styled("Add DNS servers: ", Dns_style), 
+                        Span::styled("Add DNS servers: ", Dns_style),
                         Span::raw("                      "),
-                        Span::styled("manage ", manage_style), 
-
+                        Span::styled("manage ", manage_style),
                     ]),
                     Line::from(""),
                     Line::from(vec![
@@ -851,48 +861,82 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     Block::default()
                         .title("Settings")
                         .borders(Borders::ALL)
-                        .border_style(
-                            if transit {
-                                Style::default().fg(Color::Blue)
-                            } else {
-                                Style::default()
-                            }
-                        )
-                        .border_type(BorderType::Rounded), 
-                ); 
+                        .border_style(if transit {
+                            Style::default().fg(Color::Blue)
+                        } else {
+                            Style::default()
+                        })
+                        .border_type(BorderType::Rounded),
+                );
                 f.render_widget(settings, horizontal[1]);
             }
 
             // Context Menu
             if context_menu {
                 let context_panel_area = ratatui::layout::Rect {
-                    x: horizontal[1].x + 4, 
-                    y: horizontal[1].y + 2, 
-                    width: horizontal[1].width.saturating_sub(8), 
-                    height: 7, 
-                }; 
+                    x: horizontal[1].x + 4,
+                    y: horizontal[1].y + 2,
+                    width: horizontal[1].width.saturating_sub(8),
+                    height: 7,
+                };
 
                 f.render_widget(Clear, context_panel_area);
 
                 let context_items: Vec<ListItem> = if settings_selected == 0 {
-                    let mut items: Vec<ListItem> = vec!["r", "h", "s"].into_iter().map(ListItem::new).collect(); 
+                    let mut items: Vec<ListItem> =
+                        vec!["r", "h", "s"].into_iter().map(ListItem::new).collect();
                     if custom {
                         items.push(ListItem::new(format!("Input: {}", input_buffer)));
                     } else {
                         items.push(ListItem::new("personal"));
                     }
 
-                    items  
+                    items
                 } else if settings_selected == 1 {
-                    vec!["inbound", "ip version", "auth user", "protocol", "client", "domain", "domain suffix", "domain keyword", "domain regex", "geosite", "source geoip", "geoip", "source ip cidr", "ip is private", "ip cidr", "ip is private", "source port", "range", "port", "range", "process name", "process path", "regex", "package name", "user", "user id", "clash mode", "network type", "network", "is expensive", "constrained"].into_iter().map(ListItem::new).collect()
+                    vec![
+                        "inbound",
+                        "ip version",
+                        "auth user",
+                        "protocol",
+                        "client",
+                        "domain",
+                        "domain suffix",
+                        "domain keyword",
+                        "domain regex",
+                        "geosite",
+                        "source geoip",
+                        "geoip",
+                        "source ip cidr",
+                        "ip is private",
+                        "ip cidr",
+                        "ip is private",
+                        "source port",
+                        "range",
+                        "port",
+                        "range",
+                        "process name",
+                        "process path",
+                        "regex",
+                        "package name",
+                        "user",
+                        "user id",
+                        "clash mode",
+                        "network type",
+                        "network",
+                        "is expensive",
+                        "constrained",
+                    ]
+                    .into_iter()
+                    .map(ListItem::new)
+                    .collect()
                 } else {
                     vec!["No items!"].into_iter().map(ListItem::new).collect()
                 };
 
-                let mut state = ListState::default(); 
+                let mut state = ListState::default();
                 state.select(Some(popup_selected));
 
-                let list = List::new(context_items) 
+                let list = List::new(context_items)
                     .block(
                         Block::default()
                             .title("Select")
@@ -904,34 +948,31 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         Style::default()
                             .fg(Color::LightGreen)
                             .add_modifier(Modifier::BOLD),
-
                     )
-                    .highlight_symbol(">> "); 
+                    .highlight_symbol(">> ");
                 f.render_stateful_widget(list, context_panel_area, &mut state);
             }
 
             if value_input {
-                    let input = Paragraph::new(input_buffer.as_str())
-                        .block(
-                            Block::default()
-                                .title("Enter value")
-                                .borders(Borders::ALL)
-                                .border_type(BorderType::Rounded),
-                        )
-                        .style(Style::default().fg(Color::Green));
+                let input = Paragraph::new(input_buffer.as_str())
+                    .block(
+                        Block::default()
+                            .title("Enter value")
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded),
+                    )
+                    .style(Style::default().fg(Color::Green));
 
-                    let area = ratatui::layout::Rect {
-                        x: horizontal[1].x + 2, 
-                        y: horizontal[1].y + 4, 
-                        width: horizontal[1].width.saturating_sub(4), 
-                        height: 3,
-                    };
+                let area = ratatui::layout::Rect {
+                    x: horizontal[1].x + 2,
+                    y: horizontal[1].y + 4,
+                    width: horizontal[1].width.saturating_sub(4),
+                    height: 3,
+                };
 
-                    f.render_widget(Clear, area);
-                    f.render_widget(input, area);
-                }
-            
-
+                f.render_widget(Clear, area);
+                f.render_widget(input, area);
+            }
         })?;
     }
     disable_raw_mode()?;
