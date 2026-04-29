@@ -835,6 +835,12 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 };
 
                 let settings = Paragraph::new(vec![
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::raw("         "),
+                        Span::raw("Routing Rules"),
+                    ]),
+                    Line::from(""),
                     Line::from(vec![
                         Span::styled("Action: ", action_style),
                         Span::styled(action_text, action_style),
@@ -844,6 +850,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         Span::raw("   "),
                         Span::styled("Value: ", value_style),
                         Span::styled(value_text, value_style),
+                    ]),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::raw("         "),
+                        Span::raw("DNS Servers"),
                     ]),
                     Line::from(""),
                     Line::from(vec![
