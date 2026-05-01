@@ -812,21 +812,28 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let Dns_style = if transit && settings_selected == 3 {
+                let Dns_type_style = if transit && settings_selected == 3 {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let manage_style = if transit && settings_selected == 4 {
+                let Dns_value1_style = if transit && settings_selected == 4 {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let enter_style = if transit && settings_selected == 5 {
+                let Dns_value2_style = if transit && settings_selected == 5 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let enter_style = if transit && settings_selected == 6 {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
@@ -858,9 +865,11 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     ]),
                     Line::from(""),
                     Line::from(vec![
-                        Span::styled("Add DNS servers: ", Dns_style),
-                        Span::raw("                      "),
-                        Span::styled("manage ", manage_style),
+                        Span::styled("Type: ", Dns_type_style),
+                        Span::raw("             "),
+                        Span::styled("Value 1: ", Dns_value1_style),
+                        Span::raw("             "),
+                        Span::styled("Value 2: ", Dns_value2_style),
                     ]),
                     Line::from(""),
                     Line::from(vec![
