@@ -99,9 +99,16 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     // settings vars
     let mut settings_panel = true;
+    // Route var
     let mut rule_action: Option<String> = None;
     let mut rule_type: Option<String> = None;
     let mut rule_value: Option<String> = None;
+
+    // DNS settings
+    let mut type_dns_action: Option<String> = None;
+    let mut dns_value1: Option<String> = None;
+    let mut dns_value2: Option<String> = None;
+
     let mut settings_selected = 0;
     let mut context_menu = false;
     let mut popup_selected = 0;
@@ -791,6 +798,10 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                 let action_text = rule_action.as_deref().unwrap_or("empty");
                 let type_text = rule_type.as_deref().unwrap_or("empty");
                 let value_text = rule_value.as_deref().unwrap_or("empty");
+                let type_dns_text = type_dns_action.as_deref().unwrap_or("empty");
+                let value1_text = dns_value1.as_deref().unwrap_or("empty");
+                let value2_text = dns_value2.as_deref().unwrap_or("empty");
+
                 let action_style = if transit && settings_selected == 0 {
                     Style::default()
                         .fg(Color::Green)
@@ -866,10 +877,13 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                     Line::from(""),
                     Line::from(vec![
                         Span::styled("Type: ", Dns_type_style),
+                        Span::styled(type_dns_text, Dns_type_style),
                         Span::raw("             "),
                         Span::styled("Value 1: ", Dns_value1_style),
+                        Span::styled(value1_text, Dns_value1_style),
                         Span::raw("             "),
                         Span::styled("Value 2: ", Dns_value2_style),
+                        Span::styled(value2_text, Dns_value2_style),
                     ]),
                     Line::from(""),
                     Line::from(vec![
