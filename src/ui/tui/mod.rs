@@ -1,18 +1,17 @@
 mod ifaces;
 mod minireq;
-use crate::configurator::Configurator;
-use clap::builder::Str;
+mod tuiguard;
+
 use ifaces::*;
 use minireq::*;
-use ratatui::symbols::block;
-use ratatui::widgets::block::{Position, Title};
-use std::fs::OpenOptions;
-use std::os::fd::AsRawFd;
-use std::os::fd::FromRawFd;
 use std::{
     io,
+    os::fd::{AsRawFd, FromRawFd},
     time::{Duration, Instant},
 };
+use tuiguard::TuiGuard;
+
+use std::fs::{File, OpenOptions};
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -24,11 +23,7 @@ use crate::datamanager::app::App;
 #[cfg(feature = "daemon")]
 use crate::datamanager::async_app::App;
 
-use crossterm::{
-    event::{self, Event, KeyCode},
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
-};
+use crossterm::event::{self, Event, KeyCode};
 
 use std::collections::VecDeque;
 
@@ -38,35 +33,50 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{
+        Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap,
+        block::{Position, Title},
+    },
 };
 
-pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+use anyhow::{Context, Result, anyhow};
+
+pub struct Tui {
+    pub terminal: Terminal<CrosstermBackend<File>>,
+    pub guard: TuiGuard,
+}
+
+fn setup_tty() -> Result<Tui> {
+    let guard = TuiGuard::new()?;
+
+    let ui_fd = unsafe { libc::dup(libc::STDOUT_FILENO) };
+    if ui_fd < 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+
+    let null = OpenOptions::new().write(true).open("/dev/null")?;
+
+    unsafe {
+        if libc::dup2(null.as_raw_fd(), libc::STDOUT_FILENO) < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        if libc::dup2(null.as_raw_fd(), libc::STDERR_FILENO) < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+    }
+
+    let ui_out = unsafe { File::from_raw_fd(ui_fd) };
+    let backend = CrosstermBackend::new(ui_out);
+    let terminal = Terminal::new(backend)?;
+
+    Ok(Tui { terminal, guard })
+}
+
+pub fn run(app: &mut App) -> Result<()> {
     let iface = iface_detect();
 
-    enable_raw_mode()?;
-
-    // 1) Входим в alternate screen через обычный stdout (fd=1)
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
-
-    // 2) Дублируем fd=1 (TTY) — это будет “канал” для UI
-    let ui_fd = unsafe { libc::dup(stdout.as_raw_fd()) };
-    if ui_fd < 0 {
-        return Err("dup(stdout) failed".into());
-    }
-
-    // 3) Глушим fd=1 и fd=2, чтобы Go/bridge больше не мог печатать в терминал
-    let null = OpenOptions::new().write(true).open("/dev/null")?;
-    unsafe {
-        libc::dup2(null.as_raw_fd(), libc::STDOUT_FILENO);
-        libc::dup2(null.as_raw_fd(), libc::STDERR_FILENO);
-    }
-
-    // 4) Создаём writer из сохранённого fd для ratatui
-    let ui_out = unsafe { std::fs::File::from_raw_fd(ui_fd) };
-    let backend = CrosstermBackend::new(ui_out);
-    let mut terminal = Terminal::new(backend)?;
+    let mut tui = setup_tty()?;
 
     let old_log = app.get_data_path().join("box.log");
     let _ = std::fs::write(&old_log, "");
@@ -533,7 +543,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             prev_time = now;
         }
 
-        terminal.draw(|f| {
+        tui.terminal.draw(|f| {
             let size = f.area();
 
             let root = Layout::default()
@@ -854,10 +864,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
                 let settings = Paragraph::new(vec![
                     Line::from(""),
-                    Line::from(vec![
-                        Span::raw("         "),
-                        Span::raw("Routing Rules"),
-                    ]),
+                    Line::from(vec![Span::raw("         "), Span::raw("Routing Rules")]),
                     Line::from(""),
                     Line::from(vec![
                         Span::styled("Action: ", action_style),
@@ -870,10 +877,7 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
                         Span::styled(value_text, value_style),
                     ]),
                     Line::from(""),
-                    Line::from(vec![
-                        Span::raw("         "),
-                        Span::raw("DNS Servers"),
-                    ]),
+                    Line::from(vec![Span::raw("         "), Span::raw("DNS Servers")]),
                     Line::from(""),
                     Line::from(vec![
                         Span::styled("Type: ", Dns_type_style),
@@ -1009,7 +1013,5 @@ pub fn run(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             }
         })?;
     }
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     Ok(())
 }
