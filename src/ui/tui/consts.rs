@@ -31,7 +31,7 @@ pub mod traffic {
 
     pub static BAR_MAP: LazyLock<HashMap<u8, char>> = LazyLock::new(|| {
         HashMap::from([
-            (000, '⠀'),
+            (000, ' '),
             (001, '⢀'),
             (002, '⢠'),
             (003, '⢰'),
@@ -56,7 +56,7 @@ pub mod traffic {
             (042, '⣧'),
             (043, '⣷'),
             (044, '⣿'),
-            (100, '⠀'),
+            (100, ' '),
             (101, '⠈'),
             (102, '⠘'),
             (103, '⠸'),

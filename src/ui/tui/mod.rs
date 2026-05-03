@@ -900,8 +900,16 @@ fn render_traffic_bar(
     let traffic_width = traffic_inner.width as usize;
     let traffic_height = traffic_inner.height as usize;
 
-    let rx_rows = (traffic_height / 2).max(1);
-    let tx_rows = traffic_height.saturating_sub(rx_rows).max(1);
+    if traffic_width == 0 || traffic_height < 2 {
+        return;
+    }
+
+    let rx_rows = traffic_height / 2;
+    let tx_rows = traffic_height - rx_rows;
+
+    if rx_rows == 0 || tx_rows == 0 {
+        return;
+    }
 
     let rx_area_y = traffic_inner.y;
     let tx_area_y = traffic_inner.y + rx_rows as u16;
@@ -940,9 +948,9 @@ fn latest_points(list: &VecDeque<u64>, limit: usize) -> Vec<u64> {
     list.iter()
         .rev()
         .take(limit)
-        .into_iter()
         .copied()
         .collect::<Vec<_>>()
+        .into_iter()
         .rev()
         .collect()
 }
@@ -967,11 +975,15 @@ fn render_braille_series(
     // В одной braille-ячейке рисуются 2 значения.
     let cell_count = points.len().div_ceil(2).min(width);
 
+    if cell_count == 0 {
+        return;
+    }
+
     // Выравниваем по правому краю:
     // новые значения появляются справа, старые уходят влево.
     let start_x = x + width.saturating_sub(cell_count) as u16;
 
-    for (cell_id, pair) in points.chunks(2).take(width).enumerate() {
+    for (cell_id, pair) in points.chunks(2).take(cell_count).enumerate() {
         let left_value = pair.first().copied().unwrap_or_default();
 
         // Если правого значения нет, дублируем левое,
