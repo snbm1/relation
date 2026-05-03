@@ -1,13 +1,15 @@
+mod consts;
 mod ifaces;
 mod minireq;
 mod tuiguard;
 
+use consts::*;
 use ifaces::*;
 use minireq::*;
 use std::{
     io,
     os::fd::{AsRawFd, FromRawFd},
-    time::{Duration, Instant},
+    time::Instant,
 };
 use tuiguard::TuiGuard;
 
@@ -39,15 +41,15 @@ use ratatui::{
     },
 };
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::Result;
 
 pub struct Tui {
     pub terminal: Terminal<CrosstermBackend<File>>,
-    pub guard: TuiGuard,
+    pub _guard: TuiGuard,
 }
 
 fn setup_tty() -> Result<Tui> {
-    let guard = TuiGuard::new()?;
+    let _guard = TuiGuard::new()?;
 
     let ui_fd = unsafe { libc::dup(libc::STDOUT_FILENO) };
     if ui_fd < 0 {
@@ -70,7 +72,7 @@ fn setup_tty() -> Result<Tui> {
     let backend = CrosstermBackend::new(ui_out);
     let terminal = Terminal::new(backend)?;
 
-    Ok(Tui { terminal, guard })
+    Ok(Tui { terminal, _guard })
 }
 
 pub fn run(app: &mut App) -> Result<()> {
@@ -109,6 +111,7 @@ pub fn run(app: &mut App) -> Result<()> {
 
     // settings vars
     let mut settings_panel = true;
+
     // Route var
     let mut rule_action: Option<String> = None;
     let mut rule_type: Option<String> = None;
@@ -123,13 +126,12 @@ pub fn run(app: &mut App) -> Result<()> {
     let mut context_menu = false;
     let mut popup_selected = 0;
     let mut value_input = false;
-    // let mut context_menu_selected = 0;
 
     let mut input_buffer = String::new();
 
     let mut custom = false;
 
-    let current_ip = Arc::new(Mutex::new("loading...".to_string()));
+    let current_ip = Arc::new(Mutex::new(net::LOADING_IP.to_string()));
     let ip_shared = Arc::clone(&current_ip);
 
     let change_flag = Arc::new(Mutex::new(true));
@@ -140,11 +142,11 @@ pub fn run(app: &mut App) -> Result<()> {
             if let Ok(mut flag) = change_shared.lock()
                 && *flag
             {
-                let ip = match get_ip(Some("127.0.0.1:12334")) {
+                let ip = match get_ip(Some(net::LOCAL_PROXY_ADDR)) {
                     Ok(ip) => ip,
                     Err(_) => match get_ip(None) {
                         Ok(ip) => ip,
-                        Err(_) => "0.0.0.0".to_string(),
+                        Err(_) => net::FALLBACK_IP.to_string(),
                     },
                 };
                 *flag = false;
@@ -154,7 +156,7 @@ pub fn run(app: &mut App) -> Result<()> {
                 }
             }
 
-            thread::sleep(Duration::from_millis(200));
+            thread::sleep(timing::IP_REFRESH_SLEEP);
         }
     });
 
@@ -162,10 +164,10 @@ pub fn run(app: &mut App) -> Result<()> {
         let ip_base = current_ip
             .lock()
             .map(|ip| ip.clone())
-            .unwrap_or_else(|_| "ip unavailable".to_string());
+            .unwrap_or_else(|_| net::UNAVAILABLE_IP.to_string());
 
         // -------- INPUT --------
-        if event::poll(Duration::from_millis(200))? {
+        if event::poll(timing::EVENT_POLL)? {
             if let Event::Key(key) = event::read()? {
                 if input_mode {
                     match key.code {
@@ -244,9 +246,8 @@ pub fn run(app: &mut App) -> Result<()> {
                     }
                 } else {
                     match key.code {
-                        KeyCode::Char('q') => {
+                        KeyCode::Char(keys::QUIT) => {
                             if running.is_some() {
-                                // #[cfg(not(feature = "daemon"))]
                                 app.send_quit()?;
                             }
 
@@ -267,14 +268,14 @@ pub fn run(app: &mut App) -> Result<()> {
                             }
                         }
 
-                        KeyCode::Char('a') => {
+                        KeyCode::Char(keys::ADD_CONFIG) => {
                             input_mode = true;
                         }
-                        KeyCode::Char('A') => {
+                        KeyCode::Char(keys::ADD_TUN_CONFIG) => {
                             input_mode = true;
                             tun_mode = true;
                         }
-                        KeyCode::Char('d') => {
+                        KeyCode::Char(keys::DELETE_CONFIG) => {
                             if len > 0 {
                                 let name = app.get_list()[selected_index].clone();
                                 app.remove_config_by_number(selected_index)?;
@@ -298,9 +299,9 @@ pub fn run(app: &mut App) -> Result<()> {
 
                         KeyCode::Char(c) => {
                             if context_menu
-                                && settings_selected == 0
+                                && settings_selected == ui::ROUTE_ACTION_INDEX
                                 && custom
-                                && popup_selected == 3
+                                && popup_selected == ui::ROUTE_ACTION_CUSTOM_INDEX
                             {
                                 input_buffer.push(c);
                             }
@@ -308,16 +309,16 @@ pub fn run(app: &mut App) -> Result<()> {
 
                         KeyCode::Backspace => {
                             if context_menu
-                                && settings_selected == 0
+                                && settings_selected == ui::ROUTE_ACTION_INDEX
                                 && custom
-                                && popup_selected == 3
+                                && popup_selected == ui::ROUTE_ACTION_CUSTOM_INDEX
                             {
                                 input_buffer.pop();
                             }
                         }
 
                         KeyCode::Enter => {
-                            if settings_selected == 3 {
+                            if settings_selected == ui::DNS_TYPE_INDEX {
                                 let mut route_rules: Vec<String> = Vec::new();
                                 if let Some(action) = rule_action.as_ref() {
                                     route_rules.push(action.to_string());
@@ -331,10 +332,11 @@ pub fn run(app: &mut App) -> Result<()> {
                                 let route_rules = vec![route_rules.join(":")];
                                 app.handler_mut().add_route_rules(&route_rules)?;
                             }
+
                             if context_menu {
                                 match settings_selected {
-                                    0 => {
-                                        if popup_selected == 3 {
+                                    ui::ROUTE_ACTION_INDEX => {
+                                        if popup_selected == ui::ROUTE_ACTION_CUSTOM_INDEX {
                                             if !custom {
                                                 custom = true;
                                                 input_buffer.clear();
@@ -343,59 +345,18 @@ pub fn run(app: &mut App) -> Result<()> {
                                                 custom = false;
                                                 input_buffer.clear();
                                             }
-                                        } else {
-                                            let value = match popup_selected {
-                                                0 => "r",
-                                                1 => "h",
-                                                2 => "s",
-                                                _ => "",
-                                            };
-                                            if !value.is_empty() {
-                                                rule_action = Some(value.to_string());
-                                                context_menu = false;
-                                                popup_selected = 0;
-                                            }
+                                        } else if let Some(value) =
+                                            route::ACTIONS.get(popup_selected)
+                                        {
+                                            rule_action = Some((*value).to_string());
+                                            context_menu = false;
+                                            popup_selected = 0;
                                         }
                                     }
 
-                                    1 => {
-                                        let value = match popup_selected {
-                                            0 => "ib",
-                                            1 => "iv",
-                                            2 => "au",
-                                            3 => "pl",
-                                            4 => "cl",
-                                            5 => "dm",
-                                            6 => "ds",
-                                            7 => "dk",
-                                            8 => "dr",
-                                            9 => "gs",
-                                            10 => "sg",
-                                            11 => "gp",
-                                            12 => "sc",
-                                            13 => "si",
-                                            14 => "ic",
-                                            15 => "ip",
-                                            16 => "sp",
-                                            17 => "sr",
-                                            18 => "pt",
-                                            19 => "pr",
-                                            20 => "pn",
-                                            21 => "pp",
-                                            22 => "pg",
-                                            23 => "kn",
-                                            24 => "ur",
-                                            25 => "ui",
-                                            26 => "cm",
-                                            27 => "nt",
-                                            28 => "nk",
-                                            29 => "ne",
-                                            30 => "nc",
-                                            _ => "",
-                                        };
-
-                                        if !value.is_empty() {
-                                            rule_type = Some(value.to_string());
+                                    ui::ROUTE_TYPE_INDEX => {
+                                        if let Some((_, value)) = route::TYPES.get(popup_selected) {
+                                            rule_type = Some((*value).to_string());
                                         }
                                     }
 
@@ -406,16 +367,13 @@ pub fn run(app: &mut App) -> Result<()> {
                                     popup_selected = 0;
                                 }
                             } else if transit && settings_panel {
-                                if settings_selected == 2 {
+                                if settings_selected == ui::ROUTE_VALUE_INDEX {
                                     value_input = true;
                                     input_buffer.clear();
-                                } else {
-                                    if settings_selected != 3 {
-                                        context_menu = true;
-                                        popup_selected = 0;
-                                    }
+                                } else if settings_selected != ui::DNS_TYPE_INDEX {
+                                    context_menu = true;
+                                    popup_selected = 0;
                                 }
-                                // context_menu_selected = settings_selected;
                             } else {
                                 let len = app.get_len();
                                 if let Ok(mut flag) = change_flag.lock() {
@@ -437,7 +395,7 @@ pub fn run(app: &mut App) -> Result<()> {
                                         enter_mode = false;
                                     } else {
                                         app.stop_app()?;
-                                        std::thread::sleep(Duration::from_millis(100));
+                                        std::thread::sleep(timing::RESTART_DELAY);
                                         let number = selected_index as u16 + 1;
                                         running = Some(name.clone());
                                         app.set_log_file();
@@ -453,59 +411,62 @@ pub fn run(app: &mut App) -> Result<()> {
                             if !transit {
                                 transit = true;
                             } else if transit && settings_panel {
-                                settings_selected = (settings_selected + 1) % 6;
+                                settings_selected =
+                                    (settings_selected + 1) % ui::SETTINGS_FIELDS_COUNT;
                             }
                         }
                         KeyCode::Left => {
                             if settings_selected - 1 < 0 && transit {
                                 transit = false;
                             } else if transit && settings_panel {
-                                settings_selected = (settings_selected + 3 - 1) % 3;
+                                settings_selected = (settings_selected + ui::ROUTE_FIELDS_COUNT
+                                    - 1)
+                                    % ui::ROUTE_FIELDS_COUNT;
                             }
                         }
 
-                        KeyCode::Down | KeyCode::Char('j') => {
+                        KeyCode::Down | KeyCode::Char(keys::DOWN_ALT) => {
                             if !transit && len > 0 {
                                 selected_index = (selected_index + 1) % len;
                             } else if context_menu {
-                                let context_len = if settings_selected == 0 {
-                                    4
-                                } else if settings_selected == 1 {
-                                    31
+                                let context_len = if settings_selected == ui::ROUTE_ACTION_INDEX {
+                                    route::ACTIONS.len() + 1
+                                } else if settings_selected == ui::ROUTE_TYPE_INDEX {
+                                    route::TYPES.len()
                                 } else {
                                     1
                                 };
                                 popup_selected = (popup_selected + 1) % context_len;
                             } else if transit && settings_panel && !value_input {
                                 settings_selected = match settings_selected {
-                                    0 => 3,
-                                    1 => 3,
-                                    2 => 4,
-                                    3 => 5,
-                                    4 => 5,
+                                    ui::ROUTE_ACTION_INDEX => ui::DNS_TYPE_INDEX,
+                                    ui::ROUTE_TYPE_INDEX => ui::DNS_TYPE_INDEX,
+                                    ui::ROUTE_VALUE_INDEX => ui::DNS_VALUE1_INDEX,
+                                    ui::DNS_TYPE_INDEX => ui::DNS_VALUE2_INDEX,
+                                    ui::DNS_VALUE1_INDEX => ui::DNS_VALUE2_INDEX,
 
                                     _ => settings_selected,
                                 };
                             }
                         }
 
-                        KeyCode::Up | KeyCode::Char('k') => {
+                        KeyCode::Up | KeyCode::Char(keys::UP_ALT) => {
                             if len > 0 && !transit {
                                 selected_index = (selected_index + len - 1) % len;
                             } else if context_menu {
-                                let context_len = if settings_selected == 0 {
-                                    4
-                                } else if settings_selected == 1 {
-                                    31
+                                let context_len = if settings_selected == ui::ROUTE_ACTION_INDEX {
+                                    route::ACTIONS.len() + 1
+                                } else if settings_selected == ui::ROUTE_TYPE_INDEX {
+                                    route::TYPES.len()
                                 } else {
                                     1
                                 };
                                 popup_selected = (popup_selected + context_len - 1) % context_len;
                             } else if transit && settings_panel && !value_input {
                                 settings_selected = match settings_selected {
-                                    5 => 4,
-                                    3 => 0,
-                                    4 => 1,
+                                    ui::DNS_VALUE2_INDEX => ui::DNS_VALUE1_INDEX,
+                                    ui::DNS_TYPE_INDEX => ui::ROUTE_ACTION_INDEX,
+                                    ui::DNS_VALUE1_INDEX => ui::ROUTE_TYPE_INDEX,
 
                                     _ => settings_selected,
                                 };
@@ -518,7 +479,7 @@ pub fn run(app: &mut App) -> Result<()> {
             }
         }
 
-        if prev_time.elapsed() >= Duration::from_millis(200) {
+        if prev_time.elapsed() >= timing::TRAFFIC_REFRESH {
             let now = Instant::now();
             let dt = (now - prev_time).as_secs_f64().max(0.001);
 
@@ -532,10 +493,10 @@ pub fn run(app: &mut App) -> Result<()> {
 
             rx_list.push_back(rx_rate);
             tx_list.push_back(tx_rate);
-            while rx_list.len() > 900 {
+            while rx_list.len() > traffic::HISTORY_LIMIT {
                 rx_list.pop_front();
             }
-            while tx_list.len() > 900 {
+            while tx_list.len() > traffic::HISTORY_LIMIT {
                 tx_list.pop_front();
             }
 
@@ -548,11 +509,14 @@ pub fn run(app: &mut App) -> Result<()> {
 
             let root = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Min(0), Constraint::Length(1)])
+                .constraints([Constraint::Min(0), Constraint::Length(ui::HELP_HEIGHT)])
                 .split(size);
             let horizontal = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Fill(2), Constraint::Fill(5)])
+                .constraints([
+                    Constraint::Fill(ui::LEFT_PANEL_WEIGHT),
+                    Constraint::Fill(ui::RIGHT_PANEL_WEIGHT),
+                ])
                 .split(root[0]);
 
             let vertical = Layout::default()
@@ -569,7 +533,7 @@ pub fn run(app: &mut App) -> Result<()> {
                     if is_running {
                         ListItem::new(Line::from(vec![
                             Span::styled(
-                                "● ",
+                                ui::RUNNING_SYMBOL,
                                 Style::default()
                                     .fg(Color::Green)
                                     .add_modifier(Modifier::BOLD),
@@ -591,7 +555,7 @@ pub fn run(app: &mut App) -> Result<()> {
             let list = List::new(items)
                 .block(
                     Block::default()
-                        .title("Configs")
+                        .title(text::CONFIGS_TITLE)
                         .borders(Borders::ALL)
                         .border_style(if !transit {
                             Style::default().fg(Color::Yellow)
@@ -606,20 +570,20 @@ pub fn run(app: &mut App) -> Result<()> {
                         .fg(Color::Black)
                         .add_modifier(Modifier::BOLD),
                 )
-                .highlight_symbol(">> ");
+                .highlight_symbol(ui::SELECTED_SYMBOL);
 
             f.render_stateful_widget(list, vertical[0], &mut state);
 
-            //ADDING CONFIG LINE
+            // ADDING CONFIG LINE
             if input_mode && !tun_mode {
                 let (color, message) = if error_input {
-                    (Color::Red, "Error input")
+                    (Color::Red, text::ERROR_INPUT)
                 } else {
-                    (Color::Yellow, "Add new config url")
+                    (Color::Yellow, text::ADD_CONFIG_URL)
                 };
 
                 let input = Paragraph::new(input_buffer.as_str())
-                    .wrap(Wrap { trim: true }) // To future float
+                    .wrap(Wrap { trim: true })
                     .block(
                         Block::default()
                             .title(message)
@@ -630,19 +594,19 @@ pub fn run(app: &mut App) -> Result<()> {
 
                 let input_area = ratatui::layout::Rect {
                     x: vertical[0].x,
-                    y: vertical[0].y + vertical[0].height - 3,
+                    y: vertical[0].y + vertical[0].height - ui::INPUT_HEIGHT,
                     width: vertical[0].width,
-                    height: 3,
+                    height: ui::INPUT_HEIGHT,
                 };
                 f.render_widget(input, input_area);
             }
 
-            //ADDING TUN CONFIG LINE
+            // ADDING TUN CONFIG LINE
             if input_mode && tun_mode {
                 let (color, message) = if error_input {
-                    (Color::Red, "Error input")
+                    (Color::Red, text::ERROR_INPUT)
                 } else {
-                    (Color::Blue, "Add new config url with tun arg")
+                    (Color::Blue, text::ADD_TUN_CONFIG_URL)
                 };
 
                 let input = Paragraph::new(input_buffer.as_str())
@@ -656,21 +620,21 @@ pub fn run(app: &mut App) -> Result<()> {
 
                 let input_area = ratatui::layout::Rect {
                     x: vertical[0].x,
-                    y: vertical[0].y + vertical[0].height - 3,
+                    y: vertical[0].y + vertical[0].height - ui::INPUT_HEIGHT,
                     width: vertical[0].width,
-                    height: 3,
+                    height: ui::INPUT_HEIGHT,
                 };
                 f.render_widget(input, input_area);
             }
 
-            //TRAFFIC BAR
+            // TRAFFIC BAR
             let max_rate = rx_list
                 .iter()
                 .chain(tx_list.iter())
                 .copied()
                 .max()
-                .unwrap_or(64 * 1024)
-                .max(64 * 1024);
+                .unwrap_or(traffic::MIN_RATE)
+                .max(traffic::MIN_RATE);
 
             let current_rate = rx_list
                 .back()
@@ -678,13 +642,18 @@ pub fn run(app: &mut App) -> Result<()> {
                 .unwrap_or_default()
                 .max(tx_list.back().copied().unwrap_or_default());
 
-            let title = if current_rate >= 1024 * 1024 {
+            let title = if current_rate as f64 >= traffic::MB {
                 format!(
-                    "Traffic ({:.1}) MB/s",
-                    current_rate as f64 / 1024.0 / 1024.0
+                    "{} ({:.1}) MB/s",
+                    text::TRAFFIC_TITLE,
+                    current_rate as f64 / traffic::MB
                 )
             } else {
-                format!("Traffic ({:.0}) KB/s", current_rate as f64 / 1024.0)
+                format!(
+                    "{} ({:.0}) KB/s",
+                    text::TRAFFIC_TITLE,
+                    current_rate as f64 / traffic::KB
+                )
             };
 
             let traffic_block = Block::default()
@@ -696,7 +665,9 @@ pub fn run(app: &mut App) -> Result<()> {
             let traffic_inner = traffic_block.inner(vertical[1]);
             f.render_widget(traffic_block, vertical[1]);
 
-            if traffic_inner.width > 3 && traffic_inner.height > 4 {
+            if traffic_inner.width > traffic::MIN_WIDTH
+                && traffic_inner.height > traffic::MIN_HEIGHT
+            {
                 let traffic_x = traffic_inner.x;
                 let traffic_width = traffic_inner.width;
                 let traffic_height = traffic_inner.height as usize;
@@ -734,14 +705,14 @@ pub fn run(app: &mut App) -> Result<()> {
                         .buffer_mut()
                         .cell_mut((x, rx_base_y))
                         .expect("base traffic rx");
-                    rx_cell.set_char('⣿');
+                    rx_cell.set_char(traffic::BAR_CHAR);
                     rx_cell.set_style(Style::default().fg(Color::Cyan));
 
                     let tx_cell = f
                         .buffer_mut()
                         .cell_mut((x, tx_base_y))
                         .expect("base traffic tx");
-                    tx_cell.set_char('⣿');
+                    tx_cell.set_char(traffic::BAR_CHAR);
                     tx_cell.set_style(Style::default().fg(Color::Magenta));
                 }
 
@@ -758,7 +729,7 @@ pub fn run(app: &mut App) -> Result<()> {
 
                     for yy in start..=end {
                         let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic rx cell");
-                        cell.set_char('⣿');
+                        cell.set_char(traffic::BAR_CHAR);
                         cell.set_style(Style::default().fg(Color::Cyan));
                     }
                 }
@@ -777,17 +748,15 @@ pub fn run(app: &mut App) -> Result<()> {
 
                     for yy in start..=end {
                         let cell = f.buffer_mut().cell_mut((x, yy)).expect("traffic tx cell");
-                        cell.set_char('⣿');
+                        cell.set_char(traffic::BAR_CHAR);
                         cell.set_style(Style::default().fg(Color::Magenta));
                     }
                 }
             }
 
             // HELP PANEL
-            let helper = Paragraph::new(Line::from(
-                "↑/↓ navigate   q exit   a adding config  A adding tun config d delete config",
-            ))
-            .alignment(ratatui::layout::Alignment::Center);
+            let helper = Paragraph::new(Line::from(text::HELP))
+                .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(helper, root[1]);
 
             // LOG/SETTINGS PANEL
@@ -797,7 +766,7 @@ pub fn run(app: &mut App) -> Result<()> {
                     logs.iter().map(|l| ListItem::new(l.clone())).collect();
                 let log_list = List::new(log_items).block(
                     Block::default()
-                        .title(Line::from("Logs"))
+                        .title(Line::from(text::LOGS_TITLE))
                         .borders(Borders::ALL)
                         .border_type(BorderType::Rounded),
                 );
@@ -805,56 +774,56 @@ pub fn run(app: &mut App) -> Result<()> {
                 f.render_widget(log_list, horizontal[1]);
                 app.read_logs();
             } else {
-                let action_text = rule_action.as_deref().unwrap_or("empty");
-                let type_text = rule_type.as_deref().unwrap_or("empty");
-                let value_text = rule_value.as_deref().unwrap_or("empty");
-                let type_dns_text = type_dns_action.as_deref().unwrap_or("empty");
-                let value1_text = dns_value1.as_deref().unwrap_or("empty");
-                let value2_text = dns_value2.as_deref().unwrap_or("empty");
+                let action_text = rule_action.as_deref().unwrap_or(text::EMPTY);
+                let type_text = rule_type.as_deref().unwrap_or(text::EMPTY);
+                let value_text = rule_value.as_deref().unwrap_or(text::EMPTY);
+                let type_dns_text = type_dns_action.as_deref().unwrap_or(text::EMPTY);
+                let value1_text = dns_value1.as_deref().unwrap_or(text::EMPTY);
+                let value2_text = dns_value2.as_deref().unwrap_or(text::EMPTY);
 
-                let action_style = if transit && settings_selected == 0 {
+                let action_style = if transit && settings_selected == ui::ROUTE_ACTION_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let type_style = if transit && settings_selected == 1 {
+                let type_style = if transit && settings_selected == ui::ROUTE_TYPE_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let value_style = if transit && settings_selected == 2 {
+                let value_style = if transit && settings_selected == ui::ROUTE_VALUE_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let Dns_type_style = if transit && settings_selected == 3 {
+                let dns_type_style = if transit && settings_selected == ui::DNS_TYPE_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let Dns_value1_style = if transit && settings_selected == 4 {
+                let dns_value1_style = if transit && settings_selected == ui::DNS_VALUE1_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let Dns_value2_style = if transit && settings_selected == 5 {
+                let dns_value2_style = if transit && settings_selected == ui::DNS_VALUE2_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let enter_style = if transit && settings_selected == 6 {
+                let enter_style = if transit && settings_selected == ui::ENTER_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
@@ -864,40 +833,46 @@ pub fn run(app: &mut App) -> Result<()> {
 
                 let settings = Paragraph::new(vec![
                     Line::from(""),
-                    Line::from(vec![Span::raw("         "), Span::raw("Routing Rules")]),
+                    Line::from(vec![
+                        Span::raw("         "),
+                        Span::raw(text::ROUTING_RULES_TITLE),
+                    ]),
                     Line::from(""),
                     Line::from(vec![
-                        Span::styled("Action: ", action_style),
+                        Span::styled(text::ACTION_LABEL, action_style),
                         Span::styled(action_text, action_style),
                         Span::raw("   "),
-                        Span::styled("Type: ", type_style),
+                        Span::styled(text::TYPE_LABEL, type_style),
                         Span::styled(type_text, type_style),
                         Span::raw("   "),
-                        Span::styled("Value: ", value_style),
+                        Span::styled(text::VALUE_LABEL, value_style),
                         Span::styled(value_text, value_style),
                     ]),
                     Line::from(""),
-                    Line::from(vec![Span::raw("         "), Span::raw("DNS Servers")]),
+                    Line::from(vec![
+                        Span::raw("         "),
+                        Span::raw(text::DNS_SERVERS_TITLE),
+                    ]),
                     Line::from(""),
                     Line::from(vec![
-                        Span::styled("Type: ", Dns_type_style),
-                        Span::styled(type_dns_text, Dns_type_style),
+                        Span::styled(text::TYPE_LABEL, dns_type_style),
+                        Span::styled(type_dns_text, dns_type_style),
                         Span::raw("             "),
-                        Span::styled("Value 1: ", Dns_value1_style),
-                        Span::styled(value1_text, Dns_value1_style),
+                        Span::styled(text::VALUE1_LABEL, dns_value1_style),
+                        Span::styled(value1_text, dns_value1_style),
                         Span::raw("             "),
-                        Span::styled("Value 2: ", Dns_value2_style),
-                        Span::styled(value2_text, Dns_value2_style),
+                        Span::styled(text::VALUE2_LABEL, dns_value2_style),
+                        Span::styled(value2_text, dns_value2_style),
                     ]),
                     Line::from(""),
                     Line::from(vec![
                         Span::raw("                 "),
-                        Span::styled("[ENTER]", enter_style),
+                        Span::styled(text::ENTER_BUTTON, enter_style),
                     ]),
                 ])
                 .block(
                     Block::default()
-                        .title("Settings")
+                        .title(text::SETTINGS_TITLE)
                         .borders(Borders::ALL)
                         .border_style(if transit {
                             Style::default().fg(Color::Blue)
@@ -912,63 +887,41 @@ pub fn run(app: &mut App) -> Result<()> {
             // Context Menu
             if context_menu {
                 let context_panel_area = ratatui::layout::Rect {
-                    x: horizontal[1].x + 4,
-                    y: horizontal[1].y + 2,
-                    width: horizontal[1].width.saturating_sub(8),
-                    height: 7,
+                    x: horizontal[1].x + ui::CONTEXT_X_OFFSET,
+                    y: horizontal[1].y + ui::CONTEXT_Y_OFFSET,
+                    width: horizontal[1]
+                        .width
+                        .saturating_sub(ui::CONTEXT_WIDTH_PADDING),
+                    height: ui::CONTEXT_HEIGHT,
                 };
 
                 f.render_widget(Clear, context_panel_area);
 
-                let context_items: Vec<ListItem> = if settings_selected == 0 {
+                let context_items: Vec<ListItem> = if settings_selected == ui::ROUTE_ACTION_INDEX {
                     let mut items: Vec<ListItem> =
-                        vec!["r", "h", "s"].into_iter().map(ListItem::new).collect();
+                        route::ACTIONS.iter().copied().map(ListItem::new).collect();
+
                     if custom {
-                        items.push(ListItem::new(format!("Input: {}", input_buffer)));
+                        items.push(ListItem::new(format!(
+                            "{}{}",
+                            text::INPUT_PREFIX,
+                            input_buffer
+                        )));
                     } else {
-                        items.push(ListItem::new("personal"));
+                        items.push(ListItem::new(text::PERSONAL));
                     }
 
                     items
-                } else if settings_selected == 1 {
-                    vec![
-                        "inbound",
-                        "ip version",
-                        "auth user",
-                        "protocol",
-                        "client",
-                        "domain",
-                        "domain suffix",
-                        "domain keyword",
-                        "domain regex",
-                        "geosite",
-                        "source geoip",
-                        "geoip",
-                        "source ip cidr",
-                        "ip is private",
-                        "ip cidr",
-                        "ip is private",
-                        "source port",
-                        "range",
-                        "port",
-                        "range",
-                        "process name",
-                        "process path",
-                        "regex",
-                        "package name",
-                        "user",
-                        "user id",
-                        "clash mode",
-                        "network type",
-                        "network",
-                        "is expensive",
-                        "constrained",
-                    ]
-                    .into_iter()
-                    .map(ListItem::new)
-                    .collect()
+                } else if settings_selected == ui::ROUTE_TYPE_INDEX {
+                    route::TYPES
+                        .iter()
+                        .map(|(label, _)| ListItem::new(*label))
+                        .collect()
                 } else {
-                    vec!["No items!"].into_iter().map(ListItem::new).collect()
+                    vec![text::NO_ITEMS]
+                        .into_iter()
+                        .map(ListItem::new)
+                        .collect()
                 };
 
                 let mut state = ListState::default();
@@ -977,7 +930,7 @@ pub fn run(app: &mut App) -> Result<()> {
                 let list = List::new(context_items)
                     .block(
                         Block::default()
-                            .title("Select")
+                            .title(text::SELECT_TITLE)
                             .borders(Borders::ALL)
                             .border_type(BorderType::Rounded)
                             .border_style(Style::default().fg(Color::Yellow)),
@@ -987,7 +940,7 @@ pub fn run(app: &mut App) -> Result<()> {
                             .fg(Color::LightGreen)
                             .add_modifier(Modifier::BOLD),
                     )
-                    .highlight_symbol(">> ");
+                    .highlight_symbol(ui::SELECTED_SYMBOL);
                 f.render_stateful_widget(list, context_panel_area, &mut state);
             }
 
@@ -995,17 +948,19 @@ pub fn run(app: &mut App) -> Result<()> {
                 let input = Paragraph::new(input_buffer.as_str())
                     .block(
                         Block::default()
-                            .title("Enter value")
+                            .title(text::ENTER_VALUE)
                             .borders(Borders::ALL)
                             .border_type(BorderType::Rounded),
                     )
                     .style(Style::default().fg(Color::Green));
 
                 let area = ratatui::layout::Rect {
-                    x: horizontal[1].x + 2,
-                    y: horizontal[1].y + 4,
-                    width: horizontal[1].width.saturating_sub(4),
-                    height: 3,
+                    x: horizontal[1].x + ui::VALUE_INPUT_X_OFFSET,
+                    y: horizontal[1].y + ui::VALUE_INPUT_Y_OFFSET,
+                    width: horizontal[1]
+                        .width
+                        .saturating_sub(ui::VALUE_INPUT_WIDTH_PADDING),
+                    height: ui::VALUE_INPUT_HEIGHT,
                 };
 
                 f.render_widget(Clear, area);
@@ -1013,5 +968,6 @@ pub fn run(app: &mut App) -> Result<()> {
             }
         })?;
     }
+
     Ok(())
 }
