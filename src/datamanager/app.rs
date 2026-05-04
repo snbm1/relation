@@ -98,7 +98,7 @@ impl App {
 
     pub fn add_config(&mut self, name: Option<String>) -> Result<&mut Self> {
         self.set_log_file();
-        let saved_name = self.save_config(name)?;
+        let saved_name = self.save_config(name, false)?;
         self.inf_handler
             .set_name(&saved_name)
             .set_inbounds(self.cfg_handler.get_inbounds_ports());
@@ -235,28 +235,41 @@ impl App {
         Ok(())
     }
 
-    pub fn save_config(&mut self, name: Option<String>) -> Result<String> {
+    pub fn save(&mut self) -> Result<()> {
+        self.save_config(Some(self.inf_handler.get_name()), true)?;
+        Ok(())
+    }
+
+    pub fn save_config(&mut self, name: Option<String>, force: bool) -> Result<String> {
         let free_name = match name {
             Some(value) => {
-                if self.exist_config(&value) > 0 {
-                    format!("[{}] {}", self.exist_config(&value), value)
+                if !force {
+                    if self.exist_config(&value) > 0 {
+                        format!("[{}] {}", self.exist_config(&value), value)
+                    } else {
+                        value
+                    }
                 } else {
                     value
                 }
             }
             None => {
-                if self.exist_config(
-                    &self
-                        .cfg_handler
-                        .get_outbound_tag()
-                        .context("Not defined outbound tag")?,
-                ) > 0
-                {
-                    format!(
-                        "[{}] {}",
-                        self.exist_config(&self.cfg_handler.get_outbound_tag().unwrap()),
+                if !force {
+                    if self.exist_config(
+                        &self
+                            .cfg_handler
+                            .get_outbound_tag()
+                            .context("Not defined outbound tag")?,
+                    ) > 0
+                    {
+                        format!(
+                            "[{}] {}",
+                            self.exist_config(&self.cfg_handler.get_outbound_tag().unwrap()),
+                            self.cfg_handler.get_outbound_tag().unwrap()
+                        )
+                    } else {
                         self.cfg_handler.get_outbound_tag().unwrap()
-                    )
+                    }
                 } else {
                     self.cfg_handler.get_outbound_tag().unwrap()
                 }
