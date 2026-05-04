@@ -246,6 +246,8 @@ impl Cli {
                 if let Some(value) = name {
                     manager.rename_config(value.clone())?;
                 }
+
+                manager.save()?;
             }
             Commands::List => {
                 if manager.get_list().is_empty() {
