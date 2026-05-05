@@ -110,7 +110,7 @@ pub fn run(app: &mut App) -> Result<()> {
     let mut transit = false;
 
     // settings vars
-    let mut settings_panel = true;
+    let mut settings_panel = !running.as_ref().is_some_and(|x| !x.is_empty());
 
     // Route var
     let mut rule_action: Option<String> = None;
