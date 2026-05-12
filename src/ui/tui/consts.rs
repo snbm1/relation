@@ -4,7 +4,7 @@ pub mod timing {
     use super::*;
 
     pub const EVENT_POLL: Duration = Duration::from_millis(200);
-    pub const IP_REFRESH_SLEEP: Duration = Duration::from_millis(200);
+    pub const IP_REFRESH_SLEEP: Duration = Duration::from_millis(800);
     pub const TRAFFIC_REFRESH: Duration = Duration::from_millis(200);
     pub const RESTART_DELAY: Duration = Duration::from_millis(100);
 

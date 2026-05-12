@@ -1,22 +1,10 @@
-use std::{
-    error::Error,
-    io::{Read, Write},
-};
-
-#[cfg(not(feature = "daemon"))]
-use std::net::TcpStream;
+use std::error::Error;
 
 #[cfg(feature = "daemon")]
 type ReqError = Box<dyn Error + Send + Sync>;
 
 #[cfg(not(feature = "daemon"))]
 type ReqError = Box<dyn Error>;
-
-#[cfg(feature = "daemon")]
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream,
-};
 
 //This is realisation of mini ureq
 pub fn parse_status_code(status: &str) -> Result<u16, ReqError> {
