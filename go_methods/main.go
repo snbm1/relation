@@ -7,18 +7,13 @@ import "C"
 
 import (
 	_ "fmt"
+	"unsafe"
+
 	V2 "methods/go_methods/V2"
 	"methods/go_methods/grpcserver"
-	"unsafe"
 
 	"github.com/sagernet/sing-box/log"
 )
-
-//export setup
-func setup(basicPath, workingPath, tempPath *C.char, statusPort C.longlong, debug bool) *C.char {
-	err := V2.Setup(C.GoString(basicPath), C.GoString(workingPath), C.GoString(tempPath), int64(statusPort), debug)
-	return errorOrNot(err)
-}
 
 //export parse
 func parse(content *C.char, tempPath *C.char) *C.char {
@@ -26,14 +21,12 @@ func parse(content *C.char, tempPath *C.char) *C.char {
 		C.GoString(content),
 		C.GoString(tempPath),
 	)
-
 	if err != nil {
 		log.Error(err.Error())
 		return C.CString(err.Error())
 	}
 
 	return C.CString(res)
-
 }
 
 //export freedom

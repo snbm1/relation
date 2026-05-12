@@ -24,7 +24,7 @@ unsafe fn take_go_string(ptr: *mut c_char) -> Option<String> {
 fn to_c_mut(s: &str) -> CString {
     CString::new(s).expect("string contains NUL byte")
 }
-
+/*
 pub fn setup_safe(
     basic_path: &str,
     working_path: &str,
@@ -47,7 +47,7 @@ pub fn setup_safe(
         ))
     }
 }
-
+*/
 pub fn parse_safe(content: &str, temp_path: &str) -> Option<String> {
     let c_content = to_c_mut(content);
     let c_temp = to_c_mut(temp_path);
