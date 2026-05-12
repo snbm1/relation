@@ -137,11 +137,23 @@ pub fn run(app: &mut App) -> Result<()> {
     let change_flag = Arc::new(Mutex::new(true));
     let change_shared = Arc::clone(&change_flag);
 
+    #[cfg(not(feature = "daemon"))]
     thread::spawn(move || {
         loop {
-            if let Ok(mut flag) = change_shared.lock()
-                && *flag
-            {
+            let need_refresh = {
+                if let Ok(mut flag) = change_shared.lock() {
+                    if *flag {
+                        *flag = false;
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            };
+
+            if need_refresh {
                 let ip = match get_ip(Some(net::LOCAL_PROXY_ADDR)) {
                     Ok(ip) => ip,
                     Err(_) => match get_ip(None) {
@@ -149,7 +161,6 @@ pub fn run(app: &mut App) -> Result<()> {
                         Err(_) => net::FALLBACK_IP.to_string(),
                     },
                 };
-                *flag = false;
 
                 if let Ok(mut ip_address) = ip_shared.lock() {
                     *ip_address = ip;
@@ -157,6 +168,46 @@ pub fn run(app: &mut App) -> Result<()> {
             }
 
             thread::sleep(timing::IP_REFRESH_SLEEP);
+        }
+    });
+
+    #[cfg(feature = "daemon")]
+    tokio::spawn(async move {
+        loop {
+            let need_refresh = {
+                if let Ok(mut flag) = change_shared.lock() {
+                    if *flag {
+                        *flag = false;
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            };
+
+            if need_refresh {
+                let ip = match tokio::time::timeout(
+                    timing::IP_REQUEST_TIMEOUT,
+                    get_ip(Some(net::LOCAL_PROXY_ADDR)),
+                )
+                .await
+                {
+                    Ok(Ok(ip)) => ip,
+                    _ => match tokio::time::timeout(timing::IP_REQUEST_TIMEOUT, get_ip(None)).await
+                    {
+                        Ok(Ok(ip)) => ip,
+                        _ => net::FALLBACK_IP.to_string(),
+                    },
+                };
+
+                if let Ok(mut ip_address) = ip_shared.lock() {
+                    *ip_address = ip;
+                }
+            }
+
+            tokio::time::sleep(timing::IP_REFRESH_SLEEP).await;
         }
     });
 
