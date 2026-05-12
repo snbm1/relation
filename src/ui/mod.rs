@@ -314,7 +314,7 @@ impl Cli {
                         std::thread::sleep(std::time::Duration::from_millis(200));
                     }
 
-                    if let Err(x) = manager.stop_app() {
+                    if let Err(x) = manager.send_quit() {
                         println!("{x}");
                     }
                 }
