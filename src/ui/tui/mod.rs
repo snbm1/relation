@@ -78,6 +78,20 @@ fn setup_tty() -> Result<Tui> {
 pub fn run(app: &mut App) -> Result<()> {
     let iface = iface_detect();
 
+    std::panic::set_hook(Box::new(|panic_info| {
+        use std::io::Write;
+
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/relation-panic.log")
+        {
+            let _ = writeln!(file, "panic: {panic_info}");
+            let backtrace = std::backtrace::Backtrace::force_capture();
+            let _ = writeln!(file, "{backtrace}");
+        }
+    }));
+
     let mut tui = setup_tty()?;
 
     let old_log = app.get_data_path().join("box.log");
@@ -172,43 +186,54 @@ pub fn run(app: &mut App) -> Result<()> {
     });
 
     #[cfg(feature = "daemon")]
-    tokio::spawn(async move {
-        loop {
-            let need_refresh = {
-                if let Ok(mut flag) = change_shared.lock() {
-                    if *flag {
-                        *flag = false;
-                        true
+    thread::spawn(move || {
+        let rt = match tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+        {
+            Ok(rt) => rt,
+            Err(_) => return,
+        };
+
+        rt.block_on(async move {
+            loop {
+                let need_refresh = {
+                    if let Ok(mut flag) = change_shared.lock() {
+                        if *flag {
+                            *flag = false;
+                            true
+                        } else {
+                            false
+                        }
                     } else {
                         false
                     }
-                } else {
-                    false
-                }
-            };
-
-            if need_refresh {
-                let ip = match tokio::time::timeout(
-                    timing::IP_REQUEST_TIMEOUT,
-                    get_ip(Some(net::LOCAL_PROXY_ADDR)),
-                )
-                .await
-                {
-                    Ok(Ok(ip)) => ip,
-                    _ => match tokio::time::timeout(timing::IP_REQUEST_TIMEOUT, get_ip(None)).await
-                    {
-                        Ok(Ok(ip)) => ip,
-                        _ => net::FALLBACK_IP.to_string(),
-                    },
                 };
 
-                if let Ok(mut ip_address) = ip_shared.lock() {
-                    *ip_address = ip;
-                }
-            }
+                if need_refresh {
+                    let ip = match tokio::time::timeout(
+                        timing::IP_REQUEST_TIMEOUT,
+                        get_ip(Some(net::LOCAL_PROXY_ADDR)),
+                    )
+                    .await
+                    {
+                        Ok(Ok(ip)) => ip,
+                        _ => match tokio::time::timeout(timing::IP_REQUEST_TIMEOUT, get_ip(None))
+                            .await
+                        {
+                            Ok(Ok(ip)) => ip,
+                            _ => net::FALLBACK_IP.to_string(),
+                        },
+                    };
 
-            tokio::time::sleep(timing::IP_REFRESH_SLEEP).await;
-        }
+                    if let Ok(mut ip_address) = ip_shared.lock() {
+                        *ip_address = ip;
+                    }
+                }
+
+                tokio::time::sleep(timing::IP_REFRESH_SLEEP).await;
+            }
+        });
     });
 
     loop {
