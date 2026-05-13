@@ -8,6 +8,7 @@ use crate::datamanager::app::App;
 
 #[cfg(feature = "daemon")]
 use crate::datamanager::async_app::App;
+use crate::ui::tui::state::InputMode;
 
 use super::consts::{keys, route, timing, ui};
 use super::state::{InputAction, TuiState};
@@ -22,9 +23,8 @@ pub fn handle_add_config_input(
 ) -> Result<()> {
     match key {
         KeyCode::Esc => {
-            state.input.input_mode = false;
-            state.input.tun_mode = false;
-            state.input.error_input = false;
+            state.input.mode = InputMode::Normal;
+            state.input.error = false;
             state.input.buffer.clear();
         }
         KeyCode::Enter => {
@@ -41,18 +41,17 @@ pub fn handle_add_config_input(
                 match result {
                     Ok(_) => {
                         if app.add_config(None).is_err() {
-                            state.input.error_input = true;
+                            state.input.error = true;
                         } else {
-                            state.input.error_input = false;
+                            state.input.error = false;
                             state.input.buffer.clear();
                             state.app.len = app.get_len();
-                            state.input.input_mode = false;
-                            state.input.tun_mode = false;
+                            state.input.mode = InputMode::Normal;
                             state.app.selected_index = 0;
                         }
                     }
                     Err(_) => {
-                        state.input.error_input = true;
+                        state.input.error = true;
                     }
                 }
             }
@@ -60,7 +59,7 @@ pub fn handle_add_config_input(
         KeyCode::Backspace => {
             state.input.buffer.pop();
             if state.input.buffer.is_empty() {
-                state.input.error_input = false;
+                state.input.error = false;
             }
         }
         KeyCode::Char(c) => {
@@ -75,14 +74,14 @@ pub fn handle_add_config_input(
 pub fn handle_route_value_input(state: &mut TuiState, key: KeyCode) {
     match key {
         KeyCode::Esc => {
-            state.ui.value_input = false;
+            state.input.mode = InputMode::Normal;
             state.input.buffer.clear();
         }
         KeyCode::Enter => {
             if !state.input.buffer.is_empty() {
                 state.settings.route_value = Some(state.input.buffer.clone());
             }
-            state.ui.value_input = false;
+            state.input.mode = InputMode::Normal;
             state.input.buffer.clear();
         }
         KeyCode::Backspace => {
@@ -130,12 +129,15 @@ pub fn handle_normal_input(
         }
 
         KeyCode::Char(keys::ADD_CONFIG) => {
-            state.input.input_mode = true;
+            state.input.mode = InputMode::AddConfig { tun: (false) };
+            state.input.buffer.clear();
+            state.input.error = false;
         }
         
         KeyCode::Char(keys::ADD_TUN_CONFIG) => {
-            state.input.input_mode = true;
-            state.input.tun_mode = true;
+            state.input.mode = InputMode::AddConfig { tun: (true) };
+            state.input.buffer.clear();
+            state.input.error = false;
         }
         
         KeyCode::Char(keys::DELETE_CONFIG) => {
@@ -230,7 +232,7 @@ pub fn handle_normal_input(
                 }
             } else if state.ui.transit && state.ui.settings_panel {
                 if state.ui.settings_selected == ui::ROUTE_VALUE_INDEX {
-                    state.ui.value_input = true;
+                    state.input.mode = InputMode::RouteValue;
                     state.input.buffer.clear();
                 } else if state.ui.settings_selected != ui::DNS_TYPE_INDEX {
                     state.ui.context_menu = true;
@@ -297,7 +299,7 @@ pub fn handle_normal_input(
                     1
                 };
                 state.ui.popup_selected = (state.ui.popup_selected + 1) % context_len;
-            } else if state.ui.transit && state.ui.settings_panel && !state.ui.value_input {
+            } else if state.ui.transit && state.ui.settings_panel {
                 state.ui.settings_selected = match state.ui.settings_selected {
                     ui::ROUTE_ACTION_INDEX => ui::DNS_TYPE_INDEX,
                     ui::ROUTE_TYPE_INDEX => ui::DNS_TYPE_INDEX,
@@ -321,7 +323,7 @@ pub fn handle_normal_input(
                     1
                 };
                 state.ui.popup_selected = (state.ui.popup_selected + context_len - 1) % context_len;
-            } else if state.ui.transit && state.ui.settings_panel && !state.ui.value_input {
+            } else if state.ui.transit && state.ui.settings_panel {
                 state.ui.settings_selected = match state.ui.settings_selected {
                     ui::DNS_VALUE2_INDEX => ui::DNS_VALUE1_INDEX,
                     ui::DNS_TYPE_INDEX => ui::ROUTE_ACTION_INDEX,
