@@ -16,9 +16,8 @@ pub struct AppState {
 }
 
 pub struct InputState {
-    pub input_mode: bool, 
-    pub tun_mode: bool, 
-    pub error_input: bool, 
+    pub mode: InputMode,
+    pub error: bool,
     pub buffer: String, 
 }
 
@@ -36,8 +35,7 @@ pub struct UiState {
     pub transit: bool, 
     pub context_menu: bool, 
     pub popup_selected: usize, 
-    pub custom: bool, 
-    pub value_input: bool, 
+    pub custom: bool,
     pub settings_selected: usize,
 }
 
@@ -51,8 +49,7 @@ pub struct TuiState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputMode {
     Normal, 
-    AddConfig, 
-    AddTunConfig, 
+    AddConfig { tun: bool },
     RouteValue,
 }
 
@@ -86,14 +83,12 @@ impl TuiState {
                 context_menu: false,
                 popup_selected: 0,
                 settings_selected: 0,
-                value_input: false,
                 custom: false,
             },
             input: InputState {
-                input_mode: false,
-                tun_mode: false,
+                mode: InputMode::Normal,
                 buffer: String::new(),
-                error_input: false, 
+                error: false,
             },
             settings: SettingsState {
                 route_action: None,
@@ -106,17 +101,17 @@ impl TuiState {
         })
     }
 
-    pub fn moder(&self) -> InputMode {
-        if self.input.input_mode {
-            if self.input.tun_mode {
-                InputMode::AddTunConfig
-            } else {
-                InputMode::AddConfig
-            }
-        } else if self.ui.value_input {
-            InputMode::RouteValue
-        } else {
-            InputMode::Normal
-        }
-    }
+    // pub fn moder(&self) -> InputMode {
+    //     if self.input.input_mode {
+    //         if self.input.tun_mode {
+    //             InputMode::AddTunConfig
+    //         } else {
+    //             InputMode::AddConfig
+    //         }
+    //     } else if self.ui.value_input {
+    //         InputMode::RouteValue
+    //     } else {
+    //         InputMode::Normal
+    //     }
+    // }
 } 

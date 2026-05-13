@@ -193,15 +193,12 @@ pub fn run(app: &mut App) -> Result<()> {
         // -------- INPUT --------
         if event::poll(timing::EVENT_POLL)? {
             if let Event::Key(key) = event::read()? {
-                match state.moder() {
-                    InputMode::AddConfig => {
-                        handle_add_config_input(app, &mut state, key.code, false)?; 
+                match state.input.mode {
+                    InputMode::AddConfig { tun } => {
+                        handle_add_config_input(app, &mut state, key.code, tun)?;
                     }
-                    InputMode::AddTunConfig => {
-                        handle_add_config_input(app, &mut state, key.code, true)?; 
-                    } 
                     InputMode::RouteValue => {
-                        handle_route_value_input(&mut state, key.code);
+                         handle_route_value_input(&mut state, key.code);
                     }
                     InputMode::Normal => {
                         match handle_normal_input(app, &mut state, key.code, &change_flag)? {
@@ -309,8 +306,8 @@ pub fn run(app: &mut App) -> Result<()> {
             f.render_stateful_widget(list, vertical[0], &mut tui_state);
 
             // ADDING CONFIG LINE
-            if state.input.input_mode && !state.input.tun_mode {
-                let (color, message) = if state.input.error_input {
+            if matches!(state.input.mode, InputMode::AddConfig { tun: false }) {
+                let (color, message) = if state.input.error {
                     (Color::Red, text::ERROR_INPUT)
                 } else {
                     (Color::Yellow, text::ADD_CONFIG_URL)
@@ -336,8 +333,8 @@ pub fn run(app: &mut App) -> Result<()> {
             }
 
             // ADDING TUN CONFIG LINE
-            if state.input.input_mode && state.input.tun_mode {
-                let (color, message) = if state.input.error_input {
+            if matches!(state.input.mode, InputMode::AddConfig { tun: true }) {
+                let (color, message) = if state.input.error {
                     (Color::Red, text::ERROR_INPUT)
                 } else {
                     (Color::Blue, text::ADD_TUN_CONFIG_URL)
@@ -554,7 +551,7 @@ pub fn run(app: &mut App) -> Result<()> {
                 f.render_stateful_widget(list, context_panel_area, &mut tui_state);
             }
 
-            if state.ui.value_input {
+            if state.input.mode == InputMode::RouteValue {
                 let input = Paragraph::new(state.input.buffer.as_str())
                     .block(
                         Block::default()
