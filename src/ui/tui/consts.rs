@@ -114,7 +114,7 @@ pub mod ui {
     pub const DNS_VALUE2_INDEX: usize = 5;
     pub const ENTER_INDEX: usize = 6;
 
-    pub const SETTINGS_FIELDS_COUNT: usize = 6;
+    pub const SETTINGS_FIELDS_COUNT: usize = 7;
     pub const ROUTE_FIELDS_COUNT: usize = 3;
 
     pub const ROUTE_ACTION_CUSTOM_INDEX: usize = 3;

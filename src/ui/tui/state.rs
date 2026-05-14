@@ -68,11 +68,19 @@ impl TuiState {
                 .to_string()
         });
 
+        let configs = app.get_list(); 
+        let current = app.get_current_config(); 
+
+        let selected_index = current.as_ref().and_then(|name| configs.iter().position(|cfg| cfg == name)).unwrap_or(0); 
+        if !configs.is_empty() {
+            app.set_handler_config_by_number(selected_index)?; 
+        }
+
         let settings_panel = !running.as_ref().is_some_and(|x| !x.is_empty());
 
         Ok(Self {
             app: AppState {
-                selected_index: 0,
+                selected_index,
                 len: app.get_len(),
                 running,
                 enter_mode: false,

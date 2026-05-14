@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
+use anyhow::{Result};
 use crossterm::event::KeyCode;
 
 #[cfg(not(feature = "daemon"))]
@@ -105,13 +105,14 @@ pub fn handle_normal_input(
             if state.ui.context_menu {
                 state.ui.context_menu = false; 
                 state.input.buffer.clear();
+                return Ok(InputAction::Continue);
 
 
             }
             else if state.app.running.is_some() {
                 app.send_quit()?;
             }
-            return Ok((InputAction::Quit));
+            return Ok(InputAction::Quit);
         }
 
         KeyCode::Char(keys::QUIT) => {
@@ -160,6 +161,7 @@ pub fn handle_normal_input(
         }
         
         KeyCode::Tab => {
+            state.ui.context_menu = false;
             state.ui.settings_panel = !state.ui.settings_panel;
         }
 
@@ -184,7 +186,8 @@ pub fn handle_normal_input(
         }
 
         KeyCode::Enter => {
-            if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
+            if state.ui.settings_selected == 6 {
+                app.set_handler_config_by_number(state.app.selected_index)?;
                 let mut route_rules: Vec<String> = Vec::new();
                 if let Some(action) = state.settings.route_action.as_ref() {
                     route_rules.push(action.to_string());
@@ -197,6 +200,7 @@ pub fn handle_normal_input(
                 }
                 let route_rules = vec![route_rules.join(":")];
                 app.handler_mut().add_route_rules(&route_rules)?;
+                app.save()?;
             }
 
             if state.ui.context_menu {
@@ -336,5 +340,5 @@ pub fn handle_normal_input(
         _ => {}
     }
     
-    Ok((InputAction::Continue))
+    Ok(InputAction::Continue)
 }
