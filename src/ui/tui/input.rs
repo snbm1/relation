@@ -186,21 +186,22 @@ pub fn handle_normal_input(
         }
 
         KeyCode::Enter => {
-            if state.ui.settings_selected == 6 {
+            if state.ui.settings_selected == ui::ENTER_INDEX {
                 app.set_handler_config_by_number(state.app.selected_index)?;
-                let mut route_rules: Vec<String> = Vec::new();
-                if let Some(action) = state.settings.route_action.as_ref() {
-                    route_rules.push(action.to_string());
+
+                let action = state.settings.route_action.as_deref();
+                let r_type = state.settings.route_type.as_deref();
+                let value = state.settings.route_value.as_deref();
+
+                let has_data = [action, r_type, value].iter().any(|opt| opt.map_or(false, |s| !s.is_empty()));
+                if has_data {
+                    let parts: Vec<&str> = [action, r_type, value].iter().copied().flatten().filter(|s| !s.is_empty()).collect();
+
+                    let route_rules = vec![parts.join(":")];
+
+                    app.handler_mut().add_route_rules(&route_rules)?;
+                    app.save()?;
                 }
-                if let Some(r_type) = state.settings.route_type.as_ref() {
-                    route_rules.push(r_type.to_string());
-                }
-                if let Some(value) = state.settings.route_value.as_ref() {
-                    route_rules.push(value.to_string());
-                }
-                let route_rules = vec![route_rules.join(":")];
-                app.handler_mut().add_route_rules(&route_rules)?;
-                app.save()?;
             }
 
             if state.ui.context_menu {

@@ -4,7 +4,7 @@ mod minireq;
 mod tuiguard;
 mod render_traffic;
 mod setup;
-mod state; 
+mod state;
 mod input;
 
 
@@ -16,7 +16,7 @@ use input::{
 
 use state::{InputAction, InputMode, TuiState};
 
-use setup::setup_tty; 
+use setup::setup_tty;
 
 use render_traffic::render_traffic_bar;
 
@@ -91,7 +91,7 @@ pub fn run(app: &mut App) -> Result<()> {
     let mut rx_list: VecDeque<u64> = VecDeque::new();
     let mut tx_list: VecDeque<u64> = VecDeque::new();
 
-    let mut state = TuiState::new(app)?; 
+    let mut state = TuiState::new(app)?;
 
     let current_ip = Arc::new(Mutex::new(net::LOADING_IP.to_string()));
     let ip_shared = Arc::clone(&current_ip);
@@ -492,7 +492,7 @@ pub fn run(app: &mut App) -> Result<()> {
             }
 
             // Context Menu
-            if state.ui.context_menu {
+            if state.ui.context_menu && state.ui.settings_selected != 6 {
                 let context_panel_area = ratatui::layout::Rect {
                     x: horizontal[1].x + ui::CONTEXT_X_OFFSET,
                     y: horizontal[1].y + ui::CONTEXT_Y_OFFSET,
