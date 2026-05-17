@@ -31,8 +31,8 @@ pub struct SettingsState {
 }
 
 pub struct UiState {
-    pub settings_panel: bool, 
-    pub transit: bool, 
+    pub right_panel: RightPanel,
+    pub focus: Focus,
     pub context_menu: bool, 
     pub popup_selected: usize, 
     pub custom: bool,
@@ -58,6 +58,18 @@ pub enum InputAction {
     Quit, 
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RightPanel {
+    Logs,
+    Settings,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Focus {
+    Configs,
+    RightPanel
+}
+
 impl TuiState {
    pub fn new(app: &mut App) -> Result<Self> {
         let running = app.get_status()?.map(|s| {
@@ -76,7 +88,11 @@ impl TuiState {
             app.set_handler_config_by_number(selected_index)?; 
         }
 
-        let settings_panel = !running.as_ref().is_some_and(|x| !x.is_empty());
+       let right_panel = if running.as_ref().is_some_and(|x| !x.is_empty()) {
+           RightPanel::Logs
+       } else {
+           RightPanel::Settings
+       };
 
         Ok(Self {
             app: AppState {
@@ -86,8 +102,8 @@ impl TuiState {
                 enter_mode: false,
             },
             ui: UiState {
-                settings_panel,
-                transit: false,
+                right_panel,
+                focus: Focus::Configs,
                 context_menu: false,
                 popup_selected: 0,
                 settings_selected: 0,

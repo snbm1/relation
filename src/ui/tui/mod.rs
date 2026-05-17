@@ -14,7 +14,7 @@ use input::{
     handle_route_value_input,
 };
 
-use state::{InputAction, InputMode, TuiState};
+use state::{Focus, RightPanel, InputAction, InputMode, TuiState};
 
 use setup::setup_tty;
 
@@ -288,7 +288,7 @@ pub fn run(app: &mut App) -> Result<()> {
                     Block::default()
                         .title(text::CONFIGS_TITLE)
                         .borders(Borders::ALL)
-                        .border_style(if !state.ui.transit {
+                        .border_style(if state.ui.focus == Focus::Configs {
                             Style::default().fg(Color::Yellow)
                         } else {
                             Style::default()
@@ -367,7 +367,8 @@ pub fn run(app: &mut App) -> Result<()> {
             f.render_widget(helper, root[1]);
 
             // LOG/SETTINGS PANEL
-            if !state.ui.settings_panel {
+            match state.ui.right_panel {
+                RightPanel::Logs => {
                 let logs = app.get_logs();
                 let log_items: Vec<ListItem> =
                     logs.iter().map(|l| ListItem::new(l.clone())).collect();
@@ -379,8 +380,9 @@ pub fn run(app: &mut App) -> Result<()> {
                 );
 
                 f.render_widget(log_list, horizontal[1]);
-                app.read_logs();
-            } else {
+                    app.read_logs();
+
+            } RightPanel::Settings => {
                 let action_text = state.settings.route_action.as_deref().unwrap_or(text::EMPTY);
                 let type_text = state.settings.route_type.as_deref().unwrap_or(text::EMPTY);
                 let value_text = state.settings.route_value.as_deref().unwrap_or(text::EMPTY);
@@ -388,49 +390,49 @@ pub fn run(app: &mut App) -> Result<()> {
                 let value1_text = state.settings.dns_value1.as_deref().unwrap_or(text::EMPTY);
                 let value2_text = state.settings.dns_value2.as_deref().unwrap_or(text::EMPTY);
 
-                let action_style = if state.ui.transit && state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
+                let action_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let type_style = if state.ui.transit && state.ui.settings_selected == ui::ROUTE_TYPE_INDEX {
+                let type_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_TYPE_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let value_style = if state.ui.transit && state.ui.settings_selected == ui::ROUTE_VALUE_INDEX {
+                let value_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_VALUE_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let dns_type_style = if state.ui.transit && state.ui.settings_selected == ui::DNS_TYPE_INDEX {
+                let dns_type_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_TYPE_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let dns_value1_style = if state.ui.transit && state.ui.settings_selected == ui::DNS_VALUE1_INDEX {
+                let dns_value1_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_VALUE1_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let dns_value2_style = if state.ui.transit && state.ui.settings_selected == ui::DNS_VALUE2_INDEX {
+                let dns_value2_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_VALUE2_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let enter_style = if state.ui.transit && state.ui.settings_selected == ui::ENTER_INDEX {
+                let enter_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ENTER_INDEX {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
@@ -481,7 +483,7 @@ pub fn run(app: &mut App) -> Result<()> {
                     Block::default()
                         .title(text::SETTINGS_TITLE)
                         .borders(Borders::ALL)
-                        .border_style(if state.ui.transit {
+                        .border_style(if state.ui.focus == Focus::RightPanel {
                             Style::default().fg(Color::Blue)
                         } else {
                             Style::default()
@@ -490,7 +492,7 @@ pub fn run(app: &mut App) -> Result<()> {
                 );
                 f.render_widget(settings, horizontal[1]);
             }
-
+            }
             // Context Menu
             if state.ui.context_menu && state.ui.settings_selected != 6 {
                 let context_panel_area = ratatui::layout::Rect {

@@ -11,7 +11,7 @@ use crate::datamanager::async_app::App;
 use crate::ui::tui::state::InputMode;
 
 use super::consts::{keys, route, timing, ui};
-use super::state::{InputAction, TuiState};
+use super::state::{Focus, RightPanel, InputAction, TuiState};
 
 
 
@@ -162,7 +162,10 @@ pub fn handle_normal_input(
         
         KeyCode::Tab => {
             state.ui.context_menu = false;
-            state.ui.settings_panel = !state.ui.settings_panel;
+            state.ui.right_panel = match state.ui.right_panel {
+                RightPanel::Logs => RightPanel::Settings,
+                RightPanel::Settings => RightPanel::Logs,
+            };
         }
 
         KeyCode::Char(c) => {
@@ -235,7 +238,7 @@ pub fn handle_normal_input(
                     state.ui.context_menu = false;
                     state.ui.popup_selected = 0;
                 }
-            } else if state.ui.transit && state.ui.settings_panel {
+            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
                 if state.ui.settings_selected == ui::ROUTE_VALUE_INDEX {
                     state.input.mode = InputMode::RouteValue;
                     state.input.buffer.clear();
@@ -253,8 +256,8 @@ pub fn handle_normal_input(
                     state.app.running = Some(app.get_list()[state.app.selected_index].clone());
                     app.set_log_file();
                     app.run_app(None, Some(number as usize - 1), false)?;
-                    state.ui.settings_panel = false;
-                    state.ui.transit = false;
+                    state.ui.right_panel = RightPanel::Logs;
+                    state.ui.focus = Focus::Configs;
                     state.app.enter_mode = true;
                 } else if state.app.enter_mode {
                     let name = app.get_list()[state.app.selected_index].clone();
@@ -265,35 +268,34 @@ pub fn handle_normal_input(
                     } else {
                         app.stop_app()?;
                         std::thread::sleep(timing::RESTART_DELAY);
-                        let number = state.app.selected_index as u16 + 1;
                         state.app.running = Some(name.clone());
                         app.set_log_file();
-                        app.run_app(None, Some(number as usize - 1), false)?;
-                        state.ui.settings_panel = false;
-                        state.ui.transit = false;
+                        app.run_app(None, Some(state.app.selected_index), false)?;
+                        state.ui.right_panel = RightPanel::Logs;
+                        state.ui.focus = Focus::Configs;
                     }
                 }
             }
         }
 
         KeyCode::Right => {
-            if !state.ui.transit {
-                state.ui.transit = true;
-            } else if state.ui.transit && state.ui.settings_panel {
+            if state.ui.focus == Focus::Configs {
+                state.ui.focus = Focus::RightPanel;
+            } else if state.ui.right_panel == RightPanel::Settings {
                 state.ui.settings_selected = (state.ui.settings_selected + 1) % ui::SETTINGS_FIELDS_COUNT;
             }
         }
         
         KeyCode::Left => {
-            if state.ui.settings_selected == 0 && state.ui.transit {
-                state.ui.transit = false;
-            } else if state.ui.transit && state.ui.settings_panel {
-                state.ui.settings_selected = (state.ui.settings_selected + ui::ROUTE_FIELDS_COUNT - 1) % ui::ROUTE_FIELDS_COUNT;
+            if state.ui.settings_selected == 0 && state.ui.focus == Focus::RightPanel {
+                state.ui.focus = Focus::Configs;
+            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
+                state.ui.settings_selected = (state.ui.settings_selected + ui::SETTINGS_FIELDS_COUNT - 1) % ui::SETTINGS_FIELDS_COUNT;
             }
         }
 
         KeyCode::Down | KeyCode::Char(keys::DOWN_ALT) => {
-            if !state.ui.transit && state.app.len > 0 {
+            if state.ui.focus == Focus::Configs && state.app.len > 0 {
                 state.app.selected_index = (state.app.selected_index + 1) % state.app.len;
             } else if state.ui.context_menu {
                 let context_len = if state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
@@ -304,7 +306,7 @@ pub fn handle_normal_input(
                     1
                 };
                 state.ui.popup_selected = (state.ui.popup_selected + 1) % context_len;
-            } else if state.ui.transit && state.ui.settings_panel {
+            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
                 state.ui.settings_selected = match state.ui.settings_selected {
                     ui::ROUTE_ACTION_INDEX => ui::DNS_TYPE_INDEX,
                     ui::ROUTE_TYPE_INDEX => ui::DNS_TYPE_INDEX,
@@ -317,7 +319,7 @@ pub fn handle_normal_input(
         }
 
         KeyCode::Up | KeyCode::Char(keys::UP_ALT) => {
-            if state.app.len > 0 && !state.ui.transit {
+            if state.app.len > 0 && state.ui.focus == Focus::Configs {
                 state.app.selected_index = (state.app.selected_index + state.app.len - 1) % state.app.len;
             } else if state.ui.context_menu {
                 let context_len = if state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
@@ -328,7 +330,7 @@ pub fn handle_normal_input(
                     1
                 };
                 state.ui.popup_selected = (state.ui.popup_selected + context_len - 1) % context_len;
-            } else if state.ui.transit && state.ui.settings_panel {
+            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
                 state.ui.settings_selected = match state.ui.settings_selected {
                     ui::DNS_VALUE2_INDEX => ui::DNS_VALUE1_INDEX,
                     ui::DNS_TYPE_INDEX => ui::ROUTE_ACTION_INDEX,
