@@ -28,6 +28,9 @@ pub struct SettingsState {
     pub dns_type: Option<String>,
     pub dns_address: Option<String>,
     pub dns_port: Option<String>,
+    pub manage_action: Option<String>, 
+    pub manage_value1: Option<String>, 
+    pub manage_value2: Option<String>,
 }
 
 pub struct UiState {
@@ -128,6 +131,9 @@ impl TuiState {
                 dns_type: None,
                 dns_address: None,
                 dns_port: None,
+                manage_action: None, 
+                manage_value1: None, 
+                manage_value2: None,
             },
         })
     }

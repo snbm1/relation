@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::Result;
 use crossterm::event::KeyCode;
 use crate::ui::tui::consts::DNS;
+use crate::ui::tui::consts::manage; 
 use crate::configurator::dns;
 #[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
@@ -88,6 +89,12 @@ pub fn handle_route_value_input(state: &mut TuiState, key: KeyCode) {
                     }
                     ui::DNS_PORT => {
                         state.settings.dns_port = Some(state.input.buffer.clone());
+                    }
+                    ui::MANAGE_VALUE1 => {
+                        state.settings.manage_value1 = Some(state.input.buffer.clone()); 
+                    }
+                    ui::MANAGE_VALUE2 => {
+                        state.settings.manage_value2 = Some(state.input.buffer.clone()); 
                     }
                     _ => {}
                 }
@@ -204,7 +211,7 @@ pub fn handle_normal_input(
             if state.ui.settings_selected == ui::ENTER_INDEX {
                 app.set_handler_config_by_number(state.app.selected_index)?;
 
-                let action = state.settings.route_action.as_deref();
+                let r_action = state.settings.route_action.as_deref();
                 let r_type = state.settings.route_type.as_deref();
                 let r_value = state.settings.route_value.as_deref();
 
@@ -212,11 +219,15 @@ pub fn handle_normal_input(
                 let addr_dns = state.settings.dns_address.as_deref(); 
                 let port_dns = state.settings.dns_port.as_deref(); 
 
-                let mut has_data = [action, r_type, r_value]
+                let d_action = state.settings.manage_action.as_deref(); 
+                let d_value1 = state.settings.manage_value1.as_deref(); 
+                let d_value2 = state.settings.manage_value2.as_deref(); 
+
+                let mut has_data = [r_action, r_type, r_value]
                     .iter()
                     .any(|opt| opt.map_or(false, |s| !s.is_empty()));
                 if has_data {
-                    let parts: Vec<&str> = [action, r_type, r_value]
+                    let parts: Vec<&str> = [r_action, r_type, r_value]
                         .iter()
                         .copied()
                         .flatten()
@@ -235,6 +246,14 @@ pub fn handle_normal_input(
                     let dns_rules = vec![parts.join(":")]; 
                     app.handler_mut().add_dns_servers(&dns_rules)?;
                     app.save()?; 
+                }
+
+                has_data = [d_action, d_value1, d_value2].iter().any(|opt| opt.map_or(false, |s| !s.is_empty())); 
+                if has_data {
+                    let parts: Vec<&str> = [d_action, d_value1, d_value2].iter().copied().flatten().filter(|s| !s.is_empty()).collect(); 
+                    let manage_rules = vec![parts.join(":")]; 
+                    app.handler_mut().manage(&manage_rules)?; 
+                    app.save()?;
                 }
 
             }
@@ -268,6 +287,12 @@ pub fn handle_normal_input(
                         }
                     }
 
+                    ui::MANAGE_ACTION => {
+                        if let Some((_, value)) = manage::ACTIONS.get(state.ui.popup_selected) {
+                            state.settings.manage_action = Some((*value).to_string());
+                        }
+                    }
+
                     _ => {}
                 }
                 if !state.ui.custom {
@@ -278,7 +303,7 @@ pub fn handle_normal_input(
                 && state.ui.right_panel == RightPanel::Settings
             {
                 match state.ui.settings_selected {
-                    ui::ROUTE_VALUE_INDEX | ui::DNS_ADDR | ui::DNS_PORT => {
+                    ui::ROUTE_VALUE_INDEX | ui::DNS_ADDR | ui::DNS_PORT | ui::MANAGE_VALUE1 | ui::MANAGE_VALUE2=> {
                         state.input.mode = InputMode::ValueInput; 
                         state.input.buffer.clear();
                     }
@@ -351,6 +376,8 @@ pub fn handle_normal_input(
                     route::TYPES.len()
                 } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
                     DNS::TYPES.len()
+                } else if state.ui.settings_selected == ui::MANAGE_ACTION {
+                    manage::ACTIONS.len()
                 }else {
                     1
                 };
@@ -362,9 +389,12 @@ pub fn handle_normal_input(
                     ui::ROUTE_ACTION_INDEX => ui::DNS_TYPE_INDEX,
                     ui::ROUTE_TYPE_INDEX => ui::DNS_ADDR,
                     ui::ROUTE_VALUE_INDEX => ui::DNS_PORT,
-                    ui::DNS_TYPE_INDEX => ui::ENTER_INDEX,
-                    ui::DNS_ADDR => ui::ENTER_INDEX,
-                    ui::DNS_PORT => ui::ENTER_INDEX,
+                    ui::DNS_TYPE_INDEX => ui::MANAGE_ACTION,
+                    ui::DNS_ADDR => ui::MANAGE_VALUE1,
+                    ui::DNS_PORT => ui::MANAGE_VALUE2,
+                    ui::MANAGE_ACTION => ui::ENTER_INDEX, 
+                    ui::MANAGE_VALUE1 => ui::ENTER_INDEX, 
+                    ui::MANAGE_VALUE2 => ui::ENTER_INDEX,
                     _ => state.ui.settings_selected,
                 };
             }
@@ -381,6 +411,8 @@ pub fn handle_normal_input(
                     route::TYPES.len()
                 } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
                     DNS::TYPES.len()
+                } else if state.ui.settings_selected == ui::MANAGE_ACTION {
+                    manage::ACTIONS.len()
                 } else {
                     1
                 };
@@ -395,7 +427,10 @@ pub fn handle_normal_input(
                     ui::ROUTE_ACTION_INDEX => ui::ENTER_INDEX, 
                     ui::ROUTE_VALUE_INDEX => ui::ENTER_INDEX, 
                     ui::ROUTE_TYPE_INDEX => ui::ENTER_INDEX,
-                    ui::ENTER_INDEX => ui::DNS_ADDR,
+                    ui::MANAGE_ACTION => ui::DNS_TYPE_INDEX, 
+                    ui::MANAGE_VALUE1 => ui::DNS_ADDR, 
+                    ui::MANAGE_VALUE2 => ui::DNS_PORT,
+                    ui::ENTER_INDEX => ui::MANAGE_VALUE1,
                     _ => state.ui.settings_selected,
                 };
             }
