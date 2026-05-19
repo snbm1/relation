@@ -110,11 +110,13 @@ pub mod ui {
     pub const ROUTE_TYPE_INDEX: usize = 1;
     pub const ROUTE_VALUE_INDEX: usize = 2;
     pub const DNS_TYPE_INDEX: usize = 3;
-    pub const DNS_VALUE1_INDEX: usize = 4;
-    pub const DNS_VALUE2_INDEX: usize = 5;
-    pub const ENTER_INDEX: usize = 6;
+    pub const DNS_ADDR: usize = 4;
+    pub const DNS_PORT: usize = 5;
+    pub const DNS_VALUE1_INDEX: usize = 6;
+    pub const DNS_VALUE2_INDEX: usize = 7;
+    pub const ENTER_INDEX: usize = 8;
 
-    pub const SETTINGS_FIELDS_COUNT: usize = 7;
+    pub const SETTINGS_FIELDS_COUNT: usize = 9;
     pub const ROUTE_FIELDS_COUNT: usize = 3;
 
     pub const ROUTE_ACTION_CUSTOM_INDEX: usize = 3;
@@ -142,8 +144,8 @@ pub mod text {
     pub const ACTION_LABEL: &str = "Action: ";
     pub const TYPE_LABEL: &str = "Type: ";
     pub const VALUE_LABEL: &str = "Value: ";
-    pub const VALUE1_LABEL: &str = "Value 1: ";
-    pub const VALUE2_LABEL: &str = "Value 2: ";
+    pub const DNS_ADDR_LABEL: &str = "ADDR: ";
+    pub const DNS_PORT_LABEL: &str = "PORT: ";
 
     pub const ENTER_BUTTON: &str = "[ENTER]";
     pub const PERSONAL: &str = "personal";
@@ -151,7 +153,7 @@ pub mod text {
     pub const INPUT_PREFIX: &str = "Input: ";
 
     pub const HELP: &str =
-        "↑/↓ navigate   q exit   a adding config  A adding tun config d delete config";
+        "↑/↓ navigate   TAB switching RightPanel   q exit   a adding config  A adding tun config    d delete config";
 
     pub const TRAFFIC_TITLE: &str = "Traffic";
 }
@@ -201,4 +203,8 @@ pub mod route {
         ("is expensive", "ne"),
         ("constrained", "nc"),
     ];
+}
+
+pub mod dns {
+    pub const TYPES: &[(&str, &str)] = &[("udp", "up"), ("tcp", "tp")];
 }
