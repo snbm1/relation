@@ -44,7 +44,6 @@ pub async fn send_http_request(addr: &str, request: &str) -> Result<String, ReqE
 
     let mut stream = TcpStream::connect(addr).await?;
     stream.write_all(request.as_bytes()).await?;
-    stream.shutdown().await?;
 
     let mut response = String::new();
     stream.read_to_string(&mut response).await?;
