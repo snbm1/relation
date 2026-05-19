@@ -9,6 +9,8 @@ use crate::datamanager::app::App;
 #[cfg(feature = "daemon")]
 use crate::datamanager::async_app::App;
 
+
+use crate::ui::tui::consts::dns;
 use crate::ui::tui::state::InputMode;
 
 use super::consts::{keys, route, timing, ui};
@@ -78,7 +80,24 @@ pub fn handle_route_value_input(state: &mut TuiState, key: KeyCode) {
         }
         KeyCode::Enter => {
             if !state.input.buffer.is_empty() {
-                state.settings.route_value = Some(state.input.buffer.clone());
+                match state.ui.settings_selected {
+                    ui::ROUTE_VALUE_INDEX => {
+                        state.settings.route_value = Some(state.input.buffer.clone());
+                    }
+                    ui::DNS_ADDR => {
+                        state.settings.dns_address = Some(state.input.buffer.clone());
+                    }
+                    ui::DNS_PORT => {
+                        state.settings.dns_port = Some(state.input.buffer.clone());
+                    }
+                    ui::DNS_VALUE1_INDEX => {
+                        state.settings.dns_value1 = Some(state.input.buffer.clone());
+                    }
+                    ui::DNS_VALUE2_INDEX => {
+                        state.settings.dns_value2 = Some(state.input.buffer.clone());
+                    }
+                    _ => {}
+                }
             }
             state.input.mode = InputMode::Normal;
             state.input.buffer.clear();
@@ -194,7 +213,7 @@ pub fn handle_normal_input(
 
                 let action = state.settings.route_action.as_deref();
                 let r_type = state.settings.route_type.as_deref();
-                let value = state.settings.route_value.as_deref();
+                let r_value = state.settings.route_value.as_deref();
 
                 let has_data = [action, r_type, value]
                     .iter()
@@ -207,11 +226,31 @@ pub fn handle_normal_input(
                         .filter(|s| !s.is_empty())
                         .collect();
 
+                let d_type = state.settings.dns_type.as_deref();
+                let addr_dns = state.settings.dns_address.as_deref();
+                let port_dns = state.settings.dns_port.as_deref();
+                
+
+                let mut has_data = [action, r_type, r_value].iter().any(|opt| opt.map_or(false, |s| !s.is_empty()));
+                if has_data {
+                    let parts: Vec<&str> = [action, r_type, r_value].iter().copied().flatten().filter(|s| !s.is_empty()).collect();
+
                     let route_rules = vec![parts.join(":")];
 
                     app.handler_mut().add_route_rules(&route_rules)?;
                     app.save()?;
                 }
+
+                has_data = [d_type, addr_dns, port_dns].iter().any(|opt| opt.map_or(false, |s| !s.is_empty()));
+
+                if has_data {
+                    let parts: Vec<&str> = [d_type, addr_dns, port_dns].iter().copied().flatten().filter(|s| !s.is_empty()).collect();
+                    let dns_rules = vec![parts.join(":")];
+                    app.handler_mut().add_dns_servers(&dns_rules)?;
+                    app.save()?;
+                }
+
+
             }
 
             if state.ui.context_menu {
@@ -228,14 +267,18 @@ pub fn handle_normal_input(
                             }
                         } else if let Some(value) = route::ACTIONS.get(state.ui.popup_selected) {
                             state.settings.route_action = Some((*value).to_string());
-                            state.ui.context_menu = false;
-                            state.ui.popup_selected = 0;
                         }
                     }
 
                     ui::ROUTE_TYPE_INDEX => {
                         if let Some((_, value)) = route::TYPES.get(state.ui.popup_selected) {
                             state.settings.route_type = Some((*value).to_string());
+                        }
+                    }
+
+                    ui::DNS_TYPE_INDEX => {
+                        if let Some((_, value)) = dns::TYPES.get(state.ui.popup_selected) {
+                            state.settings.dns_type = Some((*value).to_string());
                         }
                     }
 
@@ -249,9 +292,15 @@ pub fn handle_normal_input(
                 && state.ui.right_panel == RightPanel::Settings
             {
                 if state.ui.settings_selected == ui::ROUTE_VALUE_INDEX {
-                    state.input.mode = InputMode::RouteValue;
+                    state.input.mode = InputMode::ValueInput;
                     state.input.buffer.clear();
-                } else if state.ui.settings_selected != ui::DNS_TYPE_INDEX {
+                } else if state.ui.settings_selected == ui::DNS_ADDR {
+                    state.input.mode = InputMode::ValueInput;
+                    state.input.buffer.clear();
+                } else if state.ui.settings_selected == ui::DNS_PORT {
+                    state.input.mode = InputMode::ValueInput;
+                    state.input.buffer.clear();
+                } if state.ui.settings_selected != ui::ENTER_INDEX {
                     state.ui.context_menu = true;
                     state.ui.popup_selected = 0;
                 }
@@ -285,6 +334,7 @@ pub fn handle_normal_input(
                     }
                 }
             }
+            }
         }
 
         KeyCode::Right => {
@@ -316,6 +366,8 @@ pub fn handle_normal_input(
                     route::ACTIONS.len() + 1
                 } else if state.ui.settings_selected == ui::ROUTE_TYPE_INDEX {
                     route::TYPES.len()
+                } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
+                    dns::TYPES.len()
                 } else {
                     1
                 };
@@ -343,6 +395,8 @@ pub fn handle_normal_input(
                     route::ACTIONS.len() + 1
                 } else if state.ui.settings_selected == ui::ROUTE_TYPE_INDEX {
                     route::TYPES.len()
+                } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
+                    dns::TYPES.len()
                 } else {
                     1
                 };

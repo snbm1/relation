@@ -22,12 +22,12 @@ pub struct InputState {
 }
 
 pub struct SettingsState {
-    pub route_action: Option<String>,
-    pub route_type: Option<String>,
-    pub route_value: Option<String>,
-    pub dns_type: Option<String>,
-    pub dns_value1: Option<String>,
-    pub dns_value2: Option<String>,
+   pub route_action: Option<String>,
+   pub route_type: Option<String>,
+   pub route_value: Option<String>,
+   pub dns_type: Option<String>,
+   pub dns_address: Option<String>,
+   pub dns_port: Option<String>,
 }
 
 pub struct UiState {
@@ -50,7 +50,7 @@ pub struct TuiState {
 pub enum InputMode {
     Normal,
     AddConfig { tun: bool },
-    RouteValue,
+    ValueInput,
 }
 
 pub enum InputAction {
@@ -126,6 +126,8 @@ impl TuiState {
                 route_type: None,
                 route_value: None,
                 dns_type: None,
+                dns_address: None,
+                dns_port: None,
                 dns_value1: None,
                 dns_value2: None,
             },

@@ -336,62 +336,7 @@ impl Configurator {
     pub fn add_dns_servers(&mut self, dns: &Vec<String>) -> Result<&mut Self> {
         for i in dns {
             let dh;
-            let df: Vec<&str> = i.split(":").collect();
-            let df_port;
-            let df_type;
-            let df_addr;
-
-            if df.len() < 3 {
-                df_port = None;
-                if df.len() < 2 {
-                    df_type = "up";
-                    df_addr = df[0];
-                } else {
-                    df_type = df[0];
-                    df_addr = df[1];
-                }
-            } else {
-                df_type = df[0];
-                df_port = Some(df[2].parse::<u16>()?);
-                df_addr = df[1];
-            }
-
-            match df_type {
-                "tp" => {
-                    dh = DnsServer::Tcp(DnsServerTcp::with_server(df_addr.to_string(), df_port))
-                }
-                "up" => {
-                    dh = DnsServer::Udp(DnsServerUdp::with_server(df_addr.to_string(), df_port))
-                }
-                _ => return Err(anyhow!("Cant parse that type of dns yet")),
-            }
-            self.dns.add_server(dh);
-        }
-        Ok(self)
-    }
-
-    /// Manage listables values in format: <ACTION>:<VALUE1>:<VALUE2>
-    ///
-    ///If action contains one value you need only:
-    ///     <ACTION>:<VALUE>
-    ///
-    /// ACTION:             VALUES:
-    /// "rr" -> Remove rule    `usize`         -> remove by index <VALUE>
-    /// "mr" -> Move rule      `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
-    /// "fr" -> final outbound     `str`           -> set default outbound by type
-    /// "rd" -> Remove dns server `usize`         -> remove by index <VALUE>
-    /// "md" -> Move dns server `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
-    /// "fd" -> final dns server `str`           -> set default dns server by type
-    /// "rs" -> Remove dns server `usize`         -> remove by index <VALUE>
-    /// "ms" -> Move dns server `usize`:`usize`   -> move from <VALUE1> to <VALUE2>
-    pub fn manage(&mut self, values: &Vec<String>) -> Result<&mut Self> {
-        for i in values {
-            let ri: Vec<&str> = i.split(":").collect();
-            match *ri.first().context("Incorrect manage input")? {
-                "rr" => {
-                    let _ = self
-                        .route
-                        .remove_rule(ri.get(1).context("Incorrect manage input")?.parse()?);
+            let age input")?.parse()?);
                 }
                 "mr" => {
                     self.route.move_rule(
