@@ -110,8 +110,8 @@ pub mod ui {
     pub const ROUTE_TYPE_INDEX: usize = 1;
     pub const ROUTE_VALUE_INDEX: usize = 2;
     pub const DNS_TYPE_INDEX: usize = 3;
-    pub const DNS_VALUE1_INDEX: usize = 4;
-    pub const DNS_VALUE2_INDEX: usize = 5;
+    pub const DNS_ADDR: usize = 4;
+    pub const DNS_PORT: usize = 5;
     pub const ENTER_INDEX: usize = 6;
 
     pub const SETTINGS_FIELDS_COUNT: usize = 7;
@@ -142,8 +142,8 @@ pub mod text {
     pub const ACTION_LABEL: &str = "Action: ";
     pub const TYPE_LABEL: &str = "Type: ";
     pub const VALUE_LABEL: &str = "Value: ";
-    pub const VALUE1_LABEL: &str = "Value 1: ";
-    pub const VALUE2_LABEL: &str = "Value 2: ";
+    pub const DNS_ADDRESS_LABEL: &str = "Address: ";
+    pub const DNS_PORT_LABEL: &str = "Port: ";
 
     pub const ENTER_BUTTON: &str = "[ENTER]";
     pub const PERSONAL: &str = "personal";
@@ -201,4 +201,8 @@ pub mod route {
         ("is expensive", "ne"),
         ("constrained", "nc"),
     ];
+}
+
+pub mod DNS {
+    pub const TYPES: &[(&str, &str)] = &[("udp", "up"), ("tcp", "tp")]; 
 }
