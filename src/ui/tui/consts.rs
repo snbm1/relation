@@ -9,7 +9,7 @@ pub mod timing {
     pub const RESTART_DELAY: Duration = Duration::from_millis(100);
 
     #[cfg(feature = "daemon")]
-    pub const IP_REQUEST_TIMEOUT: Duration = Duration::from_secs(1);
+    pub const IP_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 }
 
 pub mod net {
