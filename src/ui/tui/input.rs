@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use anyhow::{Result};
+use anyhow::Result;
 use crossterm::event::KeyCode;
 
 #[cfg(not(feature = "daemon"))]
@@ -8,12 +8,11 @@ use crate::datamanager::app::App;
 
 #[cfg(feature = "daemon")]
 use crate::datamanager::async_app::App;
+
 use crate::ui::tui::state::InputMode;
 
 use super::consts::{keys, route, timing, ui};
-use super::state::{Focus, RightPanel, InputAction, TuiState};
-
-
+use super::state::{Focus, InputAction, RightPanel, TuiState};
 
 pub fn handle_add_config_input(
     app: &mut App,
@@ -103,14 +102,15 @@ pub fn handle_normal_input(
     match key {
         KeyCode::Esc => {
             if state.ui.context_menu {
-                state.ui.context_menu = false; 
+                state.ui.context_menu = false;
                 state.input.buffer.clear();
                 return Ok(InputAction::Continue);
-
-
-            }
-            else if state.app.running.is_some() {
+            } else if state.app.running.is_some() {
+                #[cfg(feature = "daemon")]
                 app.send_quit()?;
+
+                #[cfg(not(feature = "daemon"))]
+                app.stop_app()?;
             }
             return Ok(InputAction::Quit);
         }
@@ -134,13 +134,13 @@ pub fn handle_normal_input(
             state.input.buffer.clear();
             state.input.error = false;
         }
-        
+
         KeyCode::Char(keys::ADD_TUN_CONFIG) => {
             state.input.mode = InputMode::AddConfig { tun: (true) };
             state.input.buffer.clear();
             state.input.error = false;
         }
-        
+
         KeyCode::Char(keys::DELETE_CONFIG) => {
             if state.app.len > 0 {
                 let name = app.get_list()[state.app.selected_index].clone();
@@ -159,7 +159,7 @@ pub fn handle_normal_input(
                 }
             }
         }
-        
+
         KeyCode::Tab => {
             state.ui.context_menu = false;
             state.ui.right_panel = match state.ui.right_panel {
@@ -196,9 +196,16 @@ pub fn handle_normal_input(
                 let r_type = state.settings.route_type.as_deref();
                 let value = state.settings.route_value.as_deref();
 
-                let has_data = [action, r_type, value].iter().any(|opt| opt.map_or(false, |s| !s.is_empty()));
+                let has_data = [action, r_type, value]
+                    .iter()
+                    .any(|opt| opt.map_or(false, |s| !s.is_empty()));
                 if has_data {
-                    let parts: Vec<&str> = [action, r_type, value].iter().copied().flatten().filter(|s| !s.is_empty()).collect();
+                    let parts: Vec<&str> = [action, r_type, value]
+                        .iter()
+                        .copied()
+                        .flatten()
+                        .filter(|s| !s.is_empty())
+                        .collect();
 
                     let route_rules = vec![parts.join(":")];
 
@@ -238,7 +245,9 @@ pub fn handle_normal_input(
                     state.ui.context_menu = false;
                     state.ui.popup_selected = 0;
                 }
-            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
+            } else if state.ui.focus == Focus::RightPanel
+                && state.ui.right_panel == RightPanel::Settings
+            {
                 if state.ui.settings_selected == ui::ROUTE_VALUE_INDEX {
                     state.input.mode = InputMode::RouteValue;
                     state.input.buffer.clear();
@@ -282,15 +291,20 @@ pub fn handle_normal_input(
             if state.ui.focus == Focus::Configs {
                 state.ui.focus = Focus::RightPanel;
             } else if state.ui.right_panel == RightPanel::Settings {
-                state.ui.settings_selected = (state.ui.settings_selected + 1) % ui::SETTINGS_FIELDS_COUNT;
+                state.ui.settings_selected =
+                    (state.ui.settings_selected + 1) % ui::SETTINGS_FIELDS_COUNT;
             }
         }
-        
+
         KeyCode::Left => {
             if state.ui.settings_selected == 0 && state.ui.focus == Focus::RightPanel {
                 state.ui.focus = Focus::Configs;
-            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
-                state.ui.settings_selected = (state.ui.settings_selected + ui::SETTINGS_FIELDS_COUNT - 1) % ui::SETTINGS_FIELDS_COUNT;
+            } else if state.ui.focus == Focus::RightPanel
+                && state.ui.right_panel == RightPanel::Settings
+            {
+                state.ui.settings_selected =
+                    (state.ui.settings_selected + ui::SETTINGS_FIELDS_COUNT - 1)
+                        % ui::SETTINGS_FIELDS_COUNT;
             }
         }
 
@@ -306,7 +320,9 @@ pub fn handle_normal_input(
                     1
                 };
                 state.ui.popup_selected = (state.ui.popup_selected + 1) % context_len;
-            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
+            } else if state.ui.focus == Focus::RightPanel
+                && state.ui.right_panel == RightPanel::Settings
+            {
                 state.ui.settings_selected = match state.ui.settings_selected {
                     ui::ROUTE_ACTION_INDEX => ui::DNS_TYPE_INDEX,
                     ui::ROUTE_TYPE_INDEX => ui::DNS_TYPE_INDEX,
@@ -320,7 +336,8 @@ pub fn handle_normal_input(
 
         KeyCode::Up | KeyCode::Char(keys::UP_ALT) => {
             if state.app.len > 0 && state.ui.focus == Focus::Configs {
-                state.app.selected_index = (state.app.selected_index + state.app.len - 1) % state.app.len;
+                state.app.selected_index =
+                    (state.app.selected_index + state.app.len - 1) % state.app.len;
             } else if state.ui.context_menu {
                 let context_len = if state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
                     route::ACTIONS.len() + 1
@@ -330,7 +347,9 @@ pub fn handle_normal_input(
                     1
                 };
                 state.ui.popup_selected = (state.ui.popup_selected + context_len - 1) % context_len;
-            } else if state.ui.focus == Focus::RightPanel && state.ui.right_panel == RightPanel::Settings {
+            } else if state.ui.focus == Focus::RightPanel
+                && state.ui.right_panel == RightPanel::Settings
+            {
                 state.ui.settings_selected = match state.ui.settings_selected {
                     ui::DNS_VALUE2_INDEX => ui::DNS_VALUE1_INDEX,
                     ui::DNS_TYPE_INDEX => ui::ROUTE_ACTION_INDEX,
@@ -342,6 +361,6 @@ pub fn handle_normal_input(
 
         _ => {}
     }
-    
+
     Ok(InputAction::Continue)
 }
