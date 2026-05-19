@@ -112,9 +112,12 @@ pub mod ui {
     pub const DNS_TYPE_INDEX: usize = 3;
     pub const DNS_ADDR: usize = 4;
     pub const DNS_PORT: usize = 5;
-    pub const ENTER_INDEX: usize = 6;
+    pub const MANAGE_ACTION: usize = 6; 
+    pub const MANAGE_VALUE1: usize = 7; 
+    pub const MANAGE_VALUE2: usize = 8; 
+    pub const ENTER_INDEX: usize = 9;
 
-    pub const SETTINGS_FIELDS_COUNT: usize = 7;
+    pub const SETTINGS_FIELDS_COUNT: usize = 10;
     pub const ROUTE_FIELDS_COUNT: usize = 3;
 
     pub const ROUTE_ACTION_CUSTOM_INDEX: usize = 3;
@@ -138,12 +141,17 @@ pub mod text {
 
     pub const ROUTING_RULES_TITLE: &str = "Routing Rules";
     pub const DNS_SERVERS_TITLE: &str = "DNS Servers";
+    pub const MANAGE_TITLE: &str = "List Management"; 
 
     pub const ACTION_LABEL: &str = "Action: ";
     pub const TYPE_LABEL: &str = "Type: ";
     pub const VALUE_LABEL: &str = "Value: ";
     pub const DNS_ADDRESS_LABEL: &str = "Address: ";
     pub const DNS_PORT_LABEL: &str = "Port: ";
+
+    pub const MANAGE_ACTION_LABEL: &str = "Action: "; 
+    pub const MANAGE_VALUE1_LABEL: &str = "Value 1: "; 
+    pub const MANAGE_VALUE2_LABEL: &str = "Value 2: "; 
 
     pub const ENTER_BUTTON: &str = "[ENTER]";
     pub const PERSONAL: &str = "personal";
@@ -205,4 +213,17 @@ pub mod route {
 
 pub mod DNS {
     pub const TYPES: &[(&str, &str)] = &[("udp", "up"), ("tcp", "tp")]; 
+}
+
+pub mod manage {
+    pub const ACTIONS: &[(&str, &str)] = &[
+        ("Remove rule", "rr"), 
+        ("Move rule", "mr"), 
+        ("Final outbound", "fr"), 
+        ("Remove dns server", "rd"), 
+        ("Move dns server", "md"), 
+        ("Final dns server", "fd"), 
+        ("Remove dns server", "rs"), 
+        ("Move dns server", "ms"),
+    ];
 }

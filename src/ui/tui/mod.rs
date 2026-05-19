@@ -389,6 +389,9 @@ pub fn run(app: &mut App) -> Result<()> {
                 let type_dns_text = state.settings.dns_type.as_deref().unwrap_or(text::EMPTY);
                 let dns_address_text = state.settings.dns_address.as_deref().unwrap_or(text::EMPTY);
                 let dns_port_text = state.settings.dns_port.as_deref().unwrap_or(text::EMPTY);
+                let manage_action_text = state.settings.manage_action.as_deref().unwrap_or(text::EMPTY); 
+                let manage_value1_text = state.settings.manage_value1.as_deref().unwrap_or(text::EMPTY); 
+                let manage_value2_text = state.settings.manage_value2.as_deref().unwrap_or(text::EMPTY); 
 
                 let action_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
                     Style::default()
@@ -426,6 +429,27 @@ pub fn run(app: &mut App) -> Result<()> {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
                 let dns_port_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_PORT {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let manage_action_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::MANAGE_ACTION {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let manage_value1_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::MANAGE_VALUE1 {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD)
+                };
+                let manage_value2_style =  if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::MANAGE_VALUE2 {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
@@ -472,6 +496,22 @@ pub fn run(app: &mut App) -> Result<()> {
                         Span::raw("             "),
                         Span::styled(text::DNS_PORT_LABEL, dns_port_style),
                         Span::styled(dns_port_text, dns_port_style),
+                    ]),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::raw("         "),
+                        Span::raw(text::MANAGE_TITLE),
+                    ]),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::styled(text::MANAGE_ACTION_LABEL, manage_action_style), 
+                        Span::styled(manage_action_text, manage_action_style), 
+                        Span::raw("             "),
+                        Span::styled(text::MANAGE_VALUE1_LABEL, manage_value1_style), 
+                        Span::styled(manage_value1_text, manage_value1_style), 
+                        Span::raw("             "),
+                        Span::styled(text::MANAGE_VALUE2_LABEL, manage_value2_style), 
+                        Span::styled(manage_value2_text, manage_value2_style),
                     ]),
                     Line::from(""),
                     Line::from(vec![
@@ -528,6 +568,8 @@ pub fn run(app: &mut App) -> Result<()> {
                         .collect()
                 } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
                     DNS::TYPES.iter().map(|(label, _)| ListItem::new(*label)).collect()
+                } else if state.ui.settings_selected == ui::MANAGE_ACTION {
+                    manage::ACTIONS.iter().map(|(label, _)| ListItem::new(*label)).collect()
                 } else {
                     vec![text::NO_ITEMS]
                         .into_iter()
