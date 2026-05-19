@@ -197,7 +197,7 @@ pub fn run(app: &mut App) -> Result<()> {
                     InputMode::AddConfig { tun } => {
                         handle_add_config_input(app, &mut state, key.code, tun)?;
                     }
-                    InputMode::RouteValue => {
+                    InputMode::ValueInput => {
                          handle_route_value_input(&mut state, key.code);
                     }
                     InputMode::Normal => {
@@ -387,8 +387,8 @@ pub fn run(app: &mut App) -> Result<()> {
                 let type_text = state.settings.route_type.as_deref().unwrap_or(text::EMPTY);
                 let value_text = state.settings.route_value.as_deref().unwrap_or(text::EMPTY);
                 let type_dns_text = state.settings.dns_type.as_deref().unwrap_or(text::EMPTY);
-                let value1_text = state.settings.dns_value1.as_deref().unwrap_or(text::EMPTY);
-                let value2_text = state.settings.dns_value2.as_deref().unwrap_or(text::EMPTY);
+                let dns_address_text = state.settings.dns_address.as_deref().unwrap_or(text::EMPTY);
+                let dns_port_text = state.settings.dns_port.as_deref().unwrap_or(text::EMPTY);
 
                 let action_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
                     Style::default()
@@ -418,14 +418,14 @@ pub fn run(app: &mut App) -> Result<()> {
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let dns_value1_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_VALUE1_INDEX {
+                let dns_address_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_ADDR {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().add_modifier(Modifier::BOLD)
                 };
-                let dns_value2_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_VALUE2_INDEX {
+                let dns_port_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_PORT {
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD)
@@ -467,11 +467,11 @@ pub fn run(app: &mut App) -> Result<()> {
                         Span::styled(text::TYPE_LABEL, dns_type_style),
                         Span::styled(type_dns_text, dns_type_style),
                         Span::raw("             "),
-                        Span::styled(text::VALUE1_LABEL, dns_value1_style),
-                        Span::styled(value1_text, dns_value1_style),
+                        Span::styled(text::DNS_ADDRESS_LABEL, dns_address_style),
+                        Span::styled(dns_address_text, dns_address_style),
                         Span::raw("             "),
-                        Span::styled(text::VALUE2_LABEL, dns_value2_style),
-                        Span::styled(value2_text, dns_value2_style),
+                        Span::styled(text::DNS_PORT_LABEL, dns_port_style),
+                        Span::styled(dns_port_text, dns_port_style),
                     ]),
                     Line::from(""),
                     Line::from(vec![
@@ -494,7 +494,7 @@ pub fn run(app: &mut App) -> Result<()> {
             }
             }
             // Context Menu
-            if state.ui.context_menu && state.ui.settings_selected != 6 {
+            if state.ui.context_menu {
                 let context_panel_area = ratatui::layout::Rect {
                     x: horizontal[1].x + ui::CONTEXT_X_OFFSET,
                     y: horizontal[1].y + ui::CONTEXT_Y_OFFSET,
@@ -526,6 +526,8 @@ pub fn run(app: &mut App) -> Result<()> {
                         .iter()
                         .map(|(label, _)| ListItem::new(*label))
                         .collect()
+                } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
+                    DNS::TYPES.iter().map(|(label, _)| ListItem::new(*label)).collect()
                 } else {
                     vec![text::NO_ITEMS]
                         .into_iter()
@@ -553,7 +555,7 @@ pub fn run(app: &mut App) -> Result<()> {
                 f.render_stateful_widget(list, context_panel_area, &mut tui_state);
             }
 
-            if state.input.mode == InputMode::RouteValue {
+            if state.input.mode == InputMode::ValueInput {
                 let input = Paragraph::new(state.input.buffer.as_str())
                     .block(
                         Block::default()
@@ -565,7 +567,7 @@ pub fn run(app: &mut App) -> Result<()> {
 
                 let area = ratatui::layout::Rect {
                     x: horizontal[1].x + ui::VALUE_INPUT_X_OFFSET,
-                    y: horizontal[1].y + ui::VALUE_INPUT_Y_OFFSET,
+                    y: horizontal[1].y + ui::VALUE_INPUT_Y_OFFSET + 5,
                     width: horizontal[1]
                         .width
                         .saturating_sub(ui::VALUE_INPUT_WIDTH_PADDING),
