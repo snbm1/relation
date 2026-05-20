@@ -519,6 +519,8 @@ pub fn run(app: &mut App) -> Result<()> {
                         Span::styled(text::ENTER_BUTTON, enter_style),
                     ]),
                 ])
+                .alignment(ratatui::layout::Alignment::Center)
+                .wrap(Wrap { trim: true })
                 .block(
                     Block::default()
                         .title(text::SETTINGS_TITLE)

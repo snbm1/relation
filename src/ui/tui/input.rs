@@ -16,6 +16,16 @@ use crate::ui::tui::state::InputMode;
 use super::consts::{keys, route, timing, ui};
 use super::state::{Focus, InputAction, RightPanel, TuiState};
 
+fn build_rule(parts: &[Option<&str>]) -> Option<Vec<String>> {
+    let parts: Vec<&str> = parts.iter().copied().flatten().filter(|s| !s.is_empty()).collect();
+
+    if parts.is_empty() {
+        None
+    } else {
+        Some(vec![parts.join(":")])
+    }
+}
+
 pub fn handle_add_config_input(
     app: &mut App,
     state: &mut TuiState,
@@ -211,48 +221,36 @@ pub fn handle_normal_input(
             if state.ui.settings_selected == ui::ENTER_INDEX {
                 app.set_handler_config_by_number(state.app.selected_index)?;
 
-                let r_action = state.settings.route_action.as_deref();
-                let r_type = state.settings.route_type.as_deref();
-                let r_value = state.settings.route_value.as_deref();
+                let route_rule = build_rule(&[
+                    state.settings.route_action.as_deref(),
+                    state.settings.route_type.as_deref(),
+                    state.settings.route_value.as_deref(),
+                ]);
 
-                let d_type = state.settings.dns_type.as_deref(); 
-                let addr_dns = state.settings.dns_address.as_deref(); 
-                let port_dns = state.settings.dns_port.as_deref(); 
-
-                let d_action = state.settings.manage_action.as_deref(); 
-                let d_value1 = state.settings.manage_value1.as_deref(); 
-                let d_value2 = state.settings.manage_value2.as_deref(); 
-
-                let mut has_data = [r_action, r_type, r_value]
-                    .iter()
-                    .any(|opt| opt.map_or(false, |s| !s.is_empty()));
-                if has_data {
-                    let parts: Vec<&str> = [r_action, r_type, r_value]
-                        .iter()
-                        .copied()
-                        .flatten()
-                        .filter(|s| !s.is_empty())
-                        .collect();
-
-                    let route_rules = vec![parts.join(":")];
-
+                if let Some(route_rules) = route_rule {
                     app.handler_mut().add_route_rules(&route_rules)?;
                     app.save()?;
                 }
 
-                has_data = [d_type, addr_dns, port_dns].iter().any(|opt| opt.map_or(false, |s| !s.is_empty())); 
-                if has_data {
-                    let parts: Vec<&str> = [d_type, addr_dns, port_dns].iter().copied().flatten().filter(|s| !s.is_empty()).collect(); 
-                    let dns_rules = vec![parts.join(":")]; 
+                let dns_rule = build_rule(&[
+                    state.settings.dns_type.as_deref(),
+                    state.settings.dns_address.as_deref(),
+                    state.settings.dns_port.as_deref(),
+                ]);
+
+                if let Some(dns_rules) = dns_rule {
                     app.handler_mut().add_dns_servers(&dns_rules)?;
-                    app.save()?; 
+                    app.save()?;
                 }
 
-                has_data = [d_action, d_value1, d_value2].iter().any(|opt| opt.map_or(false, |s| !s.is_empty())); 
-                if has_data {
-                    let parts: Vec<&str> = [d_action, d_value1, d_value2].iter().copied().flatten().filter(|s| !s.is_empty()).collect(); 
-                    let manage_rules = vec![parts.join(":")]; 
-                    app.handler_mut().manage(&manage_rules)?; 
+                let manage_rule = build_rule(&[
+                    state.settings.manage_action.as_deref(),
+                    state.settings.manage_value1.as_deref(),
+                    state.settings.manage_value2.as_deref(),
+                ]);
+
+                if let Some(manage_rules) = manage_rule {
+                    app.handler_mut().manage(&manage_rules)?;
                     app.save()?;
                 }
 
