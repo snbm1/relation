@@ -159,7 +159,7 @@ pub mod text {
     pub const INPUT_PREFIX: &str = "Input: ";
 
     pub const HELP: &str =
-        "↑/↓ navigate   q exit   a adding config  A adding tun config d delete config";
+        "↑/↓ navigate   q exit   TAB switch LOG/Settings   a adding config  A adding tun config    d delete config";
 
     pub const TRAFFIC_TITLE: &str = "Traffic";
 }
