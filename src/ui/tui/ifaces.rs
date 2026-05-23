@@ -16,6 +16,7 @@ pub fn iface_detect() -> String {
     }
 }
 
+#[cfg(unix)]
 pub fn read_iface(iface: &str) -> io::Result<Counters> {
     let text = std::fs::read_to_string("/proc/net/dev")?;
 
@@ -30,6 +31,11 @@ pub fn read_iface(iface: &str) -> io::Result<Counters> {
         }
     }
 
+    Ok(Counters { rx: 0, tx: 0 })
+}
+
+#[cfg(windows)]
+pub fn read_iface(_iface: &str) -> io::Result<Counters> {
     Ok(Counters { rx: 0, tx: 0 })
 }
 

@@ -23,15 +23,12 @@ use render_traffic::render_traffic_bar;
 use consts::*;
 use ifaces::*;
 use minireq::*;
-use std::{
-    io,
-    os::{fd::{AsRawFd, FromRawFd}},
-    time::Instant,
-};
+use std::io;
+#[cfg(unix)]
+use std::os::fd::{AsRawFd, FromRawFd};
+use std::time::Instant;
 use tuiguard::TuiGuard;
-use std::fs::{File, OpenOptions};
 
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 

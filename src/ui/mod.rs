@@ -7,6 +7,7 @@ use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock};
 
 #[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
@@ -15,19 +16,14 @@ use crate::datamanager::app::App;
 use crate::datamanager::async_app::App;
 
 use signal_hook::consts::SIGINT;
-use signal_hook::iterator::Signals;
+// use signal_hook::iterator::Signals;
+use signal_hook::flag;
 
-static RUNNING: AtomicBool = AtomicBool::new(true);
+static SHUTDOWN: OnceLock<Arc<AtomicBool>> = OnceLock::new();
 
 fn setup_signal_handler() {
-    let mut signals = Signals::new([SIGINT]).unwrap();
-
-    std::thread::spawn(move || {
-        for _ in signals.forever() {
-            RUNNING.store(false, Ordering::SeqCst);
-            break;
-        }
-    });
+    let shutdown = SHUTDOWN.get_or_init(|| Arc::new(AtomicBool::new(false))).clone();
+    flag::register(SIGINT, shutdown).expect("failed in SIGINT handler");
 }
 
 #[derive(Parser)]
@@ -306,7 +302,7 @@ impl Cli {
 
                 #[cfg(feature = "daemon")]
                 if !quiet {
-                    while RUNNING.load(Ordering::SeqCst) {
+                    while !SHUTDOWN.get_or_init(|| Arc::new(AtomicBool::new(false))).load(Ordering::SeqCst) {
                         manager.read_logs();
                         for line in manager.get_new_logs() {
                             println!("{}", line);
