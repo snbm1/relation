@@ -38,7 +38,7 @@ use crate::datamanager::app::App;
 #[cfg(feature = "daemon")]
 use crate::datamanager::async_app::App;
 
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 use std::collections::VecDeque;
 
@@ -190,6 +190,9 @@ pub fn run(app: &mut App) -> Result<()> {
         // -------- INPUT --------
         if event::poll(timing::EVENT_POLL)? {
             if let Event::Key(key) = event::read()? {
+                if key.kind != KeyEventKind::Press {
+                    continue;
+                }
                 match state.input.mode {
                     InputMode::AddConfig { tun } => {
                         handle_add_config_input(app, &mut state, key.code, tun)?;
