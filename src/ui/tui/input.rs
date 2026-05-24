@@ -230,6 +230,9 @@ pub fn handle_normal_input(
                 if let Some(route_rules) = route_rule {
                     app.handler_mut().add_route_rules(&route_rules)?;
                     app.save()?;
+                    state.settings.route_action = None;
+                    state.settings.route_type = None;
+                    state.settings.route_value = None;
                 }
 
                 let dns_rule = build_rule(&[
@@ -241,6 +244,9 @@ pub fn handle_normal_input(
                 if let Some(dns_rules) = dns_rule {
                     app.handler_mut().add_dns_servers(&dns_rules)?;
                     app.save()?;
+                    state.settings.dns_type = None;
+                    state.settings.dns_address = None;
+                    state.settings.dns_port = None;
                 }
 
                 let manage_rule = build_rule(&[
@@ -252,6 +258,9 @@ pub fn handle_normal_input(
                 if let Some(manage_rules) = manage_rule {
                     app.handler_mut().manage(&manage_rules)?;
                     app.save()?;
+                    state.settings.manage_action = None;
+                    state.settings.manage_value1 = None;
+                    state.settings.manage_value2 = None;
                 }
 
             }
