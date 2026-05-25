@@ -4,7 +4,9 @@ use interprocess::local_socket::{
     ListenerOptions,
     tokio::{Stream, prelude::*},
 };
-use relation::{socket_name, socket_path};
+use relation::socket_name;
+#[cfg(unix)]
+use relation::socket_path;
 use std::sync::Arc;
 use std::{
     env, fs,
