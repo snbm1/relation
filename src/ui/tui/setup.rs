@@ -4,7 +4,7 @@ use std::{
 };
 
 #[cfg(unix)]
-use os::fd::{AsRawFd, FromRawFd};
+use std::os::fd::{AsRawFd, FromRawFd};
 
 use anyhow::Result; 
 use ratatui::{backend::CrosstermBackend, Terminal};
