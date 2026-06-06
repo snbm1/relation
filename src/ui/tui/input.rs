@@ -83,6 +83,7 @@ pub fn handle_add_config_input(
 }
 
 pub fn handle_route_value_input(state: &mut TuiState, key: KeyCode) {
+    state.input.error = false;
     match key {
         KeyCode::Esc => {
             state.input.mode = InputMode::Normal;
@@ -256,11 +257,18 @@ pub fn handle_normal_input(
                 ]);
 
                 if let Some(manage_rules) = manage_rule {
-                    app.handler_mut().manage(&manage_rules)?;
-                    app.save()?;
-                    state.settings.manage_action = None;
-                    state.settings.manage_value1 = None;
-                    state.settings.manage_value2 = None;
+                    match app.handler_mut().manage(&manage_rules) {
+                        Ok(_) => {
+                            app.save()?;
+                            state.input.error = false; 
+                            state.settings.manage_action = None;
+                            state.settings.manage_value1 = None;
+                            state.settings.manage_value2 = None;
+                        }
+                        Err(_) => {
+                            state.input.error = true; 
+                        }
+                    }
                 }
 
             }

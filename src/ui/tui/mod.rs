@@ -523,9 +523,14 @@ pub fn run(app: &mut App) -> Result<()> {
                 .wrap(Wrap { trim: true })
                 .block(
                     Block::default()
-                        .title(text::SETTINGS_TITLE)
+                        .title(match state.input.error {
+                            true => text::ERROR_SETTINGS_TITLE, 
+                            false => text::SETTINGS_TITLE
+                        })
                         .borders(Borders::ALL)
-                        .border_style(if state.ui.focus == Focus::RightPanel {
+                        .border_style(if state.input.error {
+                            Style::default().fg(Color::Red)
+                        } else if state.ui.focus == Focus::RightPanel {
                             Style::default().fg(Color::Blue)
                         } else {
                             Style::default()

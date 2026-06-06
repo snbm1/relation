@@ -132,6 +132,7 @@ pub mod text {
     pub const CONFIGS_TITLE: &str = "Configs";
     pub const LOGS_TITLE: &str = "Logs";
     pub const SETTINGS_TITLE: &str = "Settings";
+    pub const ERROR_SETTINGS_TITLE: &str = "Data entry error!";
     pub const SELECT_TITLE: &str = "Select";
 
     pub const ERROR_INPUT: &str = "Error input";
