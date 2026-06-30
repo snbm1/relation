@@ -52,6 +52,7 @@ async fn main() -> Result<()> {
         file: String::new(),
         sys_proxy: false,
         ping: None,
+        ip: None,
     }));
 
     eprintln!("daemon listening");
@@ -273,6 +274,7 @@ async fn handle_client(
                         }
                     };
                     status.ping = ping_ms;
+                    status.ip = Some(ip);
                     Response::Running(status.clone())
                 }
             }

@@ -5,6 +5,7 @@ pub mod datamanager;
 pub mod minireq;
 pub mod ui;
 
+use macros::auto_skip_none;
 use std::process::{Command as StdCommand, Stdio};
 
 #[cfg(not(windows))]
@@ -85,9 +86,14 @@ pub enum Response {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DaemonStatus {
+    #[serde(rename = "File")]
     pub file: String,
+    #[serde(rename = "System Proxy")]
     pub sys_proxy: bool,
+    #[serde(rename = "Ping")]
     pub ping: Option<u128>,
+    #[serde(rename = "Ip")]
+    pub ip: Option<String>,
 }
 
 impl DaemonStatus {
@@ -100,6 +106,7 @@ impl DaemonStatus {
             file: String::new(),
             sys_proxy: false,
             ping: None,
+            ip: None,
         }
     }
 }
@@ -123,7 +130,7 @@ pub fn socket_name() -> Result<interprocess::local_socket::Name<'static>> {
 
 #[cfg(feature = "daemon")]
 pub fn run_daemon() -> Result<()> {
-    let possigle_paths = ["relationd", "./relationd"];
+    let possigle_paths = ["./relationd", "relationd"];
     for i in possigle_paths {
         let mut command = StdCommand::new(i);
         command

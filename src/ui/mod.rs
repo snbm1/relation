@@ -354,13 +354,7 @@ impl Cli {
                 if a.is_none() {
                     println!("Not started");
                 } else {
-                    println!("Running config: {}", a.as_ref().unwrap().file);
-                    println!("System proxy: {}", a.as_ref().unwrap().sys_proxy);
-                    if let Some(ping) = a.as_ref().unwrap().ping {
-                        println!("Ping: {} ms", ping);
-                    } else {
-                        println!("Ping: Unreachable");
-                    }
+                    print!("{}", yaml_serde::to_string(a.as_ref().unwrap())?);
                 }
             }
 
@@ -370,4 +364,3 @@ impl Cli {
         Ok(())
     }
 }
-
