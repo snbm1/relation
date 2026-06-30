@@ -22,7 +22,9 @@ use signal_hook::flag;
 static SHUTDOWN: OnceLock<Arc<AtomicBool>> = OnceLock::new();
 
 fn setup_signal_handler() {
-    let shutdown = SHUTDOWN.get_or_init(|| Arc::new(AtomicBool::new(false))).clone();
+    let shutdown = SHUTDOWN
+        .get_or_init(|| Arc::new(AtomicBool::new(false)))
+        .clone();
     flag::register(SIGINT, shutdown).expect("failed in SIGINT handler");
 }
 
@@ -302,7 +304,10 @@ impl Cli {
 
                 #[cfg(feature = "daemon")]
                 if !quiet {
-                    while !SHUTDOWN.get_or_init(|| Arc::new(AtomicBool::new(false))).load(Ordering::SeqCst) {
+                    while !SHUTDOWN
+                        .get_or_init(|| Arc::new(AtomicBool::new(false)))
+                        .load(Ordering::SeqCst)
+                    {
                         manager.read_logs();
                         for line in manager.get_new_logs() {
                             println!("{}", line);
@@ -351,6 +356,11 @@ impl Cli {
                 } else {
                     println!("Running config: {}", a.as_ref().unwrap().file);
                     println!("System proxy: {}", a.as_ref().unwrap().sys_proxy);
+                    if let Some(ping) = a.as_ref().unwrap().ping {
+                        println!("Ping: {} ms", ping);
+                    } else {
+                        println!("Ping: Unreachable");
+                    }
                 }
             }
 
@@ -360,3 +370,4 @@ impl Cli {
         Ok(())
     }
 }
+

@@ -1,4 +1,3 @@
-mod consts;
 mod ifaces;
 mod input;
 mod render_traffic;
@@ -14,14 +13,11 @@ use setup::setup_tty;
 
 use render_traffic::render_traffic_bar;
 
+use crate::consts::*;
 use crate::minireq::*;
-use consts::*;
 use ifaces::*;
-use std::io;
 #[cfg(unix)]
-use std::os::fd::{AsRawFd, FromRawFd};
 use std::time::Instant;
-use tuiguard::TuiGuard;
 
 use std::sync::{Arc, Mutex};
 use std::thread;

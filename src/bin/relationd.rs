@@ -23,6 +23,8 @@ use tokio::{
 use relation::DaemonStatus;
 
 use relation::bridge;
+use relation::consts::*;
+use relation::minireq::*;
 use relation::{Command as ClientCommand, Request, Response};
 
 const DETACHED_ENV: &str = "RELATION_DETACHED";
@@ -235,11 +237,42 @@ async fn handle_client(
 
         let response = match request.command {
             ClientCommand::Status => {
-                let status = status.lock().await;
+                let mut status = status.lock().await;
 
                 if status.file.is_empty() {
                     Response::Stopped
                 } else {
+                    let (ip, ping_ms) = {
+                        let start = std::time::Instant::now();
+
+                        match tokio::time::timeout(
+                            timing::IP_REQUEST_TIMEOUT,
+                            get_ip(Some(net::LOCAL_PROXY_ADDR)),
+                        )
+                        .await
+                        {
+                            Ok(Ok(ip)) => {
+                                let ping = start.elapsed().as_millis();
+                                (ip, Some(ping))
+                            }
+
+                            _ => {
+                                let start = std::time::Instant::now();
+
+                                match tokio::time::timeout(timing::IP_REQUEST_TIMEOUT, get_ip(None))
+                                    .await
+                                {
+                                    Ok(Ok(ip)) => {
+                                        let ping = start.elapsed().as_millis();
+                                        (ip, Some(ping))
+                                    }
+
+                                    _ => (net::FALLBACK_IP.to_string(), None),
+                                }
+                            }
+                        }
+                    };
+                    status.ping = ping_ms;
                     Response::Running(status.clone())
                 }
             }

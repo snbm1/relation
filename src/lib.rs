@@ -1,5 +1,6 @@
 pub mod bridge;
 pub mod configurator;
+pub mod consts;
 pub mod datamanager;
 pub mod minireq;
 pub mod ui;
@@ -86,7 +87,7 @@ pub enum Response {
 pub struct DaemonStatus {
     pub file: String,
     pub sys_proxy: bool,
-    pub ping: Option<String>,
+    pub ping: Option<u128>,
 }
 
 impl DaemonStatus {

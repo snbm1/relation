@@ -4,10 +4,13 @@ use ratatui::{
     Frame,
     layout::Rect,
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, block::{Position, Title}},
+    widgets::{
+        Block, BorderType, Borders,
+        block::{Position, Title},
+    },
 };
 
-use super::consts::{traffic, text};
+use crate::consts::{text, traffic};
 
 pub fn render_traffic_bar(
     f: &mut Frame,
@@ -197,4 +200,3 @@ fn row_braille_part(level: usize, row: usize, rows: usize, top_down: bool) -> u8
 
     level.saturating_sub(filled_before_row).min(4) as u8
 }
-

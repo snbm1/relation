@@ -1,23 +1,27 @@
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
-use crossterm::event::KeyCode;
-use crate::ui::tui::consts::DNS;
-use crate::ui::tui::consts::manage; 
-use crate::configurator::dns;
+use crate::consts::DNS;
+use crate::consts::manage;
 #[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
+use anyhow::Result;
+use crossterm::event::KeyCode;
 
 #[cfg(feature = "daemon")]
 use crate::datamanager::async_app::App;
 
 use crate::ui::tui::state::InputMode;
 
-use super::consts::{keys, route, timing, ui};
 use super::state::{Focus, InputAction, RightPanel, TuiState};
+use crate::consts::{keys, route, timing, ui};
 
 fn build_rule(parts: &[Option<&str>]) -> Option<Vec<String>> {
-    let parts: Vec<&str> = parts.iter().copied().flatten().filter(|s| !s.is_empty()).collect();
+    let parts: Vec<&str> = parts
+        .iter()
+        .copied()
+        .flatten()
+        .filter(|s| !s.is_empty())
+        .collect();
 
     if parts.is_empty() {
         None
@@ -102,15 +106,15 @@ pub fn handle_route_value_input(state: &mut TuiState, key: KeyCode) {
                         state.settings.dns_port = Some(state.input.buffer.clone());
                     }
                     ui::MANAGE_VALUE1 => {
-                        state.settings.manage_value1 = Some(state.input.buffer.clone()); 
+                        state.settings.manage_value1 = Some(state.input.buffer.clone());
                     }
                     ui::MANAGE_VALUE2 => {
-                        state.settings.manage_value2 = Some(state.input.buffer.clone()); 
+                        state.settings.manage_value2 = Some(state.input.buffer.clone());
                     }
                     _ => {}
                 }
             }
-            state.input.mode = InputMode::Normal; 
+            state.input.mode = InputMode::Normal;
             state.input.buffer.clear();
         }
         KeyCode::Backspace => {
@@ -260,17 +264,16 @@ pub fn handle_normal_input(
                     match app.handler_mut().manage(&manage_rules) {
                         Ok(_) => {
                             app.save()?;
-                            state.input.error = false; 
+                            state.input.error = false;
                             state.settings.manage_action = None;
                             state.settings.manage_value1 = None;
                             state.settings.manage_value2 = None;
                         }
                         Err(_) => {
-                            state.input.error = true; 
+                            state.input.error = true;
                         }
                     }
                 }
-
             }
 
             if state.ui.context_menu {
@@ -298,7 +301,7 @@ pub fn handle_normal_input(
 
                     ui::DNS_TYPE_INDEX => {
                         if let Some((_, value)) = DNS::TYPES.get(state.ui.popup_selected) {
-                            state.settings.dns_type = Some((*value).to_string()); 
+                            state.settings.dns_type = Some((*value).to_string());
                         }
                     }
 
@@ -318,14 +321,18 @@ pub fn handle_normal_input(
                 && state.ui.right_panel == RightPanel::Settings
             {
                 match state.ui.settings_selected {
-                    ui::ROUTE_VALUE_INDEX | ui::DNS_ADDR | ui::DNS_PORT | ui::MANAGE_VALUE1 | ui::MANAGE_VALUE2=> {
-                        state.input.mode = InputMode::ValueInput; 
+                    ui::ROUTE_VALUE_INDEX
+                    | ui::DNS_ADDR
+                    | ui::DNS_PORT
+                    | ui::MANAGE_VALUE1
+                    | ui::MANAGE_VALUE2 => {
+                        state.input.mode = InputMode::ValueInput;
                         state.input.buffer.clear();
                     }
                     ui::ENTER_INDEX => {}
                     _ => {
-                        state.ui.context_menu = true; 
-                        state.ui.popup_selected = 0; 
+                        state.ui.context_menu = true;
+                        state.ui.popup_selected = 0;
                     }
                 }
             } else {
@@ -393,7 +400,7 @@ pub fn handle_normal_input(
                     DNS::TYPES.len()
                 } else if state.ui.settings_selected == ui::MANAGE_ACTION {
                     manage::ACTIONS.len()
-                }else {
+                } else {
                     1
                 };
                 state.ui.popup_selected = (state.ui.popup_selected + 1) % context_len;
@@ -407,8 +414,8 @@ pub fn handle_normal_input(
                     ui::DNS_TYPE_INDEX => ui::MANAGE_ACTION,
                     ui::DNS_ADDR => ui::MANAGE_VALUE1,
                     ui::DNS_PORT => ui::MANAGE_VALUE2,
-                    ui::MANAGE_ACTION => ui::ENTER_INDEX, 
-                    ui::MANAGE_VALUE1 => ui::ENTER_INDEX, 
+                    ui::MANAGE_ACTION => ui::ENTER_INDEX,
+                    ui::MANAGE_VALUE1 => ui::ENTER_INDEX,
                     ui::MANAGE_VALUE2 => ui::ENTER_INDEX,
                     _ => state.ui.settings_selected,
                 };
@@ -439,11 +446,11 @@ pub fn handle_normal_input(
                     ui::DNS_PORT => ui::ROUTE_VALUE_INDEX,
                     ui::DNS_TYPE_INDEX => ui::ROUTE_ACTION_INDEX,
                     ui::DNS_ADDR => ui::ROUTE_TYPE_INDEX,
-                    ui::ROUTE_ACTION_INDEX => ui::ENTER_INDEX, 
-                    ui::ROUTE_VALUE_INDEX => ui::ENTER_INDEX, 
+                    ui::ROUTE_ACTION_INDEX => ui::ENTER_INDEX,
+                    ui::ROUTE_VALUE_INDEX => ui::ENTER_INDEX,
                     ui::ROUTE_TYPE_INDEX => ui::ENTER_INDEX,
-                    ui::MANAGE_ACTION => ui::DNS_TYPE_INDEX, 
-                    ui::MANAGE_VALUE1 => ui::DNS_ADDR, 
+                    ui::MANAGE_ACTION => ui::DNS_TYPE_INDEX,
+                    ui::MANAGE_VALUE1 => ui::DNS_ADDR,
                     ui::MANAGE_VALUE2 => ui::DNS_PORT,
                     ui::ENTER_INDEX => ui::MANAGE_VALUE1,
                     _ => state.ui.settings_selected,
