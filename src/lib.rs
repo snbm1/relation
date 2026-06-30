@@ -1,6 +1,7 @@
 pub mod bridge;
 pub mod configurator;
 pub mod datamanager;
+pub mod minireq;
 pub mod ui;
 
 use std::process::{Command as StdCommand, Stdio};
@@ -85,6 +86,7 @@ pub enum Response {
 pub struct DaemonStatus {
     pub file: String,
     pub sys_proxy: bool,
+    pub ping: Option<String>,
 }
 
 impl DaemonStatus {
@@ -96,6 +98,7 @@ impl DaemonStatus {
         Self {
             file: String::new(),
             sys_proxy: false,
+            ping: None,
         }
     }
 }

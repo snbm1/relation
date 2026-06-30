@@ -1,28 +1,22 @@
 mod consts;
 mod ifaces;
-mod minireq;
-mod tuiguard;
+mod input;
 mod render_traffic;
 mod setup;
 mod state;
-mod input;
+mod tuiguard;
 
+use input::{handle_add_config_input, handle_normal_input, handle_route_value_input};
 
-use input::{
-    handle_add_config_input,
-    handle_normal_input,
-    handle_route_value_input,
-};
-
-use state::{Focus, RightPanel, InputAction, InputMode, TuiState};
+use state::{Focus, InputAction, InputMode, RightPanel, TuiState};
 
 use setup::setup_tty;
 
 use render_traffic::render_traffic_bar;
 
+use crate::minireq::*;
 use consts::*;
 use ifaces::*;
-use minireq::*;
 use std::io;
 #[cfg(unix)]
 use std::os::fd::{AsRawFd, FromRawFd};
@@ -55,7 +49,6 @@ use ratatui::{
 };
 
 use anyhow::Result;
-
 
 pub fn run(app: &mut App) -> Result<()> {
     let iface = iface_detect();
@@ -198,12 +191,12 @@ pub fn run(app: &mut App) -> Result<()> {
                         handle_add_config_input(app, &mut state, key.code, tun)?;
                     }
                     InputMode::ValueInput => {
-                         handle_route_value_input(&mut state, key.code);
+                        handle_route_value_input(&mut state, key.code);
                     }
                     InputMode::Normal => {
                         match handle_normal_input(app, &mut state, key.code, &change_flag)? {
                             InputAction::Continue => {}
-                            InputAction::Quit => break
+                            InputAction::Quit => break,
                         }
                     }
                 }
@@ -369,176 +362,210 @@ pub fn run(app: &mut App) -> Result<()> {
             // LOG/SETTINGS PANEL
             match state.ui.right_panel {
                 RightPanel::Logs => {
-                let logs = app.get_logs();
-                let log_items: Vec<ListItem> =
-                    logs.iter().map(|l| ListItem::new(l.clone())).collect();
-                let log_list = List::new(log_items).block(
-                    Block::default()
-                        .title(Line::from(text::LOGS_TITLE))
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded),
-                );
+                    let logs = app.get_logs();
+                    let log_items: Vec<ListItem> =
+                        logs.iter().map(|l| ListItem::new(l.clone())).collect();
+                    let log_list = List::new(log_items).block(
+                        Block::default()
+                            .title(Line::from(text::LOGS_TITLE))
+                            .borders(Borders::ALL)
+                            .border_type(BorderType::Rounded),
+                    );
 
-                f.render_widget(log_list, horizontal[1]);
+                    f.render_widget(log_list, horizontal[1]);
                     app.read_logs();
+                }
+                RightPanel::Settings => {
+                    let action_text = state
+                        .settings
+                        .route_action
+                        .as_deref()
+                        .unwrap_or(text::EMPTY);
+                    let type_text = state.settings.route_type.as_deref().unwrap_or(text::EMPTY);
+                    let value_text = state.settings.route_value.as_deref().unwrap_or(text::EMPTY);
+                    let type_dns_text = state.settings.dns_type.as_deref().unwrap_or(text::EMPTY);
+                    let dns_address_text =
+                        state.settings.dns_address.as_deref().unwrap_or(text::EMPTY);
+                    let dns_port_text = state.settings.dns_port.as_deref().unwrap_or(text::EMPTY);
+                    let manage_action_text = state
+                        .settings
+                        .manage_action
+                        .as_deref()
+                        .unwrap_or(text::EMPTY);
+                    let manage_value1_text = state
+                        .settings
+                        .manage_value1
+                        .as_deref()
+                        .unwrap_or(text::EMPTY);
+                    let manage_value2_text = state
+                        .settings
+                        .manage_value2
+                        .as_deref()
+                        .unwrap_or(text::EMPTY);
 
-            } RightPanel::Settings => {
-                let action_text = state.settings.route_action.as_deref().unwrap_or(text::EMPTY);
-                let type_text = state.settings.route_type.as_deref().unwrap_or(text::EMPTY);
-                let value_text = state.settings.route_value.as_deref().unwrap_or(text::EMPTY);
-                let type_dns_text = state.settings.dns_type.as_deref().unwrap_or(text::EMPTY);
-                let dns_address_text = state.settings.dns_address.as_deref().unwrap_or(text::EMPTY);
-                let dns_port_text = state.settings.dns_port.as_deref().unwrap_or(text::EMPTY);
-                let manage_action_text = state.settings.manage_action.as_deref().unwrap_or(text::EMPTY); 
-                let manage_value1_text = state.settings.manage_value1.as_deref().unwrap_or(text::EMPTY); 
-                let manage_value2_text = state.settings.manage_value2.as_deref().unwrap_or(text::EMPTY); 
+                    let action_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::ROUTE_ACTION_INDEX
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let type_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::ROUTE_TYPE_INDEX
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let value_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::ROUTE_VALUE_INDEX
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let dns_type_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::DNS_TYPE_INDEX
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let dns_address_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::DNS_ADDR
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let dns_port_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::DNS_PORT
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let manage_action_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::MANAGE_ACTION
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let manage_value1_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::MANAGE_VALUE1
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let manage_value2_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::MANAGE_VALUE2
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
+                    let enter_style = if state.ui.focus == Focus::RightPanel
+                        && state.ui.settings_selected == ui::ENTER_INDEX
+                    {
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    };
 
-                let action_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let type_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_TYPE_INDEX {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let value_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ROUTE_VALUE_INDEX {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let dns_type_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_TYPE_INDEX {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let dns_address_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_ADDR {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let dns_port_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::DNS_PORT {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let manage_action_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::MANAGE_ACTION {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let manage_value1_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::MANAGE_VALUE1 {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let manage_value2_style =  if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::MANAGE_VALUE2 {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-                let enter_style = if state.ui.focus == Focus::RightPanel && state.ui.settings_selected == ui::ENTER_INDEX {
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().add_modifier(Modifier::BOLD)
-                };
-
-                let settings = Paragraph::new(vec![
-                    Line::from(""),
-                    Line::from(vec![
-                        Span::raw("         "),
-                        Span::raw(text::ROUTING_RULES_TITLE),
-                    ]),
-                    Line::from(""),
-                    Line::from(vec![
-                        Span::styled(text::ACTION_LABEL, action_style),
-                        Span::styled(action_text, action_style),
-                        Span::raw("   "),
-                        Span::styled(text::TYPE_LABEL, type_style),
-                        Span::styled(type_text, type_style),
-                        Span::raw("   "),
-                        Span::styled(text::VALUE_LABEL, value_style),
-                        Span::styled(value_text, value_style),
-                    ]),
-                    Line::from(""),
-                    Line::from(vec![
-                        Span::raw("         "),
-                        Span::raw(text::DNS_SERVERS_TITLE),
-                    ]),
-                    Line::from(""),
-                    Line::from(vec![
-                        Span::styled(text::TYPE_LABEL, dns_type_style),
-                        Span::styled(type_dns_text, dns_type_style),
-                        Span::raw("             "),
-                        Span::styled(text::DNS_ADDRESS_LABEL, dns_address_style),
-                        Span::styled(dns_address_text, dns_address_style),
-                        Span::raw("             "),
-                        Span::styled(text::DNS_PORT_LABEL, dns_port_style),
-                        Span::styled(dns_port_text, dns_port_style),
-                    ]),
-                    Line::from(""),
-                    Line::from(vec![
-                        Span::raw("         "),
-                        Span::raw(text::MANAGE_TITLE),
-                    ]),
-                    Line::from(""),
-                    Line::from(vec![
-                        Span::styled(text::MANAGE_ACTION_LABEL, manage_action_style), 
-                        Span::styled(manage_action_text, manage_action_style), 
-                        Span::raw("             "),
-                        Span::styled(text::MANAGE_VALUE1_LABEL, manage_value1_style), 
-                        Span::styled(manage_value1_text, manage_value1_style), 
-                        Span::raw("             "),
-                        Span::styled(text::MANAGE_VALUE2_LABEL, manage_value2_style), 
-                        Span::styled(manage_value2_text, manage_value2_style),
-                    ]),
-                    Line::from(""),
-                    Line::from(vec![
-                        Span::raw("                 "),
-                        Span::styled(text::ENTER_BUTTON, enter_style),
-                    ]),
-                ])
-                .alignment(ratatui::layout::Alignment::Center)
-                .wrap(Wrap { trim: true })
-                .block(
-                    Block::default()
-                        .title(match state.input.error {
-                            true => text::ERROR_SETTINGS_TITLE, 
-                            false => text::SETTINGS_TITLE
-                        })
-                        .borders(Borders::ALL)
-                        .border_style(if state.input.error {
-                            Style::default().fg(Color::Red)
-                        } else if state.ui.focus == Focus::RightPanel {
-                            Style::default().fg(Color::Blue)
-                        } else {
-                            Style::default()
-                        })
-                        .border_type(BorderType::Rounded),
-                );
-                f.render_widget(settings, horizontal[1]);
-            }
+                    let settings = Paragraph::new(vec![
+                        Line::from(""),
+                        Line::from(vec![
+                            Span::raw("         "),
+                            Span::raw(text::ROUTING_RULES_TITLE),
+                        ]),
+                        Line::from(""),
+                        Line::from(vec![
+                            Span::styled(text::ACTION_LABEL, action_style),
+                            Span::styled(action_text, action_style),
+                            Span::raw("   "),
+                            Span::styled(text::TYPE_LABEL, type_style),
+                            Span::styled(type_text, type_style),
+                            Span::raw("   "),
+                            Span::styled(text::VALUE_LABEL, value_style),
+                            Span::styled(value_text, value_style),
+                        ]),
+                        Line::from(""),
+                        Line::from(vec![
+                            Span::raw("         "),
+                            Span::raw(text::DNS_SERVERS_TITLE),
+                        ]),
+                        Line::from(""),
+                        Line::from(vec![
+                            Span::styled(text::TYPE_LABEL, dns_type_style),
+                            Span::styled(type_dns_text, dns_type_style),
+                            Span::raw("             "),
+                            Span::styled(text::DNS_ADDRESS_LABEL, dns_address_style),
+                            Span::styled(dns_address_text, dns_address_style),
+                            Span::raw("             "),
+                            Span::styled(text::DNS_PORT_LABEL, dns_port_style),
+                            Span::styled(dns_port_text, dns_port_style),
+                        ]),
+                        Line::from(""),
+                        Line::from(vec![Span::raw("         "), Span::raw(text::MANAGE_TITLE)]),
+                        Line::from(""),
+                        Line::from(vec![
+                            Span::styled(text::MANAGE_ACTION_LABEL, manage_action_style),
+                            Span::styled(manage_action_text, manage_action_style),
+                            Span::raw("             "),
+                            Span::styled(text::MANAGE_VALUE1_LABEL, manage_value1_style),
+                            Span::styled(manage_value1_text, manage_value1_style),
+                            Span::raw("             "),
+                            Span::styled(text::MANAGE_VALUE2_LABEL, manage_value2_style),
+                            Span::styled(manage_value2_text, manage_value2_style),
+                        ]),
+                        Line::from(""),
+                        Line::from(vec![
+                            Span::raw("                 "),
+                            Span::styled(text::ENTER_BUTTON, enter_style),
+                        ]),
+                    ])
+                    .alignment(ratatui::layout::Alignment::Center)
+                    .wrap(Wrap { trim: true })
+                    .block(
+                        Block::default()
+                            .title(match state.input.error {
+                                true => text::ERROR_SETTINGS_TITLE,
+                                false => text::SETTINGS_TITLE,
+                            })
+                            .borders(Borders::ALL)
+                            .border_style(if state.input.error {
+                                Style::default().fg(Color::Red)
+                            } else if state.ui.focus == Focus::RightPanel {
+                                Style::default().fg(Color::Blue)
+                            } else {
+                                Style::default()
+                            })
+                            .border_type(BorderType::Rounded),
+                    );
+                    f.render_widget(settings, horizontal[1]);
+                }
             }
             // Context Menu
             if state.ui.context_menu {
@@ -553,36 +580,43 @@ pub fn run(app: &mut App) -> Result<()> {
 
                 f.render_widget(Clear, context_panel_area);
 
-                let context_items: Vec<ListItem> = if state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
-                    let mut items: Vec<ListItem> =
-                        route::ACTIONS.iter().copied().map(ListItem::new).collect();
+                let context_items: Vec<ListItem> =
+                    if state.ui.settings_selected == ui::ROUTE_ACTION_INDEX {
+                        let mut items: Vec<ListItem> =
+                            route::ACTIONS.iter().copied().map(ListItem::new).collect();
 
-                    if state.ui.custom {
-                        items.push(ListItem::new(format!(
-                            "{}{}",
-                            text::INPUT_PREFIX,
-                            state.input.buffer
-                        )));
+                        if state.ui.custom {
+                            items.push(ListItem::new(format!(
+                                "{}{}",
+                                text::INPUT_PREFIX,
+                                state.input.buffer
+                            )));
+                        } else {
+                            items.push(ListItem::new(text::PERSONAL));
+                        }
+
+                        items
+                    } else if state.ui.settings_selected == ui::ROUTE_TYPE_INDEX {
+                        route::TYPES
+                            .iter()
+                            .map(|(label, _)| ListItem::new(*label))
+                            .collect()
+                    } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
+                        DNS::TYPES
+                            .iter()
+                            .map(|(label, _)| ListItem::new(*label))
+                            .collect()
+                    } else if state.ui.settings_selected == ui::MANAGE_ACTION {
+                        manage::ACTIONS
+                            .iter()
+                            .map(|(label, _)| ListItem::new(*label))
+                            .collect()
                     } else {
-                        items.push(ListItem::new(text::PERSONAL));
-                    }
-
-                    items
-                } else if state.ui.settings_selected == ui::ROUTE_TYPE_INDEX {
-                    route::TYPES
-                        .iter()
-                        .map(|(label, _)| ListItem::new(*label))
-                        .collect()
-                } else if state.ui.settings_selected == ui::DNS_TYPE_INDEX {
-                    DNS::TYPES.iter().map(|(label, _)| ListItem::new(*label)).collect()
-                } else if state.ui.settings_selected == ui::MANAGE_ACTION {
-                    manage::ACTIONS.iter().map(|(label, _)| ListItem::new(*label)).collect()
-                } else {
-                    vec![text::NO_ITEMS]
-                        .into_iter()
-                        .map(ListItem::new)
-                        .collect()
-                };
+                        vec![text::NO_ITEMS]
+                            .into_iter()
+                            .map(ListItem::new)
+                            .collect()
+                    };
 
                 let mut tui_state = ListState::default();
                 tui_state.select(Some(state.ui.popup_selected));

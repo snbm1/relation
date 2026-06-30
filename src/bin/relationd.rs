@@ -49,6 +49,7 @@ async fn main() -> Result<()> {
     let status = Arc::new(Mutex::new(DaemonStatus {
         file: String::new(),
         sys_proxy: false,
+        ping: None,
     }));
 
     eprintln!("daemon listening");
