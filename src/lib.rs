@@ -130,7 +130,7 @@ pub fn socket_name() -> Result<interprocess::local_socket::Name<'static>> {
 
 #[cfg(feature = "daemon")]
 pub fn run_daemon() -> Result<()> {
-    let possigle_paths = ["./relationd", "relationd"];
+    let possigle_paths = ["relationd", "./relationd"];
     for i in possigle_paths {
         let mut command = StdCommand::new(i);
         command
