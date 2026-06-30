@@ -224,6 +224,8 @@ impl VlessConfig {
         let mut mtx = MultiplexConfig::new();
         let mut tfg = TransportConfig::None;
 
+        let mut transport_flags = vec![None, None, None];
+
         for (key, val) in value {
             match key {
                 PossibleKeys::Type => {
@@ -328,7 +330,9 @@ impl VlessConfig {
                 },
                 PossibleKeys::Path => match val {
                     PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => eprintln!("[Warning] Path before transport"),
+                        TransportConfig::None => {
+                            transport_flags[0] = Some(PossibleValues::String(x))
+                        }
                         TransportConfig::WebSocket(ref mut z) => z.path = Some(x),
                         TransportConfig::Http(ref mut z) => z.path = Some(x),
                         TransportConfig::HttpUpdate(ref mut z) => z.path = Some(x),
@@ -339,7 +343,9 @@ impl VlessConfig {
 
                 PossibleKeys::Host => match val {
                     PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => eprintln!("[Warning] Host before transport"),
+                        TransportConfig::None => {
+                            transport_flags[1] = Some(PossibleValues::String(x))
+                        }
                         TransportConfig::WebSocket(ref mut z) => match z.headers {
                             None => z.headers = Some(HashMap::from([("Host".to_string(), x)])),
                             Some(_) => {
@@ -366,7 +372,9 @@ impl VlessConfig {
 
                 PossibleKeys::ServiceName => match val {
                     PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => return Err(anyhow!("Host before type")),
+                        TransportConfig::None => {
+                            transport_flags[2] = Some(PossibleValues::String(x))
+                        }
                         TransportConfig::Grpc(ref mut z) => z.service_name = Some(x),
                         _ => {}
                     },
@@ -377,6 +385,63 @@ impl VlessConfig {
                     PossibleValues::String(x) => cfg.tag = x.clone(),
                     _ => return Err(anyhow!("Invalid ServiceName type")),
                 },
+            }
+        }
+
+        if let Some(x) = &transport_flags[0] {
+            match x {
+                PossibleValues::String(t) => match tfg {
+                    TransportConfig::WebSocket(ref mut z) => z.path = Some(t.clone()),
+                    TransportConfig::Http(ref mut z) => z.path = Some(t.clone()),
+                    TransportConfig::HttpUpdate(ref mut z) => z.path = Some(t.clone()),
+                    TransportConfig::None => unreachable!(),
+                    _ => {}
+                },
+                _ => unreachable!(),
+            }
+        }
+
+        if let Some(x) = &transport_flags[1] {
+            match x {
+                PossibleValues::String(t) => match tfg {
+                    TransportConfig::WebSocket(ref mut z) => match z.headers {
+                        None => z.headers = Some(HashMap::from([("Host".to_string(), t.clone())])),
+                        Some(_) => {
+                            let _ = z
+                                .headers
+                                .as_mut()
+                                .unwrap()
+                                .insert("Host".to_string(), t.clone());
+                        }
+                    },
+                    TransportConfig::Http(ref mut z) => match z.host {
+                        None => z.host = Some(vec![t.clone()]),
+                        Some(_) => {
+                            z.host.as_mut().unwrap().push(t.clone());
+                        }
+                    },
+                    TransportConfig::HttpUpdate(ref mut z) => match z.host {
+                        None => z.host = Some(vec![t.clone()]),
+                        Some(_) => {
+                            z.host.as_mut().unwrap().push(t.clone());
+                        }
+                    },
+                    _ => {}
+                },
+                _ => unreachable!(),
+            }
+        }
+
+        if let Some(x) = &transport_flags[2] {
+            match x {
+                PossibleValues::String(t) => match tfg {
+                    TransportConfig::None => {
+                        transport_flags[2] = Some(PossibleValues::String(t.clone()))
+                    }
+                    TransportConfig::Grpc(ref mut z) => z.service_name = Some(t.clone()),
+                    _ => {}
+                },
+                _ => unreachable!(),
             }
         }
 
