@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), allow(warnings))]
+
 pub mod bridge;
 pub mod configurator;
 pub mod consts;
