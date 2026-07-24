@@ -23,6 +23,7 @@ enum Flow {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
 enum TransportType {
     Grpc,
     #[serde(rename = "ws")]
@@ -237,7 +238,7 @@ impl VlessConfig {
                             "quic" => tfg = TransportConfig::Quic(QuicConfig::new()),
                             "http" => tfg = TransportConfig::Http(HttpConfig::new()),
                             "httpupdate" => {
-                                tfg = TransportConfig::HttpUpdate(HttpUpdateConfig::new())
+                                tfg = TransportConfig::HttpUpgrade(HttpUpgradeConfig::new())
                             }
                             _ => {}
                         },
@@ -335,7 +336,7 @@ impl VlessConfig {
                         }
                         TransportConfig::WebSocket(ref mut z) => z.path = Some(x),
                         TransportConfig::Http(ref mut z) => z.path = Some(x),
-                        TransportConfig::HttpUpdate(ref mut z) => z.path = Some(x),
+                        TransportConfig::HttpUpgrade(ref mut z) => z.path = Some(x),
                         _ => {}
                     },
                     _ => return Err(anyhow!("Invalid Path type")),
@@ -358,7 +359,7 @@ impl VlessConfig {
                                 z.host.as_mut().unwrap().push(x);
                             }
                         },
-                        TransportConfig::HttpUpdate(ref mut z) => match z.host {
+                        TransportConfig::HttpUpgrade(ref mut z) => match z.host {
                             None => z.host = Some(vec![x]),
                             Some(_) => {
                                 z.host.as_mut().unwrap().push(x);
@@ -393,7 +394,7 @@ impl VlessConfig {
                 PossibleValues::String(t) => match tfg {
                     TransportConfig::WebSocket(ref mut z) => z.path = Some(t.clone()),
                     TransportConfig::Http(ref mut z) => z.path = Some(t.clone()),
-                    TransportConfig::HttpUpdate(ref mut z) => z.path = Some(t.clone()),
+                    TransportConfig::HttpUpgrade(ref mut z) => z.path = Some(t.clone()),
                     TransportConfig::None => unreachable!(),
                     _ => {}
                 },
@@ -420,7 +421,7 @@ impl VlessConfig {
                             z.host.as_mut().unwrap().push(t.clone());
                         }
                     },
-                    TransportConfig::HttpUpdate(ref mut z) => match z.host {
+                    TransportConfig::HttpUpgrade(ref mut z) => match z.host {
                         None => z.host = Some(vec![t.clone()]),
                         Some(_) => {
                             z.host.as_mut().unwrap().push(t.clone());
@@ -507,13 +508,13 @@ impl VlessConfig {
                             cfg.transport = Some(TransportConfig::Http(x))
                         }
                     }
-                    TransportConfig::HttpUpdate(x) => {
+                    TransportConfig::HttpUpgrade(x) => {
                         if x.check() {
                             if let Some(ref mut z) = cfg.tls {
                                 z.insecure = Some(true)
                             }
                             cfg.flow = Some(Flow::None);
-                            cfg.transport = Some(TransportConfig::HttpUpdate(x))
+                            cfg.transport = Some(TransportConfig::HttpUpgrade(x))
                         }
                     }
                     TransportConfig::Tcp => {}

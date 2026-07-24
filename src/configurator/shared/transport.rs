@@ -12,7 +12,7 @@ pub enum TransportConfig {
     Grpc(GrpcConfig),
     Quic(QuicConfig),
     Http(HttpConfig),
-    HttpUpdate(HttpUpdateConfig),
+    HttpUpgrade(HttpUpgradeConfig),
 }
 
 #[auto_skip_none]
@@ -113,7 +113,7 @@ impl HttpConfig {
 
 #[auto_skip_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct HttpUpdateConfig {
+pub struct HttpUpgradeConfig {
     #[serde(rename = "type")]
     pub config_type: Option<String>,
     pub host: Option<Vec<String>>,
@@ -121,9 +121,9 @@ pub struct HttpUpdateConfig {
     pub headers: Option<HashMap<String, String>>,
 }
 
-impl HttpUpdateConfig {
+impl HttpUpgradeConfig {
     pub fn new() -> Self {
-        HttpUpdateConfig {
+        HttpUpgradeConfig {
             config_type: Some("httpupgrade".to_string()),
             ..Default::default()
         }
