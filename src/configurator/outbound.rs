@@ -2,10 +2,13 @@ pub mod direct;
 pub mod vless;
 
 use anyhow::{Context, Result, anyhow};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::configurator::outbound::{direct::DirectConfig, vless::VlessConfig};
+
+use crate::minireq::*;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 #[serde(transparent)]
@@ -24,10 +27,29 @@ impl OutboundConfig {
     }
 
     pub fn add_server_from_url(&mut self, url: &str) -> Result<&mut Self> {
-        match Url::parse(url)?.scheme() {
+        let parsed = Url::parse(url)?;
+        let decoded;
+        let turl: &str;
+
+        if matches!(parsed.scheme(), "http" | "https") {
+            decoded = URL_SAFE.decode(
+                get_responce(
+                    parsed.host_str().context("incorrcet url")?,
+                    parsed.port().unwrap_or(80),
+                    parsed.path(),
+                )
+                .map_err(|err| anyhow::anyhow!("{err}"))?
+                .as_str(),
+            )?;
+            turl = str::from_utf8(&decoded)?;
+        } else {
+            turl = url;
+        }
+
+        match Url::parse(turl)?.scheme() {
             "vless" => {
                 self.add_server(Outbound::Vless(
-                    VlessConfig::from_url(url).context("Cant parse Vless config from url.")?,
+                    VlessConfig::from_url(turl).context("Cant parse Vless config from url.")?,
                 ));
             }
             _ => {}

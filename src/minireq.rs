@@ -34,7 +34,7 @@ pub fn get_ip(proxy: Option<&str>) -> Result<String, ReqError> {
 
     let response = send_http_request(&addr, &request)?;
 
-    parse_ip_response(&response)
+    parse_response(&response)
 }
 
 #[cfg(feature = "daemon")]
@@ -57,7 +57,7 @@ pub async fn get_ip(proxy: Option<&str>) -> Result<String, ReqError> {
 
     let response = send_http_request(&addr, &request).await?;
 
-    parse_ip_response(&response)
+    parse_response(&response)
 }
 
 fn build_ip_request(proxy: Option<&str>) -> (String, String) {
@@ -84,7 +84,7 @@ fn build_ip_request(proxy: Option<&str>) -> (String, String) {
     }
 }
 
-fn parse_ip_response(response: &str) -> Result<String, ReqError> {
+pub fn parse_response(response: &str) -> Result<String, ReqError> {
     let (status, rest) = response
         .split_once("\r\n")
         .ok_or("Can't read status line")?;
@@ -98,4 +98,32 @@ fn parse_ip_response(response: &str) -> Result<String, ReqError> {
     let (_, body) = rest.split_once("\r\n\r\n").ok_or("Can't get body")?;
 
     Ok(body.trim().to_string())
+}
+
+pub fn build_request(host: &str, port: u16, path: &str) -> (String, String) {
+    let request = format!(
+        "GET {} HTTP/1.1\r\n\
+                           Host: {}:{}\r\n\
+                           Connection: close\r\n\
+                           \r\n",
+        path, host, port
+    )
+    .to_string();
+
+    (format!("{}:{}", host, port).to_string(), request)
+}
+
+pub fn get_responce(host: &str, port: u16, path: &str) -> Result<String, ReqError> {
+    let (addr, request) = build_request(host, port, path);
+
+    use std::io::{Read, Write};
+    use std::net::TcpStream;
+
+    let mut stream = TcpStream::connect(addr)?;
+    stream.write_all(request.as_bytes())?;
+
+    let mut response = String::new();
+    stream.read_to_string(&mut response)?;
+
+    parse_response(&response)
 }

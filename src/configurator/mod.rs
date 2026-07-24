@@ -12,13 +12,13 @@ use outbound::*;
 use route::*;
 use serde::{Deserialize, Serialize};
 
-use crate::configurator::dns::dnsserver::*;
-use crate::configurator::experimental::ExperimentalConfig;
-use crate::configurator::inbound::tun::TunConfig;
-use crate::configurator::log::LogConfig;
-use crate::configurator::route::routerule::DefaultRouteRule;
-use crate::configurator::route::routerule::LogicalRouteRule;
 use crate::datamanager::InboundMod;
+use dns::dnsserver::*;
+use experimental::ExperimentalConfig;
+use inbound::tun::TunConfig;
+use log::LogConfig;
+use route::routerule::DefaultRouteRule;
+use route::routerule::LogicalRouteRule;
 
 use anyhow::{Context, Result, anyhow};
 use std::fs::File;
