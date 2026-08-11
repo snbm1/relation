@@ -1,12 +1,6 @@
-use std::path::PathBuf;
-
 use anyhow::Result;
 
-#[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
-
-#[cfg(feature = "daemon")]
-use crate::datamanager::async_app::App;
 
 pub struct AppState {
     pub selected_index: usize,
@@ -28,8 +22,8 @@ pub struct SettingsState {
     pub dns_type: Option<String>,
     pub dns_address: Option<String>,
     pub dns_port: Option<String>,
-    pub manage_action: Option<String>, 
-    pub manage_value1: Option<String>, 
+    pub manage_action: Option<String>,
+    pub manage_value1: Option<String>,
     pub manage_value2: Option<String>,
 }
 
@@ -75,7 +69,6 @@ pub enum Focus {
 
 impl TuiState {
     pub fn new(app: &mut App) -> Result<Self> {
-        #[cfg(feature = "daemon")]
         let running = app.get_status()?.map(|s| {
             PathBuf::from(s.file)
                 .file_stem()
@@ -83,9 +76,6 @@ impl TuiState {
                 .unwrap_or("")
                 .to_string()
         });
-
-        #[cfg(not(feature = "daemon"))]
-        let running: Option<String> = None;
 
         let configs = app.get_list();
         let current = app.get_current_config();
@@ -131,8 +121,8 @@ impl TuiState {
                 dns_type: None,
                 dns_address: None,
                 dns_port: None,
-                manage_action: None, 
-                manage_value1: None, 
+                manage_action: None,
+                manage_value1: None,
                 manage_value2: None,
             },
         })

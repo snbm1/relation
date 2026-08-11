@@ -1,16 +1,20 @@
 pub mod direct;
+pub mod shadowsocks;
 pub mod socks;
 pub mod subcription;
 pub mod vless;
+pub mod vmess;
 
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use self::direct::DirectConfig;
-use self::socks::SocksConfig;
-use self::subcription::Subscription;
-use self::vless::VlessConfig;
+use direct::DirectConfig;
+use shadowsocks::ShadowsocksConfig;
+use socks::SocksConfig;
+use subcription::Subscription;
+use vless::VlessConfig;
+use vmess::VmessConfig;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 #[serde(transparent)]
@@ -103,6 +107,12 @@ pub enum Outbound {
 
     #[serde(rename = "socks")]
     Socks(SocksConfig),
+
+    #[serde(rename = "shadowsocks")]
+    Shadowsocks(shadowsocks::ShadowsocksConfig),
+
+    #[serde(rename = "vmess")]
+    Vmess(VmessConfig),
 }
 
 impl Outbound {
@@ -118,7 +128,15 @@ impl Outbound {
                 SocksConfig::from_url(input).context("Cannot parse SOCKS outbound")?,
             )),
 
-            "http" | "https" => Ok(subcription::Subscription::load(input)?.pop().unwrap()),
+            "http" | "https" => Ok(Subscription::load(input)?.pop().unwrap()),
+
+            "ss" => Ok(Self::Shadowsocks(
+                ShadowsocksConfig::from_url(input).context("Cannot parse Shadowsocks outbound")?,
+            )),
+
+            "vmess" => Ok(Self::Vmess(
+                VmessConfig::from_url(input).context("Cannot parse VMess outbound")?,
+            )),
 
             scheme => {
                 bail!("Unsupported outbound scheme '{scheme}'")
@@ -131,6 +149,8 @@ impl Outbound {
             Self::Direct(cfg) => cfg.tag(),
             Self::Vless(cfg) => cfg.tag(),
             Self::Socks(cfg) => cfg.tag(),
+            Self::Shadowsocks(cfg) => cfg.tag(),
+            Self::Vmess(cfg) => cfg.tag(),
         }
     }
 
@@ -139,6 +159,8 @@ impl Outbound {
             Self::Direct(_) => "direct",
             Self::Vless(_) => "vless",
             Self::Socks(_) => "socks",
+            Self::Shadowsocks(_) => "shadowsocks",
+            Self::Vmess(_) => "vmess",
         }
     }
 
@@ -147,6 +169,8 @@ impl Outbound {
             Self::Direct(_) => None,
             Self::Vless(cfg) => Some(cfg.server()),
             Self::Socks(cfg) => Some(cfg.server()),
+            Self::Shadowsocks(cfg) => Some(cfg.server()),
+            Self::Vmess(cfg) => Some(cfg.server()),
         }
     }
 }

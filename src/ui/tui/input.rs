@@ -2,13 +2,9 @@ use std::sync::{Arc, Mutex};
 
 use crate::consts::DNS;
 use crate::consts::manage;
-#[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
 use anyhow::Result;
 use crossterm::event::KeyCode;
-
-#[cfg(feature = "daemon")]
-use crate::datamanager::async_app::App;
 
 use crate::ui::tui::state::InputMode;
 
@@ -140,11 +136,7 @@ pub fn handle_normal_input(
                 state.input.buffer.clear();
                 return Ok(InputAction::Continue);
             } else if state.app.running.is_some() {
-                #[cfg(feature = "daemon")]
                 app.send_quit()?;
-
-                #[cfg(not(feature = "daemon"))]
-                app.stop_app()?;
             }
             return Ok(InputAction::Quit);
         }
@@ -159,7 +151,7 @@ pub fn handle_normal_input(
                     state.ui.popup_selected = 0;
                 }
             } else {
-                return Ok((InputAction::Quit));
+                return Ok(InputAction::Quit);
             }
         }
 
