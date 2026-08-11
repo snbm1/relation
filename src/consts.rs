@@ -7,8 +7,6 @@ pub mod timing {
     pub const IP_REFRESH_SLEEP: Duration = Duration::from_millis(800);
     pub const TRAFFIC_REFRESH: Duration = Duration::from_millis(200);
     pub const RESTART_DELAY: Duration = Duration::from_millis(100);
-
-    #[cfg(feature = "daemon")]
     pub const IP_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 }
 
@@ -112,9 +110,9 @@ pub mod ui {
     pub const DNS_TYPE_INDEX: usize = 3;
     pub const DNS_ADDR: usize = 4;
     pub const DNS_PORT: usize = 5;
-    pub const MANAGE_ACTION: usize = 6; 
-    pub const MANAGE_VALUE1: usize = 7; 
-    pub const MANAGE_VALUE2: usize = 8; 
+    pub const MANAGE_ACTION: usize = 6;
+    pub const MANAGE_VALUE1: usize = 7;
+    pub const MANAGE_VALUE2: usize = 8;
     pub const ENTER_INDEX: usize = 9;
 
     pub const SETTINGS_FIELDS_COUNT: usize = 10;
@@ -142,7 +140,7 @@ pub mod text {
 
     pub const ROUTING_RULES_TITLE: &str = "Routing Rules";
     pub const DNS_SERVERS_TITLE: &str = "DNS Servers";
-    pub const MANAGE_TITLE: &str = "List Management"; 
+    pub const MANAGE_TITLE: &str = "List Management";
 
     pub const ACTION_LABEL: &str = "Action: ";
     pub const TYPE_LABEL: &str = "Type: ";
@@ -150,17 +148,16 @@ pub mod text {
     pub const DNS_ADDRESS_LABEL: &str = "Address: ";
     pub const DNS_PORT_LABEL: &str = "Port: ";
 
-    pub const MANAGE_ACTION_LABEL: &str = "Action: "; 
-    pub const MANAGE_VALUE1_LABEL: &str = "Value 1: "; 
-    pub const MANAGE_VALUE2_LABEL: &str = "Value 2: "; 
+    pub const MANAGE_ACTION_LABEL: &str = "Action: ";
+    pub const MANAGE_VALUE1_LABEL: &str = "Value 1: ";
+    pub const MANAGE_VALUE2_LABEL: &str = "Value 2: ";
 
     pub const ENTER_BUTTON: &str = "[ENTER]";
     pub const PERSONAL: &str = "personal";
     pub const NO_ITEMS: &str = "No items!";
     pub const INPUT_PREFIX: &str = "Input: ";
 
-    pub const HELP: &str =
-        "↑/↓ navigate   q exit   TAB switch LOG/Settings   a adding config  A adding tun config    d delete config";
+    pub const HELP: &str = "↑/↓ navigate   q exit   TAB switch LOG/Settings   a adding config  A adding tun config    d delete config";
 
     pub const TRAFFIC_TITLE: &str = "Traffic";
 }
@@ -213,18 +210,18 @@ pub mod route {
 }
 
 pub mod DNS {
-    pub const TYPES: &[(&str, &str)] = &[("udp", "up"), ("tcp", "tp")]; 
+    pub const TYPES: &[(&str, &str)] = &[("udp", "up"), ("tcp", "tp")];
 }
 
 pub mod manage {
     pub const ACTIONS: &[(&str, &str)] = &[
-        ("Remove rule", "rr"), 
-        ("Move rule", "mr"), 
-        ("Final outbound", "fr"), 
-        ("Remove dns server", "rd"), 
-        ("Move dns server", "md"), 
-        ("Final dns server", "fd"), 
-        ("Remove dns server", "rs"), 
+        ("Remove rule", "rr"),
+        ("Move rule", "mr"),
+        ("Final outbound", "fr"),
+        ("Remove dns server", "rd"),
+        ("Move dns server", "md"),
+        ("Final dns server", "fd"),
+        ("Remove dns server", "rs"),
         ("Move dns server", "ms"),
     ];
 }

@@ -11,11 +11,9 @@ use macros::auto_skip_none;
 use std::process::{Command as StdCommand, Stdio};
 
 #[cfg(not(windows))]
-#[cfg(feature = "daemon")]
 use interprocess::local_socket::{GenericFilePath, ToFsName};
 
 #[cfg(windows)]
-#[cfg(feature = "daemon")]
 use interprocess::local_socket::{GenericNamespaced, ToNsName};
 
 use anyhow::Result;
@@ -114,12 +112,10 @@ impl DaemonStatus {
 }
 
 #[cfg(unix)]
-#[cfg(feature = "daemon")]
 pub fn socket_path() -> &'static str {
     "/tmp/relation.sock"
 }
 
-#[cfg(feature = "daemon")]
 pub fn socket_name() -> Result<interprocess::local_socket::Name<'static>> {
     #[cfg(windows)]
     let name = SOCKET_NAME.to_ns_name::<GenericNamespaced>()?;
@@ -130,7 +126,6 @@ pub fn socket_name() -> Result<interprocess::local_socket::Name<'static>> {
     Ok(name)
 }
 
-#[cfg(feature = "daemon")]
 pub fn run_daemon() -> Result<()> {
     let possigle_paths = ["relationd", "./relationd"];
     for i in possigle_paths {

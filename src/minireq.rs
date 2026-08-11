@@ -1,12 +1,7 @@
 use std::error::Error;
 
-#[cfg(feature = "daemon")]
 type ReqError = Box<dyn Error + Send + Sync>;
 
-#[cfg(not(feature = "daemon"))]
-type ReqError = Box<dyn Error>;
-
-//This is realisation of mini ureq
 pub fn parse_status_code(status: &str) -> Result<u16, ReqError> {
     let mut parts = status.split_whitespace();
     let _http_ver = parts.next().ok_or("Missing HTTP version")?;
@@ -14,30 +9,6 @@ pub fn parse_status_code(status: &str) -> Result<u16, ReqError> {
     Ok(status_code.parse()?)
 }
 
-#[cfg(not(feature = "daemon"))]
-pub fn send_http_request(addr: &str, request: &str) -> Result<String, ReqError> {
-    use std::io::{Read, Write};
-    use std::net::TcpStream;
-
-    let mut stream = TcpStream::connect(addr)?;
-    stream.write_all(request.as_bytes())?;
-
-    let mut response = String::new();
-    stream.read_to_string(&mut response)?;
-
-    Ok(response)
-}
-
-#[cfg(not(feature = "daemon"))]
-pub fn get_ip(proxy: Option<&str>) -> Result<String, ReqError> {
-    let (addr, request) = build_ip_request(proxy);
-
-    let response = send_http_request(&addr, &request)?;
-
-    parse_response(&response)
-}
-
-#[cfg(feature = "daemon")]
 pub async fn send_http_request(addr: &str, request: &str) -> Result<String, ReqError> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpStream;
@@ -51,7 +22,6 @@ pub async fn send_http_request(addr: &str, request: &str) -> Result<String, ReqE
     Ok(response)
 }
 
-#[cfg(feature = "daemon")]
 pub async fn get_ip(proxy: Option<&str>) -> Result<String, ReqError> {
     let (addr, request) = build_ip_request(proxy);
 

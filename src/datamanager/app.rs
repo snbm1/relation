@@ -1,8 +1,12 @@
-use crate::bridge;
+use crate::{DaemonStatus, Request, Response, socket_name};
 use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
+use interprocess::local_socket::tokio::{Stream, prelude::*};
 use std::fs;
 use std::path::PathBuf;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::runtime::Runtime;
+use tokio::time::{Duration, sleep, timeout};
 
 use crate::datamanager::*;
 
@@ -13,6 +17,7 @@ pub struct App {
     cfg_handler: Configurator,
     stg_handler: Settings,
     log_handler: Logger,
+    runtime: Runtime,
 }
 
 impl App {
@@ -26,17 +31,42 @@ impl App {
 
         fs::create_dir_all(&config_dir).expect("Failed to create config directory");
 
-        let mut mng = Self {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()?;
+
+        let mut app = Self {
             data_dir,
             configs: vec![],
             inf_handler: Infor::new(),
             cfg_handler: Configurator::new(),
             stg_handler: settings,
             log_handler: Logger::new(),
+            runtime,
         };
 
-        mng.configs = mng.read_configs()?;
-        Ok(mng)
+        app.configs = app.read_configs()?;
+        Ok(app)
+    }
+
+    async fn connect_socket() -> Result<Stream> {
+        match Stream::connect(socket_name()?).await {
+            Ok(x) => Ok(x),
+            Err(_) => {
+                crate::run_daemon()?;
+
+                for _ in 0..20 {
+                    match Stream::connect(socket_name()?).await {
+                        Ok(stream) => return Ok(stream),
+                        Err(_) => sleep(Duration::from_millis(100)).await,
+                    }
+                }
+
+                Err(anyhow::anyhow!(
+                    "relationd started but it is impossible to connect to socket"
+                ))
+            }
+        }
     }
 
     pub fn read_configs(&mut self) -> Result<Vec<String>> {
@@ -148,7 +178,15 @@ impl App {
             self.stg_handler.current = Some(self.get_list().first().unwrap().clone());
             self.set_handler_config_by_name(self.get_list().first().unwrap())?;
         }
-        bridge::start_safe(file_path.to_str().unwrap(), 0);
+
+        self.run_app_by_path(file_path, unable_system_proxy)?;
+        Ok(())
+    }
+
+    fn run_app_by_path(&mut self, file_path: PathBuf, unable_system_proxy: bool) -> Result<()> {
+        self.runtime
+            .block_on(async { send_start(file_path.to_str().unwrap().to_string()).await })?;
+
         if unable_system_proxy {
             self.stg_handler.unable_system_proxy = Some(unable_system_proxy);
         }
@@ -159,22 +197,39 @@ impl App {
             } else if let Some((host, port, support_socks)) =
                 self.handler_ref().get_list_of_system_proxies().first()
             {
-                bridge::enable_system_proxy_safe(host, *port as i64, *support_socks);
+                self.runtime.block_on(async {
+                    send_enable_sys_proxy(host.to_string(), *port, *support_socks).await
+                })?;
             }
         }
-        let _ = self.stg_handler.save(self.get_settings_path());
+        self.stg_handler.save(self.get_settings_path())?;
         Ok(())
     }
 
     pub fn stop_app(&mut self) -> Result<()> {
         if !self.stg_handler.unable_system_proxy.unwrap_or(true) {
-            bridge::disable_system_proxy_safe();
+            self.runtime
+                .block_on(async { send_disable_sys_proxy().await })?;
         }
-        bridge::stop_safe();
+        self.runtime.block_on(async { send_stop().await })?;
         let _ = self.stg_handler.save(self.get_settings_path());
         self.log_handler.clean();
         self.remove_log_file()?;
 
+        Ok(())
+    }
+
+    pub fn get_status(&mut self) -> Result<Option<DaemonStatus>> {
+        let status = self.runtime.block_on(async { send_status().await })?;
+        match status {
+            Response::Running(x) => return Ok(Some(x)),
+            Response::Stopped => return Ok(None),
+            _ => Err(anyhow!("Incorrect response")),
+        }
+    }
+
+    pub fn send_quit(&mut self) -> Result<()> {
+        self.runtime.block_on(async { send_quit().await })?;
         Ok(())
     }
 
@@ -369,4 +424,60 @@ impl App {
         }
         counter
     }
+}
+
+#[inline]
+async fn send_request(request: Request) -> Result<Response> {
+    let mut socket_stream = App::connect_socket().await?;
+    let payload = serde_json::to_vec(&request)?;
+
+    socket_stream.write_all(&payload).await?;
+    socket_stream.write_all(b"\n").await?;
+    socket_stream.flush().await?;
+
+    let mut response = String::new();
+    let mut reader = BufReader::new(&mut socket_stream);
+    timeout(Duration::from_secs(3), reader.read_line(&mut response))
+        .await
+        .context("daemon did not respond in time")??;
+
+    if response.trim().is_empty() {
+        return Err(anyhow!("daemon returned empty response"));
+    }
+
+    let response: Response = serde_json::from_str(response.trim())?;
+    match response {
+        Response::Error(message) => Err(anyhow!(message)),
+        other => Ok(other),
+    }
+}
+
+#[inline]
+async fn send_disable_sys_proxy() -> Result<Response> {
+    send_request(Request::disable_sys_proxy()).await
+}
+
+#[inline]
+async fn send_stop() -> Result<Response> {
+    send_request(Request::stop()).await
+}
+
+#[inline]
+async fn send_start(config_path: String) -> Result<Response> {
+    send_request(Request::start(config_path)).await
+}
+
+#[inline]
+async fn send_enable_sys_proxy(host: String, port: u16, support_socks: bool) -> Result<Response> {
+    send_request(Request::enable_sys_proxy(host, port, support_socks)).await
+}
+
+#[inline]
+async fn send_quit() -> Result<Response> {
+    send_request(Request::quit()).await
+}
+
+#[inline]
+async fn send_status() -> Result<Response> {
+    send_request(Request::status()).await
 }

@@ -22,26 +22,17 @@ use std::time::Instant;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-#[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
-
-#[cfg(feature = "daemon")]
-use crate::datamanager::async_app::App;
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 use std::collections::VecDeque;
 
 use ratatui::{
-    Frame, Terminal,
-    backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{
-        Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap,
-        block::{Position, Title},
-    },
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
 
 use anyhow::Result;
@@ -85,41 +76,6 @@ pub fn run(app: &mut App) -> Result<()> {
     let change_flag = Arc::new(Mutex::new(true));
     let change_shared = Arc::clone(&change_flag);
 
-    #[cfg(not(feature = "daemon"))]
-    thread::spawn(move || {
-        loop {
-            let need_refresh = {
-                if let Ok(mut flag) = change_shared.lock() {
-                    if *flag {
-                        *flag = false;
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            };
-
-            if need_refresh {
-                let ip = match get_ip(Some(net::LOCAL_PROXY_ADDR)) {
-                    Ok(ip) => ip,
-                    Err(_) => match get_ip(None) {
-                        Ok(ip) => ip,
-                        Err(_) => net::FALLBACK_IP.to_string(),
-                    },
-                };
-
-                if let Ok(mut ip_address) = ip_shared.lock() {
-                    *ip_address = ip;
-                }
-            }
-
-            thread::sleep(timing::IP_REFRESH_SLEEP);
-        }
-    });
-
-    #[cfg(feature = "daemon")]
     thread::spawn(move || {
         let rt = match tokio::runtime::Builder::new_current_thread()
             .enable_all()

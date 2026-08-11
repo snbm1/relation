@@ -9,11 +9,7 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 
-#[cfg(not(feature = "daemon"))]
 use crate::datamanager::app::App;
-
-#[cfg(feature = "daemon")]
-use crate::datamanager::async_app::App;
 
 use signal_hook::consts::SIGINT;
 // use signal_hook::iterator::Signals;
@@ -97,7 +93,6 @@ enum Commands {
     List,
 
     /// Get daemon status
-    #[cfg(feature = "daemon")]
     Status,
 
     /// Run terminal user interface
@@ -118,17 +113,14 @@ enum Commands {
         #[arg(long, short)]
         unable_system_proxy: bool,
 
-        #[cfg(feature = "daemon")]
         #[arg(long, short)]
         quiet: bool,
     },
 
     ///Stop proxy
-    #[cfg(feature = "daemon")]
     Stop,
 
     ///Stop and shutdown proxy
-    #[cfg(feature = "daemon")]
     Quit,
 }
 
@@ -277,16 +269,11 @@ impl Cli {
             Commands::Run {
                 value,
                 unable_system_proxy,
-                #[cfg(feature = "daemon")]
                 quiet,
             } => {
-                #[cfg(feature = "daemon")]
                 if !quiet {
                     setup_signal_handler();
                 }
-
-                #[cfg(not(feature = "daemon"))]
-                setup_signal_handler();
 
                 let rr = match value {
                     Some(x) => match x {
@@ -302,7 +289,6 @@ impl Cli {
                     return Err(anyhow!(x));
                 }
 
-                #[cfg(feature = "daemon")]
                 if !quiet {
                     while !SHUTDOWN
                         .get_or_init(|| Arc::new(AtomicBool::new(false)))
@@ -319,24 +305,8 @@ impl Cli {
                         println!("{x}");
                     }
                 }
-
-                #[cfg(not(feature = "daemon"))]
-                {
-                    while RUNNING.load(Ordering::SeqCst) {
-                        manager.read_logs();
-                        for line in manager.get_new_logs() {
-                            println!("{}", line);
-                        }
-                        std::thread::sleep(std::time::Duration::from_millis(200));
-                    }
-
-                    if let Err(x) = manager.stop_app() {
-                        println!("{x}");
-                    }
-                }
             }
 
-            #[cfg(feature = "daemon")]
             Commands::Stop => {
                 if let Err(x) = manager.stop_app() {
                     println!("{x}");
@@ -348,7 +318,6 @@ impl Cli {
                 let _ = tui::run(manager);
             }
 
-            #[cfg(feature = "daemon")]
             Commands::Status => {
                 let a = manager.get_status()?;
                 if a.is_none() {
@@ -358,7 +327,6 @@ impl Cli {
                 }
             }
 
-            #[cfg(feature = "daemon")]
             Commands::Quit => manager.send_quit()?,
         }
         Ok(())

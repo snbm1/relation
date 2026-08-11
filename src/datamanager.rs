@@ -5,11 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use toml;
 
-#[cfg(not(feature = "daemon"))]
 pub mod app;
-
-#[cfg(feature = "daemon")]
-pub mod async_app;
 
 use crate::configurator::Configurator;
 
@@ -166,7 +162,7 @@ impl Infor {
     }
 
     pub fn get_inbound_ports(&self) -> Option<Vec<u16>> {
-        let mut rs = vec![];
+        let rs = vec![];
 
         if rs.is_empty() { None } else { Some(rs) }
     }
