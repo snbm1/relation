@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use anyhow::{Context, Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 use url::Url;
-use urlencoding;
 
 use macros::auto_skip_none;
 
@@ -11,10 +11,9 @@ use crate::configurator::shared::dialfields::DialFields;
 use crate::configurator::shared::multiplex::*;
 use crate::configurator::shared::tls::*;
 use crate::configurator::shared::transport::*;
-use anyhow::{Context, Result, anyhow};
 
-#[derive(Serialize, Deserialize, Default, Debug)]
-enum Flow {
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Flow {
     #[default]
     #[serde(rename = "")]
     None,
@@ -22,16 +21,8 @@ enum Flow {
     XtlsRprxVision,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-enum TransportType {
-    Grpc,
-    #[serde(rename = "ws")]
-    WebSocket,
-}
-
-#[derive(Serialize, Deserialize, Default, Debug)]
-enum PacketEncoding {
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PacketEncoding {
     #[serde(rename = "none")]
     None,
     #[serde(rename = "packetaddr")]
@@ -39,34 +30,6 @@ enum PacketEncoding {
     #[default]
     #[serde(rename = "xudp")]
     Xudp,
-}
-
-#[warn(dead_code)]
-#[derive(Debug)]
-enum PossibleKeys {
-    Server,
-    ServerPort,
-    Uuid,
-    Security,
-    Type,
-    Tag,
-    Flow,
-    Path,
-    Host,
-    Sni,
-    Fp,
-    Pbk,
-    Sid,
-    Mux,
-    ServiceName,
-}
-
-#[warn(dead_code)]
-#[derive(Debug)]
-enum PossibleValues {
-    Bool(bool),
-    U16(u16),
-    String(String),
 }
 
 #[auto_skip_none]
@@ -82,13 +45,56 @@ pub struct VlessConfig {
     multiplex: Option<MultiplexConfig>,
     packet_encoding: Option<PacketEncoding>,
     transport: Option<TransportConfig>,
+
     #[serde(flatten)]
     dial: Option<DialFields>,
 }
 
+#[derive(Default, Debug)]
+struct ParsedVlessUrl {
+    server: String,
+    server_port: u16,
+    uuid: String,
+    tag: String,
+
+    transport_type: Option<TransportKind>,
+    security: SecurityKind,
+    flow: Option<Flow>,
+    packet_encoding: Option<PacketEncoding>,
+
+    sni: Option<String>,
+    fingerprint: Option<String>,
+    reality_public_key: Option<String>,
+    reality_short_id: Option<String>,
+
+    mux: Option<u16>,
+
+    path: Option<String>,
+    hosts: Vec<String>,
+    service_name: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+enum SecurityKind {
+    #[default]
+    None,
+    Tls,
+    Reality,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TransportKind {
+    Tcp,
+    WebSocket,
+    Grpc,
+    Quic,
+    Http,
+    HttpUpgrade,
+}
+
 impl VlessConfig {
-    pub fn new() -> VlessConfig {
-        VlessConfig {
+    pub fn new() -> Self {
+        Self {
             tag: "outbound-vless".to_string(),
             ..Default::default()
         }
@@ -101,22 +107,12 @@ impl VlessConfig {
         }
     }
 
-    pub fn check(&mut self) -> bool {
-        match &self.server == "" || self.server_port == 0 || &self.uuid == "" {
-            true => false,
-            false => {
-                if self.flow.is_none() {
-                    self.flow = Some(Flow::default());
-                }
-                if self.packet_encoding.is_none() {
-                    self.packet_encoding = Some(PacketEncoding::default());
-                }
-                match self.tls.is_none() {
-                    true => true,
-                    false => self.tls.as_ref().unwrap().check(),
-                }
-            }
-        }
+    pub fn tag(&self) -> &str {
+        &self.tag
+    }
+
+    pub fn server(&self) -> &str {
+        &self.server
     }
 
     pub fn get_tag(&self) -> String {
@@ -127,400 +123,484 @@ impl VlessConfig {
         self.server.clone()
     }
 
-    fn parser(input: &str) -> Result<Vec<(PossibleKeys, PossibleValues)>> {
-        let parsed_input = Url::parse(input)?;
-        let mut values: Vec<(PossibleKeys, PossibleValues)> = vec![
-            (
-                PossibleKeys::Server,
-                PossibleValues::String(
-                    parsed_input
-                        .host_str()
-                        .context("No specified url host")?
-                        .to_owned(),
-                ),
-            ),
-            (
-                PossibleKeys::ServerPort,
-                PossibleValues::U16(parsed_input.port().unwrap_or(443)),
-            ),
-            (
-                PossibleKeys::Uuid,
-                PossibleValues::String(parsed_input.username().to_owned()),
-            ),
-            (
-                PossibleKeys::Tag,
-                PossibleValues::String(
-                    urlencoding::decode(parsed_input.fragment().unwrap_or("vless_outbound"))
-                        .unwrap()
-                        .to_string(),
-                ),
-            ),
-        ];
+    fn apply_defaults(&mut self) {
+        self.flow.get_or_insert_default();
+        self.packet_encoding.get_or_insert_default();
+    }
 
-        for i in parsed_input
-            .query()
-            .unwrap()
-            .split("&")
-            .map(|x| x.split("="))
-        {
-            let j = i.collect::<Vec<_>>();
-            let ln = j.len();
-            if ln > 1 {
-                match j[0] {
-                    "type" => values.push((
-                        PossibleKeys::Type,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "security" => values.push((
-                        PossibleKeys::Security,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "flow" => values.push((
-                        PossibleKeys::Flow,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "sni" => values.push((
-                        PossibleKeys::Sni,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "fp" => {
-                        values.push((PossibleKeys::Fp, PossibleValues::String(String::from(j[1]))))
-                    }
-                    "pbk" => values.push((
-                        PossibleKeys::Pbk,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "sid" => values.push((
-                        PossibleKeys::Sid,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "mux" => values.push((PossibleKeys::Mux, PossibleValues::U16(j[1].parse()?))),
-                    "path" => values.push((
-                        PossibleKeys::Path,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "host" => values.push((
-                        PossibleKeys::Host,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    "serviceName" => values.push((
-                        PossibleKeys::ServiceName,
-                        PossibleValues::String(String::from(j[1])),
-                    )),
-                    _ => {}
+    pub fn validate(&self) -> Result<()> {
+        if self.server.trim().is_empty() {
+            bail!("VLESS server is empty");
+        }
+
+        if self.server_port == 0 {
+            bail!("VLESS server port cannot be 0");
+        }
+
+        if self.uuid.trim().is_empty() {
+            bail!("VLESS UUID is empty");
+        }
+
+        validate_uuid(&self.uuid)?;
+
+        if let Some(tls) = &self.tls {
+            if !tls.check() {
+                bail!("Invalid VLESS TLS configuration");
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn check(&mut self) -> bool {
+        self.apply_defaults();
+        self.validate().is_ok()
+    }
+
+    pub fn from_url(input: &str) -> Result<Self> {
+        let parsed = ParsedVlessUrl::parse(input)?;
+        parsed.build()
+    }
+}
+
+impl ParsedVlessUrl {
+    fn parse(input: &str) -> Result<Self> {
+        let url = Url::parse(input).context("Invalid VLESS URL")?;
+
+        if url.scheme() != "vless" {
+            bail!("Invalid URL scheme '{}': expected 'vless'", url.scheme());
+        }
+
+        let server = url
+            .host_str()
+            .context("VLESS URL does not contain a server")?
+            .to_owned();
+
+        if server.trim().is_empty() {
+            bail!("VLESS URL contains an empty server");
+        }
+
+        let server_port = url.port().unwrap_or(443);
+
+        if server_port == 0 {
+            bail!("VLESS server port cannot be 0");
+        }
+
+        let uuid = decode_component(url.username(), "UUID")?;
+
+        if uuid.trim().is_empty() {
+            bail!("VLESS URL does not contain a UUID");
+        }
+
+        validate_uuid(&uuid)?;
+
+        if url.password().is_some() {
+            bail!("VLESS URL must not contain a password");
+        }
+
+        let tag = match url.fragment() {
+            Some(fragment) if !fragment.is_empty() => decode_component(fragment, "fragment/tag")?,
+            _ => "vless_outbound".to_string(),
+        };
+
+        let mut result = ParsedVlessUrl {
+            server,
+            server_port,
+            uuid,
+            tag,
+            ..Default::default()
+        };
+
+        for (key, value) in url.query_pairs() {
+            let key = key.as_ref();
+            let value = value.into_owned();
+            result.parse_query_parameter(key, value)?;
+        }
+
+        result.validate_parameters()?;
+
+        Ok(result)
+    }
+
+    fn parse_query_parameter(&mut self, key: &str, value: String) -> Result<()> {
+        match key {
+            "type" => {
+                self.transport_type = Some(parse_transport_type(&value)?);
+            }
+            "security" => {
+                self.security = parse_security(&value)?;
+            }
+            "flow" => {
+                self.flow = Some(parse_flow(&value)?);
+            }
+            "sni" => {
+                self.sni = non_empty(value);
+            }
+            "fp" => {
+                self.fingerprint = non_empty(value);
+            }
+            "pbk" => {
+                self.reality_public_key = non_empty(value);
+            }
+            "sid" => {
+                self.reality_short_id = non_empty(value);
+            }
+            "mux" => {
+                if value.is_empty() {
+                    bail!("mux parameter cannot be empty");
+                }
+                let max_streams = value
+                    .parse::<u16>()
+                    .with_context(|| format!("Invalid mux value '{value}'"))?;
+                if max_streams == 0 {
+                    bail!("mux must be greater than 0");
+                }
+                self.mux = Some(max_streams);
+            }
+            "path" => {
+                self.path = Some(value);
+            }
+            "host" => {
+                if !value.is_empty() {
+                    self.hosts.push(value);
+                }
+            }
+            "serviceName" | "service_name" => {
+                self.service_name = Some(value);
+            }
+            "packetEncoding" | "packet_encoding" => {
+                self.packet_encoding = Some(parse_packet_encoding(&value)?);
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn validate_parameters(&self) -> Result<()> {
+        if self.reality_public_key.is_some() || self.reality_short_id.is_some() {
+            if self.security != SecurityKind::Reality {
+                bail!("REALITY parameters 'pbk'/'sid' require security=reality");
+            }
+        }
+
+        if self.security == SecurityKind::Reality {
+            if self.reality_public_key.is_none() {
+                bail!("security=reality requires a non-empty 'pbk' parameter");
+            }
+        }
+
+        if self.flow == Some(Flow::XtlsRprxVision) {
+            match self.transport_type.unwrap_or(TransportKind::Tcp) {
+                TransportKind::Tcp => {}
+                other => {
+                    bail!(
+                        "flow=xtls-rprx-vision cannot be combined with transport {:?}",
+                        other
+                    );
                 }
             }
         }
-        Ok(values)
+
+        Ok(())
     }
 
-    pub fn from_url(url: &str) -> Result<Self> {
-        let value = VlessConfig::parser(url)?;
+    fn build(self) -> Result<VlessConfig> {
+        let ParsedVlessUrl {
+            server,
+            server_port,
+            uuid,
+            tag,
 
-        let mut cfg = VlessConfig::new();
+            transport_type,
+            security,
+            flow,
+            packet_encoding,
 
-        let mut tls = TlsConfig::new();
+            sni,
+            fingerprint,
+            reality_public_key,
+            reality_short_id,
+
+            mux,
+
+            path,
+            hosts,
+            service_name,
+        } = self;
+
+        let tls = build_tls(
+            security,
+            sni,
+            fingerprint,
+            reality_public_key,
+            reality_short_id,
+        )?;
+
+        let multiplex = build_multiplex(mux)?;
+
+        let transport = build_transport(
+            transport_type.unwrap_or(TransportKind::Tcp),
+            path,
+            hosts,
+            service_name,
+        )?;
+
+        let mut config = VlessConfig {
+            tag,
+            server,
+            server_port,
+            uuid,
+            flow,
+            network: None,
+            tls,
+            multiplex,
+            packet_encoding,
+            transport,
+            dial: None,
+        };
+
+        config.apply_defaults();
+        config.validate()?;
+
+        Ok(config)
+    }
+}
+
+fn parse_transport_type(value: &str) -> Result<TransportKind> {
+    match value.to_ascii_lowercase().as_str() {
+        "" | "tcp" => Ok(TransportKind::Tcp),
+
+        "ws" | "websocket" => Ok(TransportKind::WebSocket),
+
+        "grpc" => Ok(TransportKind::Grpc),
+
+        "quic" => Ok(TransportKind::Quic),
+
+        "http" | "h2" => Ok(TransportKind::Http),
+
+        // Correct sing-box/Xray spelling.
+        "httpupgrade" => Ok(TransportKind::HttpUpgrade),
+
+        _ => bail!("Unsupported VLESS transport type '{value}'"),
+    }
+}
+
+fn parse_security(value: &str) -> Result<SecurityKind> {
+    match value.to_ascii_lowercase().as_str() {
+        "" | "none" => Ok(SecurityKind::None),
+        "tls" => Ok(SecurityKind::Tls),
+        "reality" => Ok(SecurityKind::Reality),
+
+        _ => bail!("Unsupported VLESS security type '{value}'"),
+    }
+}
+
+fn parse_flow(value: &str) -> Result<Flow> {
+    match value {
+        "" | "none" => Ok(Flow::None),
+        "xtls-rprx-vision" => Ok(Flow::XtlsRprxVision),
+
+        _ => bail!("Unsupported VLESS flow '{value}'"),
+    }
+}
+
+fn parse_packet_encoding(value: &str) -> Result<PacketEncoding> {
+    match value.to_ascii_lowercase().as_str() {
+        "" | "none" => Ok(PacketEncoding::None),
+        "packetaddr" => Ok(PacketEncoding::Packetaddr),
+        "xudp" => Ok(PacketEncoding::Xudp),
+
+        _ => bail!("Unsupported packet encoding '{value}'"),
+    }
+}
+
+fn build_tls(
+    security: SecurityKind,
+    sni: Option<String>,
+    fingerprint: Option<String>,
+    reality_public_key: Option<String>,
+    reality_short_id: Option<String>,
+) -> Result<Option<TlsConfig>> {
+    if security == SecurityKind::None {
+        return Ok(None);
+    }
+
+    let mut tls = TlsConfig::new();
+    tls.enabled = Some(true);
+
+    if let Some(sni) = sni {
+        tls.server_name = Some(sni);
+    }
+    if let Some(fingerprint) = fingerprint {
         let mut utls = UtlsConfig::new();
-        let mut rlt = RealityConfig::new();
-        let mut mtx = MultiplexConfig::new();
-        let mut tfg = TransportConfig::None;
 
-        let mut transport_flags = vec![None, None, None];
+        utls.enabled = Some(true);
+        utls.fingerprint = Some(fingerprint);
 
-        for (key, val) in value {
-            match key {
-                PossibleKeys::Type => {
-                    match val {
-                        PossibleValues::String(x) => match x.as_str() {
-                            "tcp" => tfg = TransportConfig::Tcp,
-                            "ws" => tfg = TransportConfig::WebSocket(WebSocketConfig::new()),
-                            "grpc" => tfg = TransportConfig::Grpc(GrpcConfig::new()),
-                            "quic" => tfg = TransportConfig::Quic(QuicConfig::new()),
-                            "http" => tfg = TransportConfig::Http(HttpConfig::new()),
-                            "httpupdate" => {
-                                tfg = TransportConfig::HttpUpgrade(HttpUpgradeConfig::new())
-                            }
-                            _ => {}
-                        },
-                        _ => return Err(anyhow!("Invalid type type")),
-                    };
-                }
-
-                PossibleKeys::Flow => {
-                    match val {
-                        PossibleValues::String(x) => match x.as_str() {
-                            "xtls-rprx-vision" => cfg.flow = Some(Flow::XtlsRprxVision),
-                            _ => cfg.flow = Some(Flow::None),
-                        },
-                        _ => return Err(anyhow!("Invalid flow type")),
-                    };
-                }
-
-                PossibleKeys::Server => {
-                    match val {
-                        PossibleValues::String(x) => cfg.server = x,
-                        _ => return Err(anyhow!("Invalid server type")),
-                    };
-                }
-
-                PossibleKeys::ServerPort => {
-                    match val {
-                        PossibleValues::U16(x) => cfg.server_port = x,
-                        _ => return Err(anyhow!("Invalid port type")),
-                    };
-                }
-
-                PossibleKeys::Uuid => {
-                    match val {
-                        PossibleValues::String(x) => cfg.uuid = x,
-                        _ => return Err(anyhow!("Invalid uuid type")),
-                    };
-                }
-
-                PossibleKeys::Sni => match val {
-                    PossibleValues::String(x) => {
-                        tls.enabled = Some(true);
-                        tls.server_name = Some(x);
-                    }
-                    _ => return Err(anyhow!("Invalid tls server name")),
-                },
-
-                PossibleKeys::Fp => match val {
-                    PossibleValues::String(x) => {
-                        tls.enabled = Some(true);
-                        utls.enabled = Some(true);
-                        utls.fingerprint = Some(x);
-                    }
-                    _ => return Err(anyhow!("Invalid fingerprint name")),
-                },
-
-                PossibleKeys::Security => match val {
-                    PossibleValues::String(x) => match x.as_str() {
-                        "reality" => rlt.enabled = Some(true),
-                        "tls" => tls.enabled = Some(true),
-                        _ => eprintln!("{} not supported", x),
-                    },
-                    _ => return Err(anyhow!("Invalid Security type")),
-                },
-
-                PossibleKeys::Pbk => match val {
-                    PossibleValues::String(x) => {
-                        tls.enabled = Some(true);
-                        rlt.enabled = Some(true);
-                        rlt.public_key = Some(x);
-                    }
-                    _ => return Err(anyhow!("Invalid public key")),
-                },
-
-                PossibleKeys::Sid => match val {
-                    PossibleValues::String(x) => {
-                        tls.enabled = Some(true);
-                        rlt.enabled = Some(true);
-                        rlt.short_id = Some(x);
-                    }
-                    _ => return Err(anyhow!("Invalid short id")),
-                },
-
-                PossibleKeys::Mux => match val {
-                    PossibleValues::U16(x) => {
-                        mtx.enable = Some(true);
-                        mtx.protocol = Some("h2mux".to_string());
-                        mtx.max_streams = Some(x);
-                    }
-                    _ => return Err(anyhow!("Invalid multiplex type")),
-                },
-                PossibleKeys::Path => match val {
-                    PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => {
-                            transport_flags[0] = Some(PossibleValues::String(x))
-                        }
-                        TransportConfig::WebSocket(ref mut z) => z.path = Some(x),
-                        TransportConfig::Http(ref mut z) => z.path = Some(x),
-                        TransportConfig::HttpUpgrade(ref mut z) => z.path = Some(x),
-                        _ => {}
-                    },
-                    _ => return Err(anyhow!("Invalid Path type")),
-                },
-
-                PossibleKeys::Host => match val {
-                    PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => {
-                            transport_flags[1] = Some(PossibleValues::String(x))
-                        }
-                        TransportConfig::WebSocket(ref mut z) => match z.headers {
-                            None => z.headers = Some(HashMap::from([("Host".to_string(), x)])),
-                            Some(_) => {
-                                let _ = z.headers.as_mut().unwrap().insert("Host".to_string(), x);
-                            }
-                        },
-                        TransportConfig::Http(ref mut z) => match z.host {
-                            None => z.host = Some(vec![x]),
-                            Some(_) => {
-                                z.host.as_mut().unwrap().push(x);
-                            }
-                        },
-                        TransportConfig::HttpUpgrade(ref mut z) => match z.host {
-                            None => z.host = Some(vec![x]),
-                            Some(_) => {
-                                z.host.as_mut().unwrap().push(x);
-                            }
-                        },
-                        TransportConfig::Tcp => {}
-                        _ => {}
-                    },
-                    _ => return Err(anyhow!("Invalid Host type")),
-                },
-
-                PossibleKeys::ServiceName => match val {
-                    PossibleValues::String(x) => match tfg {
-                        TransportConfig::None => {
-                            transport_flags[2] = Some(PossibleValues::String(x))
-                        }
-                        TransportConfig::Grpc(ref mut z) => z.service_name = Some(x),
-                        _ => {}
-                    },
-                    _ => return Err(anyhow!("Invalid ServiceName type")),
-                },
-
-                PossibleKeys::Tag => match val {
-                    PossibleValues::String(x) => cfg.tag = x.clone(),
-                    _ => return Err(anyhow!("Invalid ServiceName type")),
-                },
-            }
+        if !utls.check() {
+            bail!("Invalid uTLS configuration");
         }
 
-        if let Some(x) = &transport_flags[0] {
-            match x {
-                PossibleValues::String(t) => match tfg {
-                    TransportConfig::WebSocket(ref mut z) => z.path = Some(t.clone()),
-                    TransportConfig::Http(ref mut z) => z.path = Some(t.clone()),
-                    TransportConfig::HttpUpgrade(ref mut z) => z.path = Some(t.clone()),
-                    TransportConfig::None => unreachable!(),
-                    _ => {}
-                },
-                _ => unreachable!(),
-            }
+        tls.utls = Some(utls);
+    }
+
+    if security == SecurityKind::Reality {
+        let mut reality = RealityConfig::new();
+
+        reality.enabled = Some(true);
+        reality.public_key = reality_public_key;
+        reality.short_id = reality_short_id;
+
+        if !reality.check() {
+            bail!("Invalid REALITY configuration");
         }
 
-        if let Some(x) = &transport_flags[1] {
-            match x {
-                PossibleValues::String(t) => match tfg {
-                    TransportConfig::WebSocket(ref mut z) => match z.headers {
-                        None => z.headers = Some(HashMap::from([("Host".to_string(), t.clone())])),
-                        Some(_) => {
-                            let _ = z
-                                .headers
-                                .as_mut()
-                                .unwrap()
-                                .insert("Host".to_string(), t.clone());
-                        }
-                    },
-                    TransportConfig::Http(ref mut z) => match z.host {
-                        None => z.host = Some(vec![t.clone()]),
-                        Some(_) => {
-                            z.host.as_mut().unwrap().push(t.clone());
-                        }
-                    },
-                    TransportConfig::HttpUpgrade(ref mut z) => match z.host {
-                        None => z.host = Some(vec![t.clone()]),
-                        Some(_) => {
-                            z.host.as_mut().unwrap().push(t.clone());
-                        }
-                    },
-                    _ => {}
-                },
-                _ => unreachable!(),
+        tls.reality = Some(reality);
+    }
+
+    if !tls.check() {
+        bail!("Invalid TLS configuration");
+    }
+
+    Ok(Some(tls))
+}
+
+fn build_multiplex(max_streams: Option<u16>) -> Result<Option<MultiplexConfig>> {
+    let Some(max_streams) = max_streams else {
+        return Ok(None);
+    };
+
+    let mut multiplex = MultiplexConfig::new();
+
+    multiplex.enable = Some(true);
+    multiplex.protocol = Some("h2mux".to_string());
+    multiplex.max_streams = Some(max_streams);
+
+    if !multiplex.check() {
+        bail!("Invalid multiplex configuration");
+    }
+
+    Ok(Some(multiplex))
+}
+
+fn build_transport(
+    kind: TransportKind,
+    path: Option<String>,
+    hosts: Vec<String>,
+    service_name: Option<String>,
+) -> Result<Option<TransportConfig>> {
+    match kind {
+        TransportKind::Tcp => Ok(None),
+
+        TransportKind::WebSocket => {
+            let mut ws = WebSocketConfig::new();
+
+            ws.path = path;
+
+            if let Some(host) = hosts.last() {
+                ws.headers = Some(HashMap::from([("Host".to_string(), host.clone())]));
             }
+
+            if !ws.check() {
+                bail!("Invalid WebSocket transport configuration");
+            }
+
+            Ok(Some(TransportConfig::WebSocket(ws)))
         }
 
-        if let Some(x) = &transport_flags[2] {
-            match x {
-                PossibleValues::String(t) => match tfg {
-                    TransportConfig::None => {
-                        transport_flags[2] = Some(PossibleValues::String(t.clone()))
-                    }
-                    TransportConfig::Grpc(ref mut z) => z.service_name = Some(t.clone()),
-                    _ => {}
-                },
-                _ => unreachable!(),
+        TransportKind::Grpc => {
+            let mut grpc = GrpcConfig::new();
+
+            grpc.service_name = service_name;
+
+            if !grpc.check() {
+                bail!("Invalid gRPC transport configuration");
             }
+
+            Ok(Some(TransportConfig::Grpc(grpc)))
         }
 
-        match cfg.check() {
-            false => Err(anyhow!("Not configurated required fields")),
-            true => {
-                if mtx.check() {
-                    cfg.multiplex = Some(mtx);
+        TransportKind::Quic => {
+            let quic = QuicConfig::new();
+
+            if !quic.check() {
+                bail!("Invalid QUIC transport configuration");
+            }
+
+            Ok(Some(TransportConfig::Quic(quic)))
+        }
+
+        TransportKind::Http => {
+            let mut http = HttpConfig::new();
+
+            http.path = path;
+
+            if !hosts.is_empty() {
+                http.host = Some(hosts);
+            }
+
+            if !http.check() {
+                bail!("Invalid HTTP transport configuration");
+            }
+
+            Ok(Some(TransportConfig::Http(http)))
+        }
+
+        TransportKind::HttpUpgrade => {
+            let mut upgrade = HttpUpgradeConfig::new();
+
+            upgrade.path = path;
+
+            if !hosts.is_empty() {
+                upgrade.host = Some(hosts);
+            }
+
+            if !upgrade.check() {
+                bail!("Invalid HTTPUpgrade transport configuration");
+            }
+
+            Ok(Some(TransportConfig::HttpUpgrade(upgrade)))
+        }
+    }
+}
+
+fn non_empty(value: String) -> Option<String> {
+    if value.is_empty() { None } else { Some(value) }
+}
+
+fn decode_component(value: &str, name: &str) -> Result<String> {
+    urlencoding::decode(value)
+        .with_context(|| format!("Invalid percent encoding in VLESS {name}"))
+        .map(|value| value.into_owned())
+}
+
+fn validate_uuid(value: &str) -> Result<()> {
+    if value.len() != 36 {
+        bail!("Invalid VLESS UUID '{value}': expected 36 characters");
+    }
+
+    for (index, byte) in value.bytes().enumerate() {
+        match index {
+            8 | 13 | 18 | 23 => {
+                if byte != b'-' {
+                    bail!(
+                        "Invalid VLESS UUID '{value}': expected '-' at position {}",
+                        index + 1
+                    );
                 }
-                match tls.check() {
-                    false => {}
-                    true => {
-                        if utls.check() {
-                            tls.utls = Some(utls);
-                        }
-                        if let Some(x) = rlt.enabled {
-                            if x && rlt.check() {
-                                tls.reality = Some(rlt)
-                            } else if x && !rlt.check() {
-                                return Err(anyhow!(
-                                    "Security = reality, but it doesnt configurated"
-                                ));
-                            }
-                        }
-                        cfg.tls = Some(tls);
-                    }
+            }
+
+            _ => {
+                if !byte.is_ascii_hexdigit() {
+                    bail!(
+                        "Invalid VLESS UUID '{value}': invalid character at position {}",
+                        index + 1
+                    );
                 }
-                match tfg {
-                    TransportConfig::None => {}
-                    TransportConfig::WebSocket(x) => {
-                        if x.check() {
-                            if let Some(ref mut z) = cfg.tls {
-                                z.insecure = Some(true);
-                            }
-                            cfg.flow = Some(Flow::None);
-                            cfg.transport = Some(TransportConfig::WebSocket(x));
-                        }
-                    }
-                    TransportConfig::Grpc(x) => {
-                        if x.check() {
-                            if let Some(ref mut z) = cfg.tls {
-                                z.insecure = Some(true);
-                            }
-                            cfg.flow = Some(Flow::None);
-                            cfg.transport = Some(TransportConfig::Grpc(x));
-                        }
-                    }
-                    TransportConfig::Quic(x) => {
-                        if x.check() {
-                            if let Some(ref mut z) = cfg.tls {
-                                z.insecure = Some(true);
-                            }
-                            cfg.flow = Some(Flow::None);
-                            cfg.transport = Some(TransportConfig::Quic(x));
-                        }
-                    }
-                    TransportConfig::Http(x) => {
-                        if x.check() {
-                            if let Some(ref mut z) = cfg.tls {
-                                z.insecure = Some(true)
-                            }
-                            cfg.flow = Some(Flow::None);
-                            cfg.transport = Some(TransportConfig::Http(x))
-                        }
-                    }
-                    TransportConfig::HttpUpgrade(x) => {
-                        if x.check() {
-                            if let Some(ref mut z) = cfg.tls {
-                                z.insecure = Some(true)
-                            }
-                            cfg.flow = Some(Flow::None);
-                            cfg.transport = Some(TransportConfig::HttpUpgrade(x))
-                        }
-                    }
-                    TransportConfig::Tcp => {}
-                }
-                Ok(cfg)
             }
         }
     }
+
+    Ok(())
 }
