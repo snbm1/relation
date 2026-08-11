@@ -1,3 +1,4 @@
+use anyhow::{Context, Result, anyhow, bail};
 use macros::auto_skip_none;
 use serde::{Deserialize, Serialize};
 
@@ -25,4 +26,22 @@ impl MultiplexConfig {
             },
         }
     }
+}
+
+pub fn build_multiplex(max_streams: Option<u16>) -> Result<Option<MultiplexConfig>> {
+    let Some(max_streams) = max_streams else {
+        return Ok(None);
+    };
+
+    let mut multiplex = MultiplexConfig::new();
+
+    multiplex.enable = Some(true);
+    multiplex.protocol = Some("h2mux".to_string());
+    multiplex.max_streams = Some(max_streams);
+
+    if !multiplex.check() {
+        bail!("Invalid multiplex configuration");
+    }
+
+    Ok(Some(multiplex))
 }

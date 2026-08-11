@@ -6,11 +6,9 @@ use url::Url;
 
 use macros::auto_skip_none;
 
-use crate::configurator::shared::Network;
-use crate::configurator::shared::dialfields::DialFields;
-use crate::configurator::shared::multiplex::*;
-use crate::configurator::shared::tls::*;
-use crate::configurator::shared::transport::*;
+use crate::configurator::shared::{
+    Network, dialfields::DialFields, multiplex::*, tls::*, transport::*,
+};
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Flow {
@@ -464,24 +462,6 @@ fn build_tls(
     }
 
     Ok(Some(tls))
-}
-
-fn build_multiplex(max_streams: Option<u16>) -> Result<Option<MultiplexConfig>> {
-    let Some(max_streams) = max_streams else {
-        return Ok(None);
-    };
-
-    let mut multiplex = MultiplexConfig::new();
-
-    multiplex.enable = Some(true);
-    multiplex.protocol = Some("h2mux".to_string());
-    multiplex.max_streams = Some(max_streams);
-
-    if !multiplex.check() {
-        bail!("Invalid multiplex configuration");
-    }
-
-    Ok(Some(multiplex))
 }
 
 fn build_transport(

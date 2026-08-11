@@ -148,7 +148,7 @@ impl Configurator {
         if self.get_inbounds_types().contains(&"tun".to_string()) {
             self.route.add_default_rule(
                 DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
-                    .add_ip_cidr(&self.outbounds.get_server_addr_by_type("vless")),
+                    .add_ip_cidr(&self.outbounds.get_server_addr_by_type("vless").unwrap()),
             );
         }
         self.route.set_final_by_type(

@@ -26,4 +26,8 @@ impl DirectConfig {
     pub fn get_tag(&self) -> String {
         self.tag.clone()
     }
+
+    pub fn tag(&self) -> &str {
+        &self.tag
+    }
 }
