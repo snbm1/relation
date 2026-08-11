@@ -58,6 +58,11 @@ impl RouteConfig {
         self
     }
 
+    pub fn set_final_by_tag(&mut self, outbound_tag: &str) -> &mut Self {
+        self.default = Some(outbound_tag.to_string());
+        self
+    }
+
     pub fn set_default_domain_resolver_by_type(
         &mut self,
         dns: &DnsConfig,

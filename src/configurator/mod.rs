@@ -145,16 +145,33 @@ impl Configurator {
 
     pub fn set_outbound_from_url(&mut self, url: &str) -> Result<&mut Self> {
         self.outbounds.add_server_from_url(url)?;
-        if self.get_inbounds_types().contains(&"tun".to_string()) {
-            self.route.add_default_rule(
-                DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
-                    .add_ip_cidr(&self.outbounds.get_server_addr_by_type("vless").unwrap()),
-            );
+
+        let outbound = self
+            .outbounds
+            .servers
+            .last()
+            .context("Outbound was not added")?;
+
+        let tag = outbound.tag().to_owned();
+
+        if self
+            .inbounds
+            .get_vec_ref()
+            .iter()
+            .any(|x| x.get_type() == "tun")
+        {
+            if let Some(server) = outbound.server() {
+                if server.parse::<std::net::IpAddr>().is_ok() {
+                    self.route.add_default_rule(
+                        DefaultRouteRule::route_action_by_type(&self.outbounds, "direct")
+                            .add_ip_cidr(server),
+                    );
+                }
+            }
         }
-        self.route.set_final_by_type(
-            &self.outbounds,
-            &self.outbounds.get_types_except_direct().first().unwrap(),
-        );
+
+        self.route.set_final_by_tag(&tag);
+
         Ok(self)
     }
 
@@ -278,7 +295,9 @@ impl Configurator {
                             ri.get(2).context("Incorrect input")?,
                         )
                     }
-                    "iv" => rh = rh.set_ip_version(ri.get(2).unwrap().parse()?),
+                    "iv" => {
+                        rh = rh.set_ip_version(ri.get(2).context("Missing IP version")?.parse()?)
+                    }
                     "au" => rh = rh.add_auth_user(ri.get(2).context("Incorrect input")?),
                     "pl" => rh = rh.add_protocol(ri.get(2).context("Incorrect input")?),
                     "cl" => rh = rh.add_client(ri.get(2).context("Incorrect input")?),

@@ -9,6 +9,7 @@ use url::Url;
 
 use self::direct::DirectConfig;
 use self::socks::SocksConfig;
+use self::subcription::Subscription;
 use self::vless::VlessConfig;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -116,6 +117,8 @@ impl Outbound {
             "socks" | "socks4" | "socks4a" | "socks5" | "socks5h" => Ok(Self::Socks(
                 SocksConfig::from_url(input).context("Cannot parse SOCKS outbound")?,
             )),
+
+            "http" | "https" => Ok(subcription::Subscription::load(input)?.pop().unwrap()),
 
             scheme => {
                 bail!("Unsupported outbound scheme '{scheme}'")
