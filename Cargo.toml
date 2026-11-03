@@ -13,7 +13,9 @@ macros = { path = "macros" }
 urlencoding = "2"
 url = "2"
 clap = { version = "4", features = ["derive", "color", "help"] }
-clap_complete = { version = "4", features = ["unstable-dynamic"], optional = true }
+clap_complete = { version = "4", features = [
+  "unstable-dynamic",
+], optional = true }
 directories = "6"
 libc = "0.2"
 toml = "*"
@@ -23,12 +25,19 @@ crossterm = { version = "*", optional = true }
 anyhow = "1.0"
 default-net = { version = "*", optional = true }
 yaml_serde = "0.10"
-interprocess = { version = "2", features = ["tokio"]}
-tokio = { version = "1", features = ["macros", "net", "io-util", "rt-multi-thread", "signal", "time"]}
+interprocess = { version = "2", features = ["tokio"] }
+tokio = { version = "1", features = [
+  "macros",
+  "net",
+  "io-util",
+  "rt-multi-thread",
+  "signal",
+  "time",
+] }
 base64 = "*"
 
 [build-dependencies]
-bindgen = "0.72"
+bindgen = "0.73"
 
 [features]
 tui = ["dep:ratatui", "dep:crossterm", "dep:default-net"]
@@ -36,8 +45,8 @@ autocomlete = ["dep:clap_complete"]
 default = ["tui", "autocomlete"]
 
 [[bin]]
-name="relationd"
-path="src/bin/relationd.rs"
+name = "relationd"
+path = "src/bin/relationd.rs"
 
 [profile.release]
 opt-level = "z"
