@@ -1,7 +1,8 @@
 # Relation
+
 <img src="img/logo.png">
 
-**Relation** is a tiny proxy client based on [sing-box](https://github.com/SagerNet/sing-box).
+**Relation** is a tiny proxy client based on [mihomo](https://github.com/MetaCubeX/mihomo).
 
 It provides a simple way to add, manage and run proxy configurations from the terminal, with support for daemon mode, TUN mode, system proxy control and a terminal UI.
 
@@ -240,8 +241,6 @@ The TUI provides an interactive way to work with saved configurations.
 └── README.md
 ```
 
-
-
 ## Tech Stack
 
 - Rust
@@ -251,4 +250,3 @@ The TUI provides an interactive way to work with saved configurations.
 - tokio
 - ratatui
 - crossterm
-
