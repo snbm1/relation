@@ -24,3 +24,13 @@ func start(configPath *C.char) *C.char {
 
 	return C.CString("")
 }
+
+//export stop
+func stop() *C.char {
+	err := M.Stop()
+	if err != nil {
+		return C.CString(err.Error())
+	}
+
+	return C.CString("")
+}
